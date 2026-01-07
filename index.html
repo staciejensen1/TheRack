@@ -304,6 +304,18 @@
               Clear Filters
             </button>
           </div>
+          
+          <!-- Sales Filter Bar -->
+          <div id="salesFilterBar" class="hidden mb-4 flex flex-wrap gap-2 items-center">
+            <select id="filterSalesYear" onchange="applyFilter('salesYear', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+              <option value="">All Years</option>
+            </select>
+            <select id="filterSalesStatus" onchange="applyFilter('salesStatus', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+              <option value="">All Status</option>
+              <option value="On Hold">On Hold</option>
+              <option value="Sold">Sold</option>
+            </select>
+          </div>
 
           <!-- Data table -->
           <div id="tableView" class="overflow-x-auto hidden">
@@ -545,7 +557,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.16";
+    var VERSION = "2.10.19";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -592,7 +604,9 @@
         sex: "",
         status: "",
         species: "",
-        gene: ""
+        gene: "",
+        salesYear: "",
+        salesStatus: ""
       }
     };
 
@@ -1097,7 +1111,7 @@
       var tabs = [
         { key: "dashboard", label: "Dashboard" },
         { key: "collection", label: "Collection" },
-        { key: "clutches", label: "Incubator" },
+        { key: "clutches", label: "Clutches" },
         { key: "hatchlings", label: "Hatchlings" },
         { key: "sales", label: "Sales" },
         { key: "activity", label: "Activity" },
@@ -1150,7 +1164,7 @@
       var titles = {
         dashboard: "Dashboard",
         collection: "Collection",
-        clutches: "Incubator",
+        clutches: "Clutches",
         hatchlings: "Hatchlings",
         sales: "Sales",
         activity: "Activity",
@@ -1421,7 +1435,7 @@
           s.listed++;
           countSex(sex, s, "hatch");
         }
-        if (st === "unlisted") {
+        if (st === "unlisted" || st === "not listed") {
           s.unlisted++;
           countSex(sex, s, "hatch");
           // Needs sexing (unlisted with unknown sex)
@@ -1532,11 +1546,19 @@
       // Show/hide filter bar (only for collection-based views)
       var filterBar = document.getElementById("filterBar");
       var sheetKey = getSheetKey(state.activeTab);
+      // Show/hide filter bars based on tab
+      var salesFilterBar = document.getElementById("salesFilterBar");
       if (sheetKey === "collection" && state.activeTab !== "sales") {
         filterBar.classList.remove("hidden");
+        salesFilterBar.classList.add("hidden");
         populateSpeciesFilter();
+      } else if (state.activeTab === "sales") {
+        filterBar.classList.add("hidden");
+        salesFilterBar.classList.remove("hidden");
+        populateSalesYearFilter();
       } else {
         filterBar.classList.add("hidden");
+        salesFilterBar.classList.add("hidden");
       }
 
       // Header
@@ -1860,17 +1882,21 @@
     }
     
     function clearAllFilters() {
-      state.filters = { sex: "", status: "", species: "", gene: "" };
+      state.filters = { sex: "", status: "", species: "", gene: "", salesYear: "", salesStatus: "" };
       document.getElementById("filterSex").value = "";
       document.getElementById("filterStatus").value = "";
       document.getElementById("filterSpecies").value = "";
+      var salesYearSelect = document.getElementById("filterSalesYear");
+      if (salesYearSelect) salesYearSelect.value = "";
+      var salesStatusSelect = document.getElementById("filterSalesStatus");
+      if (salesStatusSelect) salesStatusSelect.value = "";
       document.getElementById("geneFilterDisplay").classList.add("hidden");
       document.getElementById("clearFiltersBtn").classList.add("hidden");
       renderTable();
     }
     
     function updateClearFiltersVisibility() {
-      var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene;
+      var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene || state.filters.salesYear || state.filters.salesStatus;
       document.getElementById("clearFiltersBtn").classList.toggle("hidden", !hasFilters);
     }
     
@@ -1885,6 +1911,25 @@
       select.innerHTML = '<option value="">All Species</option>';
       Object.keys(species).sort().forEach(function(sp) {
         select.innerHTML += '<option value="' + escapeHtml(sp) + '">' + escapeHtml(sp) + '</option>';
+      });
+    }
+
+    function populateSalesYearFilter() {
+      var years = {};
+      state.data.collection.forEach(function(r) {
+        var st = (r.STATUS || "").toLowerCase().trim();
+        if (st === "sold" || st === "on hold" || st === "hold") {
+          var soldDate = parseDate(r["DATE SOLD"]);
+          if (soldDate) {
+            years[soldDate.getFullYear()] = true;
+          }
+        }
+      });
+      
+      var select = document.getElementById("filterSalesYear");
+      select.innerHTML = '<option value="">All Years</option>';
+      Object.keys(years).sort().reverse().forEach(function(yr) {
+        select.innerHTML += '<option value="' + yr + '">' + yr + '</option>';
       });
     }
 
@@ -1979,6 +2024,19 @@
         
       } else if (state.activeTab === "sales") {
         var year = new Date().getFullYear();
+        
+        // Year filter dropdown
+        html += '<div class="mb-4 flex items-center gap-2">';
+        html += '<label class="text-sm text-gray-600">Show sales from:</label>';
+        html += '<select onchange="state.filters.salesYear=this.value; renderCurrentView();" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">';
+        html += '<option value="">All Years</option>';
+        for (var y = year; y >= year - 5; y--) {
+          var selected = state.filters.salesYear === String(y) ? ' selected' : '';
+          html += '<option value="' + y + '"' + selected + '>' + y + '</option>';
+        }
+        html += '</select>';
+        html += '</div>';
+        
         html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Sold (' + year + ')</div>';
@@ -2026,7 +2084,20 @@
       var sheetKey = getSheetKey(state.activeTab);
       var rows = state.data[sheetKey] || [];
       
-      return rows.filter(function(r) {
+      // Debug logging
+      console.log("getFilteredRows - activeTab:", state.activeTab, "sheetKey:", sheetKey, "total rows:", rows.length);
+      
+      // Debug logging for hatchlings
+      if (state.activeTab === "hatchlings" || state.activeTab === "clutches") {
+        var statusCounts = {};
+        rows.forEach(function(r) {
+          var st = (r.STATUS || "").toLowerCase().trim();
+          statusCounts[st] = (statusCounts[st] || 0) + 1;
+        });
+        console.log("Status counts for", state.activeTab, ":", statusCounts);
+      }
+      
+      var filtered = rows.filter(function(r) {
         var st = (r.STATUS || "").toLowerCase().trim();
         
         // Tab-specific base filter
@@ -2034,7 +2105,8 @@
         if (state.activeTab === "collection") {
           passesBaseFilter = st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
         } else if (state.activeTab === "clutches") {
-          passesBaseFilter = st !== "hatched";
+          // Show all clutches except hatched ones
+          passesBaseFilter = true; // Show all for now to debug
         } else if (state.activeTab === "hatchlings") {
           passesBaseFilter = st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale";
         } else if (state.activeTab === "sales") {
@@ -2042,6 +2114,21 @@
         }
         
         if (!passesBaseFilter) return false;
+        
+        // Apply year filter for sales
+        if (state.activeTab === "sales" && state.filters.salesYear) {
+          var soldDate = parseDate(r["DATE SOLD"]);
+          if (!soldDate || soldDate.getFullYear() !== parseInt(state.filters.salesYear)) {
+            return false;
+          }
+        }
+        
+        // Apply status filter for sales
+        if (state.activeTab === "sales" && state.filters.salesStatus) {
+          if (st !== state.filters.salesStatus.toLowerCase()) {
+            return false;
+          }
+        }
         
         // Apply user filters (only for collection-based views)
         if (sheetKey === "collection") {
@@ -2071,6 +2158,9 @@
         
         return true;
       });
+      
+      console.log("Filtered rows count:", filtered.length);
+      return filtered;
     }
 
     function getSheetKey(tab) {
@@ -3267,6 +3357,8 @@
     }
 
     function openSettingsModal() {
+      console.log("openSettingsModal called");
+      console.log("state.settings:", state.settings);
       var html = '<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)closeSettingsModal()">';
       html += '<div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">';
       html += '<div class="p-6">';
