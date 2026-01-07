@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.4
+  Version: 2.10.5
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.10.5: Fixed MorphMarket import - year-only DOB now becomes 01/01/YYYY
   - 2.10.4: Made Hatchlings/Sales table stats monochrome, removed Clutches section from Dashboard
   - 2.10.3: Complete rewrite of Edit/Delete using event delegation and data attributes
   - 2.10.0: Filter dropdowns, clickable gene tags, maturity auto-calc, status badges
@@ -541,7 +542,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.4";
+    var VERSION = "2.10.5";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -3483,7 +3484,11 @@
         else sex = "Unknown";
 
         // Parse DOB - MorphMarket uses various formats
-        var dob = row[cols.dob] || "";
+        // If it's just a year (4 digits), prepend 01/01/
+        var dob = (row[cols.dob] || "").trim();
+        if (dob && /^\d{4}$/.test(dob)) {
+          dob = "01/01/" + dob;
+        }
         
         // Get first photo URL only
         var photoUrls = row[cols.photoUrls] || "";
