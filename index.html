@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.6.0
+  Version: 2.7.1
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.7.1: Import duplicate detection - updates existing by MANUAL ID instead of creating duplicates
+  - 2.7.0: MorphMarket CSV import with field mapping
   - 2.6.0: QR code generation and scanning for quick activity logging
   - 2.5.2: Fixed support ticket form link
   - 2.5.1: Added support ticket link
@@ -183,6 +185,7 @@
         <div class="pt-4 border-t border-gray-100">
           <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
           <div class="flex flex-col gap-1">
+            <button onclick="openImportModal(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Import from MorphMarket</button>
             <button onclick="exportCSV('collection'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
             <button onclick="exportCSV('clutch'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
             <button onclick="showDataHealth(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
@@ -223,6 +226,7 @@
           <div class="mt-6 pt-4 border-t border-gray-100">
             <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
             <div class="flex flex-col gap-1">
+              <button onclick="openImportModal()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Import from MorphMarket</button>
               <button onclick="exportCSV('collection')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
               <button onclick="exportCSV('clutch')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
               <button onclick="openQRGenerator()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print QR Codes</button>
@@ -317,6 +321,90 @@
           <!-- Preview -->
           <div id="qrPreview" class="border border-gray-200 rounded-xl p-4 bg-gray-50 max-h-96 overflow-auto">
             <p class="text-gray-500 text-sm">Loading preview...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div id="importModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-slate-900">Import from MorphMarket</h3>
+          <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="p-4 md:p-6">
+          <!-- Step 1: Upload -->
+          <div id="importStep1">
+            <div class="mb-4">
+              <p class="text-gray-600 mb-4">Upload your MorphMarket CSV export file. Go to MorphMarket &gt; My Store &gt; Inventory &gt; Export to download your file.</p>
+              <label class="block">
+                <span class="sr-only">Choose CSV file</span>
+                <input type="file" id="importFileInput" accept=".csv" onchange="handleImportFile(event)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-black cursor-pointer"/>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Step 2: Preview -->
+          <div id="importStep2" class="hidden">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <span id="importCount" class="font-bold text-gray-900">0</span>
+                <span class="text-gray-600">animals to import</span>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="resetImport()" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 text-sm">
+                  Back
+                </button>
+                <button onclick="executeImport()" id="importBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+                  Import All
+                </button>
+              </div>
+            </div>
+            
+            <!-- Preview Table -->
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+              <div class="max-h-96 overflow-auto">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Action</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Manual ID</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Sex</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Status</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Genes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="importPreviewBody" class="divide-y divide-gray-100">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Step 3: Progress -->
+          <div id="importStep3" class="hidden">
+            <div class="text-center py-8">
+              <div class="mb-4">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-gray-900"></div>
+              </div>
+              <p id="importProgress" class="text-gray-600">Importing...</p>
+            </div>
+          </div>
+          
+          <!-- Step 4: Complete -->
+          <div id="importStep4" class="hidden">
+            <div class="text-center py-8">
+              <div class="text-4xl mb-4">Done!</div>
+              <p id="importResult" class="text-gray-600 mb-4">Successfully imported 0 animals.</p>
+              <button onclick="closeImportModal(); loadData();" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -421,7 +509,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.6.0";
+    var VERSION = "2.7.1";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -2703,6 +2791,321 @@
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       printWindow.print();
+    }
+
+    // ============ MORPHMARKET IMPORT ============
+    var importData = [];
+
+    function openImportModal() {
+      if (!state.isLoggedIn) {
+        setStatus("Please log in first", true);
+        return;
+      }
+      resetImport();
+      document.getElementById("importModal").classList.remove("hidden");
+    }
+
+    function closeImportModal() {
+      document.getElementById("importModal").classList.add("hidden");
+      resetImport();
+    }
+
+    function resetImport() {
+      importData = [];
+      document.getElementById("importStep1").classList.remove("hidden");
+      document.getElementById("importStep2").classList.add("hidden");
+      document.getElementById("importStep3").classList.add("hidden");
+      document.getElementById("importStep4").classList.add("hidden");
+      document.getElementById("importFileInput").value = "";
+    }
+
+    function handleImportFile(event) {
+      var file = event.target.files[0];
+      if (!file) return;
+
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var text = e.target.result;
+        parseImportCSV(text);
+      };
+      reader.readAsText(file);
+    }
+
+    function parseImportCSV(text) {
+      var lines = text.split('\n');
+      if (lines.length < 2) {
+        setStatus("CSV file appears to be empty", true);
+        return;
+      }
+
+      // Parse header
+      var headers = parseCSVLine(lines[0]);
+      
+      // Find column indices
+      var cols = {
+        category: headers.indexOf('Category*'),
+        title: headers.indexOf('Title*'),
+        animalId: headers.indexOf('Animal_Id*'),
+        sex: headers.indexOf('Sex'),
+        dob: headers.indexOf('Dob'),
+        weight: headers.indexOf('Weight'),
+        traits: headers.indexOf('Traits'),
+        state: headers.indexOf('State'),
+        price: headers.indexOf('Price'),
+        photoUrls: headers.indexOf('Photo_Urls'),
+        desc: headers.indexOf('Desc'),
+        origin: headers.indexOf('Origin'),
+        sires: headers.indexOf('Sires**'),
+        dams: headers.indexOf('Dams**'),
+        privateNotes: headers.indexOf('Private_Notes'),
+        groupId: headers.indexOf('Group_Id')
+      };
+
+      importData = [];
+
+      // Parse each row
+      for (var i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        var row = parseCSVLine(lines[i]);
+        if (row.length < 5) continue;
+
+        var mmState = (row[cols.state] || "").toLowerCase();
+        var status = "Breeder";
+        if (mmState === "for sale") status = "Listed";
+        else if (mmState === "sold") status = "Sold";
+
+        var price = parseFloat(row[cols.price]) || 0;
+        var purchasePrice = "";
+        var listPrice = "";
+        var soldPrice = "";
+
+        if (status === "Sold") {
+          soldPrice = price;
+        } else if (status === "Listed") {
+          listPrice = price;
+        } else {
+          purchasePrice = price;
+        }
+
+        // Parse sex
+        var sex = (row[cols.sex] || "").toLowerCase();
+        if (sex === "female" || sex === "f") sex = "Female";
+        else if (sex === "male" || sex === "m") sex = "Male";
+        else sex = "Unknown";
+
+        // Parse DOB - MorphMarket uses various formats
+        var dob = row[cols.dob] || "";
+        
+        // Get first photo URL only
+        var photoUrls = row[cols.photoUrls] || "";
+        var firstPhoto = photoUrls.split(' ')[0] || "";
+
+        // Extract sire/dam names (format: "Name (M)(#ID)")
+        var sireRaw = row[cols.sires] || "";
+        var damRaw = row[cols.dams] || "";
+        var sire = sireRaw.split(' (')[0] || "";
+        var dam = damRaw.split(' (')[0] || "";
+
+        // Combine notes
+        var notes = row[cols.desc] || "";
+        var privateNotes = row[cols.privateNotes] || "";
+        if (privateNotes) {
+          notes = notes ? notes + "\n\n" + privateNotes : privateNotes;
+        }
+
+        importData.push({
+          "ANIMAL NAME": row[cols.title] || "",
+          "MANUAL ID": row[cols.animalId] || "",
+          "SPECIES": row[cols.category] || "",
+          "SEX": sex,
+          "DATE OF BIRTH": dob,
+          "WEIGHT": row[cols.weight] || "",
+          "GENES": row[cols.traits] || "",
+          "STATUS": status,
+          "PURCHASE PRICE": purchasePrice,
+          "LIST PRICE": listPrice,
+          "SOLD PRICE": soldPrice,
+          "PHOTO URL": firstPhoto,
+          "NOTES": notes,
+          "BREEDER/ORIGIN": row[cols.origin] || "",
+          "SIRE": sire,
+          "DAM": dam,
+          "CLUTCH ID": row[cols.groupId] || ""
+        });
+      }
+
+      if (importData.length === 0) {
+        setStatus("No valid animals found in CSV", true);
+        return;
+      }
+
+      // Show preview
+      showImportPreview();
+    }
+
+    function parseCSVLine(line) {
+      var result = [];
+      var current = "";
+      var inQuotes = false;
+      
+      for (var i = 0; i < line.length; i++) {
+        var char = line[i];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      
+      return result;
+    }
+
+    function showImportPreview() {
+      document.getElementById("importStep1").classList.add("hidden");
+      document.getElementById("importStep2").classList.remove("hidden");
+
+      var tbody = document.getElementById("importPreviewBody");
+      var html = "";
+      var newCount = 0;
+      var updateCount = 0;
+
+      importData.forEach(function(animal, index) {
+        // Check if this is an update or new
+        var manualId = animal["MANUAL ID"];
+        var isUpdate = false;
+        
+        if (manualId) {
+          isUpdate = state.data.collection.some(function(r) {
+            return r["MANUAL ID"] === manualId;
+          });
+        }
+
+        if (isUpdate) {
+          updateCount++;
+        } else {
+          newCount++;
+        }
+
+        var actionBadge = isUpdate 
+          ? '<span class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">Update</span>'
+          : '<span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">New</span>';
+
+        html += '<tr class="' + (index % 2 === 0 ? 'bg-white' : 'bg-gray-50') + '">';
+        html += '<td class="px-3 py-2">' + actionBadge + '</td>';
+        html += '<td class="px-3 py-2 font-medium">' + escapeHtml(animal["ANIMAL NAME"]) + '</td>';
+        html += '<td class="px-3 py-2 mono text-xs">' + escapeHtml(animal["MANUAL ID"]) + '</td>';
+        html += '<td class="px-3 py-2">' + animal["SEX"] + '</td>';
+        html += '<td class="px-3 py-2"><span class="px-2 py-1 rounded text-xs ' + getStatusColor(animal["STATUS"]) + '">' + animal["STATUS"] + '</span></td>';
+        html += '<td class="px-3 py-2 text-xs max-w-xs truncate">' + escapeHtml(animal["GENES"]) + '</td>';
+        html += '</tr>';
+      });
+
+      document.getElementById("importCount").textContent = newCount + " new, " + updateCount + " updates";
+      tbody.innerHTML = html;
+    }
+
+    function getStatusColor(status) {
+      switch(status) {
+        case "Listed": return "bg-green-100 text-green-800";
+        case "Sold": return "bg-blue-100 text-blue-800";
+        case "Breeder": return "bg-purple-100 text-purple-800";
+        default: return "bg-gray-100 text-gray-800";
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text.replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;");
+    }
+
+    function executeImport() {
+      document.getElementById("importStep2").classList.add("hidden");
+      document.getElementById("importStep3").classList.remove("hidden");
+
+      var total = importData.length;
+      var completed = 0;
+      var errors = 0;
+      var updated = 0;
+      var created = 0;
+
+      function importNext() {
+        if (completed >= total) {
+          // Done
+          document.getElementById("importStep3").classList.add("hidden");
+          document.getElementById("importStep4").classList.remove("hidden");
+          document.getElementById("importResult").textContent = 
+            "Import complete: " + created + " new, " + updated + " updated." + 
+            (errors > 0 ? " " + errors + " failed." : "");
+          return;
+        }
+
+        var animal = importData[completed];
+        document.getElementById("importProgress").textContent = 
+          "Importing " + (completed + 1) + " of " + total + "...";
+
+        // Check for existing animal by MANUAL ID
+        var manualId = animal["MANUAL ID"];
+        var existingRow = null;
+        
+        if (manualId) {
+          existingRow = state.data.collection.find(function(r) {
+            return r["MANUAL ID"] === manualId;
+          });
+        }
+
+        if (existingRow && existingRow.__rowIndex !== undefined) {
+          // Update existing row
+          apiCall('updateRecord', { tab: 'Collection', rowIndex: existingRow.__rowIndex, data: animal })
+            .then(function(response) {
+              if (response.success) {
+                updated++;
+                // Update local data
+                Object.assign(existingRow, animal);
+              } else {
+                errors++;
+                console.error("Failed to update:", animal["ANIMAL NAME"], response.error);
+              }
+            })
+            .catch(function(error) {
+              errors++;
+              console.error("Error updating:", animal["ANIMAL NAME"], error);
+            })
+            .finally(function() {
+              completed++;
+              setTimeout(importNext, 100);
+            });
+        } else {
+          // Create new row
+          apiCall('saveRecord', { tab: 'Collection', data: animal })
+            .then(function(response) {
+              if (response.success) {
+                created++;
+              } else {
+                errors++;
+                console.error("Failed to import:", animal["ANIMAL NAME"], response.error);
+              }
+            })
+            .catch(function(error) {
+              errors++;
+              console.error("Error importing:", animal["ANIMAL NAME"], error);
+            })
+            .finally(function() {
+              completed++;
+              setTimeout(importNext, 100);
+            });
+        }
+      }
+
+      importNext();
     }
 
     // ============ START ============
