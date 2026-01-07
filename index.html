@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.4.0
+  Version: 2.4.1
   Last Updated: 2026-01-07
   
   Changelog:
-  - 2.4.0: Added last year sales comparison on dashboard
+  - 2.4.1: Fixed sales section labels (This Year / Last Year)
+  - 2.4.0: Added last year sales comparison on dashboard, version display in header
   - 2.3.0: New double helix logo, Inter font
   - 2.2.0: Fixed counting to skip empty placeholder rows
   - 2.1.0: Email + Access Code login (no Google OAuth), Sync button, Back button, optimistic UI
@@ -48,6 +49,7 @@
             </g>
             <text x="58" y="32" fill="#000" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="18" letter-spacing="-0.5">THE RACK</text>
           </svg>
+          <span id="versionTag" class="text-xs text-gray-400 hidden md:inline">v2.4.0</span>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 md:gap-3">
@@ -250,6 +252,7 @@
 
   <script>
     // ============ CONFIGURATION ============
+    var VERSION = "2.4.1";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -290,6 +293,9 @@
 
     // ============ INITIALIZATION ============
     function init() {
+      // Set version
+      document.getElementById("versionTag").textContent = "v" + VERSION;
+      
       // Check for saved login
       if (state.email && state.sheetId) {
         state.isLoggedIn = true;
@@ -667,7 +673,7 @@
       html += '</div></div>';
 
       // Sales Section
-      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Sales (' + new Date().getFullYear() + ')</div>';
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Sales (This Year)</div>';
       html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
       html += statCard("Sold", stats.soldThisYear, "green", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
       html += statCard("Revenue", stats.revenueDisplay, "emerald", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
@@ -676,7 +682,7 @@
       html += '</div></div>';
 
       // Last Year Sales Section
-      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Last Year (' + (new Date().getFullYear() - 1) + ')</div>';
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Sales (Last Year)</div>';
       html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
       html += statCard("Sold", stats.soldLastYear, "slate", null, null);
       html += statCard("Revenue", stats.revenueLastYearDisplay, "slate", null, null);
