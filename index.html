@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.8.8
+  Version: 2.9.0
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.9.0: Delete button on all table views, stats cards restored, Settings tab integration
+  - 2.8.9: Fixed QR codes to be square in tables
   - 2.8.8: Removed stats cards from table pages (dashboard only), fixed QR print to use image API
   - 2.8.7: Fixed Print QR Codes to use image-based QR codes (api.qrserver.com)
   - 2.8.6: Fixed stats cards to use correct property names from calculateStats
@@ -17,15 +19,12 @@
   - 2.7.1: Import duplicate detection - updates existing by MANUAL OVERRIDE
   - 2.7.0: MorphMarket CSV import with field mapping
   - 2.6.0: QR code generation and scanning for quick activity logging
-  - 2.5.2: Fixed support ticket form link
-  - 2.5.1: Added support ticket link
   - 2.5.0: Mobile-friendly redesign with hamburger menu, quick add bar always visible
-  - 2.4.1: Fixed sales section labels (This Year / Last Year)
   - 2.4.0: Added last year sales comparison on dashboard, version display in header
   - 2.3.0: New double helix logo, Inter font
   - 2.2.0: Fixed counting to skip empty placeholder rows
-  - 2.1.0: Email + Access Code login (no Google OAuth), Sync button, Back button, optimistic UI
-  - 2.0.0: Apps Script API backend, removed direct Google Sheets API calls
+  - 2.1.0: Email + Access Code login (no Google OAuth), Sync button, Back button
+  - 2.0.0: Apps Script API backend
   - 1.0.0: Initial release with Google OAuth
 -->
 <html lang="en">
@@ -523,14 +522,15 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.8.8";
+    var VERSION = "2.9.1";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
       collection: "Collection",
       clutch: "Clutch", 
       activity: "Activity",
-      archive: "Archive"
+      archive: "Archive",
+      settings: "Settings"
     };
 
     var FIELD_OPTIONS = {
@@ -549,8 +549,9 @@
       isLoggedIn: false,
       isLoading: false,
       activeTab: "dashboard",
-      data: { collection: [], clutch: [], activity: [], archive: [] },
+      data: { collection: [], clutch: [], activity: [], archive: [], settings: {} },
       headers: { collection: [], clutch: [], activity: [], archive: [] },
+      settings: {},
       modalMode: "add",
       modalTab: null,
       editRowIndex: null,
@@ -834,6 +835,18 @@
               archive: data.archive ? data.archive.rows : []
             };
 
+            // Parse settings (key-value pairs)
+            state.settings = {};
+            if (data.settings && data.settings.rows) {
+              data.settings.rows.forEach(function(row) {
+                var field = row["FIELD"] || row["Field"] || "";
+                var value = row["VALUE"] || row["Value"] || "";
+                if (field) {
+                  state.settings[field.toUpperCase()] = value;
+                }
+              });
+            }
+
             // Count only non-empty rows for display
             var animalCount = state.data.collection.filter(function(r) {
               return (r.STATUS || "").trim() !== "" || (r["UNIQUE ID"] || "").trim() !== "";
@@ -848,6 +861,9 @@
             setStatus("Loaded " + animalCount + " animals, " + 
                       clutchCount + " clutches, " + 
                       activityCount + " activities");
+            
+            // Update UI with settings
+            updateUIWithSettings();
             renderCurrentView();
             
             // Check for pending QR action
@@ -865,6 +881,17 @@
         .finally(function() {
           state.isLoading = false;
         });
+    }
+    
+    function updateUIWithSettings() {
+      // Update business name in header if set
+      var businessName = state.settings["BUSINESS NAME"];
+      if (businessName) {
+        var taglineEl = document.querySelector('.tagline-text');
+        if (taglineEl) {
+          taglineEl.textContent = businessName;
+        }
+      }
     }
 
     function setStatus(msg, isError) {
@@ -1542,15 +1569,23 @@
           actionTd.appendChild(holdbackBtn);
         }
 
-        // Archive button for collection and clutches
-        if (state.activeTab === "collection" || state.activeTab === "clutches") {
-          var archiveTab = state.activeTab === "collection" ? "Collection" : "Clutch";
+        // Delete button for all views (archives to Archive tab)
+        // Map view to source tab name
+        var tabMapping = {
+          "collection": "Collection",
+          "clutches": "Clutch",
+          "hatchlings": "Collection",
+          "sales": "Collection",
+          "activity": "Activity"
+        };
+        var sourceTab = tabMapping[state.activeTab];
+        if (sourceTab && state.activeTab !== "activity") {
           var archiveBtn = document.createElement("button");
           archiveBtn.className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200";
           archiveBtn.textContent = "Delete";
           archiveBtn.onclick = (function(rowIndex, tab) {
             return function() { archiveRecord(rowIndex, tab); };
-          })(row.__rowIndex, archiveTab);
+          })(row.__rowIndex, sourceTab);
           actionTd.appendChild(archiveBtn);
         }
 
@@ -1566,7 +1601,7 @@
             var animalId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || "";
             if (animalId) {
               var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + animalId);
-              td.innerHTML = '<img src="' + qrUrl + '" alt="QR" class="w-10 h-10" />';
+              td.innerHTML = '<img src="' + qrUrl + '" alt="QR" style="width:40px; height:40px; min-width:40px; min-height:40px;" />';
             } else {
               td.textContent = "—";
             }
@@ -1586,9 +1621,120 @@
 
     function renderTableStats() {
       var statsView = document.getElementById("tableStatsView");
-      // Stats cards disabled - only show on dashboard
-      statsView.classList.add("hidden");
-      statsView.innerHTML = '';
+      var stats = calculateStats();
+      var html = '';
+      
+      // Count on loan separately
+      var onLoanCount = 0;
+      state.data.collection.forEach(function(r) {
+        if ((r.STATUS || "").toLowerCase().trim() === "on loan") onLoanCount++;
+      });
+      
+      // Count clutch stats
+      var hatchedCount = 0;
+      var failedCount = 0;
+      var totalEggs = 0;
+      state.data.clutch.forEach(function(r) {
+        var st = (r.STATUS || "").toLowerCase().trim();
+        if (st === "hatched") hatchedCount++;
+        if (st === "failed") failedCount++;
+        var fertile = parseInt(r["# FERTILE"]) || 0;
+        totalEggs += fertile;
+      });
+      
+      if (state.activeTab === "collection") {
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Breeders</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.totalBreeders + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Males</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.maleBreeders + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Females</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.femaleBreeders + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">On Loan</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + onLoanCount + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.innerHTML = html;
+        statsView.classList.remove("hidden");
+        
+      } else if (state.activeTab === "clutches") {
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Incubating</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.incubating + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Hatched</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + hatchedCount + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Failed</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + failedCount + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Total Eggs</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + totalEggs + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.innerHTML = html;
+        statsView.classList.remove("hidden");
+        
+      } else if (state.activeTab === "hatchlings") {
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
+        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-green-600">Listed</div>';
+        html += '<div class="text-2xl font-black text-green-700">' + stats.listed + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Unlisted</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.unlisted + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Holdbacks</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.holdbacks + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
+        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.innerHTML = html;
+        statsView.classList.remove("hidden");
+        
+      } else if (state.activeTab === "sales") {
+        var year = new Date().getFullYear();
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
+        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-green-600">Sold (' + year + ')</div>';
+        html += '<div class="text-2xl font-black text-green-700">' + stats.soldThisYear + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-3 border border-emerald-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-emerald-600">Revenue</div>';
+        html += '<div class="text-2xl font-black text-emerald-700">' + stats.revenueDisplay + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
+        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-red-600">Unshipped</div>';
+        html += '<div class="text-2xl font-black text-red-700">' + stats.unshipped + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.innerHTML = html;
+        statsView.classList.remove("hidden");
+        
+      } else {
+        statsView.classList.add("hidden");
+        statsView.innerHTML = '';
+      }
     }
 
     function getColumns() {
@@ -1702,11 +1848,13 @@
     function openEditModal(row) {
       if (!state.isLoggedIn) { setStatus("Log in first", true); return; }
       
+      // Map view tab to actual sheet tab
       var sheetKey = getSheetKey(state.activeTab);
       state.modalMode = "edit";
       state.modalTab = sheetKey;
       state.editRowIndex = row.__rowIndex;
       state.formData = Object.assign({}, row);
+      state.formType = null; // Clear formType for edit mode
 
       document.getElementById("modalTitle").textContent = "Edit Record";
       
@@ -1721,7 +1869,7 @@
         idDisplay.classList.add("hidden");
       }
 
-      renderModalForm(state.activeTab);
+      renderModalForm(sheetKey);
       document.getElementById("modal").classList.remove("hidden");
     }
 
@@ -1736,6 +1884,16 @@
       // Fallback headers for activity if none loaded
       if (state.modalTab === "activity" && headers.length === 0) {
         headers = ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE", "SOLD DATE", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SALE SOURCE", "PAYMENT STATUS", "SHIP DATE", "SHIPPING FEE", "PAIRED WITH"];
+      }
+      
+      // Fallback headers for collection if none loaded
+      if (state.modalTab === "collection" && headers.length === 0) {
+        headers = ["ANIMAL NAME", "SEX", "DATE OF BIRTH", "SPECIES", "GENETIC SUMMARY", "STATUS", "WT PURCHASE (G)", "PURCHASE PRICE", "BREEDER SOURCE", "MANUAL OVERRIDE", "NOTES", "CLUTCH ID", "SIRE", "DAM", "HATCH WEIGHT (G)", "HATCH DATE", "LIST PRICE", "SOLD PRICE", "DATE SOLD", "BUYER NAME", "BUYER EMAIL"];
+      }
+      
+      // Fallback headers for clutch if none loaded
+      if (state.modalTab === "clutch" && headers.length === 0) {
+        headers = ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# EGGS", "# FERTILE", "# SLUGS", "STATUS", "NOTES"];
       }
       
       // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
