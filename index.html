@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.6
+  Version: 2.10.9
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.10.9: Fixed Edit for imported rows - falls back to finding row by UNIQUE ID if __rowIndex missing
+  - 2.10.7: Fixed filter bar and stats cards showing on Dashboard
   - 2.10.6: NEW approach for Edit/Delete - uses global row array with inline onclick handlers
   - 2.10.5: Fixed MorphMarket import - year-only DOB now becomes 01/01/YYYY
   - 2.10.4: Made Hatchlings/Sales table stats monochrome, removed Clutches section from Dashboard
-  - 2.10.3: Complete rewrite of Edit/Delete using event delegation and data attributes
   - 2.10.0: Filter dropdowns, clickable gene tags, maturity auto-calc, status badges
   - 2.9.0: Delete button on all table views, stats cards, Settings tab integration
   - 2.8.0: Archive feature - delete moves to Archive tab
@@ -542,7 +543,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.6";
+    var VERSION = "2.10.10";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -1156,6 +1157,13 @@
       document.getElementById("dashboardView").classList.toggle("hidden", !isDash);
       document.getElementById("tableView").classList.toggle("hidden", isDash || isArchive);
       document.getElementById("addBtn").classList.toggle("hidden", isDash || isArchive);
+      
+      // Always hide filter bar and stats on dashboard/archive
+      if (isDash || isArchive) {
+        document.getElementById("filterBar").classList.add("hidden");
+        document.getElementById("tableStatsView").classList.add("hidden");
+        document.getElementById("tableStatsView").innerHTML = '';
+      }
       
       // Show/hide back button
       document.getElementById("backBtn").classList.toggle("hidden", navHistory.length === 0);
@@ -2123,9 +2131,30 @@
       var sheetKey = getSheetKey(state.activeTab);
       state.modalMode = "edit";
       state.modalTab = sheetKey;
-      state.editRowIndex = row.__rowIndex;
       state.formData = Object.assign({}, row);
       state.formType = null; // Clear formType for edit mode
+      
+      // Get row index - if missing, find by UNIQUE ID or MANUAL OVERRIDE
+      var rowIndex = row.__rowIndex;
+      if (rowIndex === undefined) {
+        var allRows = state.data[sheetKey] || [];
+        var uniqueId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || row["CLUTCH ID"];
+        for (var i = 0; i < allRows.length; i++) {
+          var r = allRows[i];
+          var rId = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || r["CLUTCH ID"];
+          if (rId && rId === uniqueId && r.__rowIndex !== undefined) {
+            rowIndex = r.__rowIndex;
+            break;
+          }
+        }
+      }
+      
+      if (rowIndex === undefined) {
+        setStatus("Cannot edit - please click Sync first to reload data", true);
+        return;
+      }
+      
+      state.editRowIndex = rowIndex;
 
       document.getElementById("modalTitle").textContent = "Edit Record";
       
@@ -3191,14 +3220,25 @@
       
       if (archiveData.length === 0) {
         html = '<div class="text-center py-12 text-gray-500">';
-        html += '<div class="text-4xl mb-4">Empty</div>';
+        html += '<div class="text-4xl mb-4">📦</div>';
         html += '<p>No archived records yet.</p>';
         html += '<p class="text-sm mt-2">When you delete animals or clutches, they will appear here.</p>';
         html += '</div>';
       } else {
-        // Filter into animals and clutches
-        var archivedAnimals = archiveData.filter(function(r) { return r["ARCHIVE TYPE"] === "Collection"; });
-        var archivedClutches = archiveData.filter(function(r) { return r["ARCHIVE TYPE"] === "Clutch"; });
+        // Filter into animals and clutches - check for both exact match and case-insensitive
+        var archivedAnimals = archiveData.filter(function(r) { 
+          var archiveType = (r["ARCHIVE TYPE"] || "").toLowerCase().trim();
+          return archiveType === "collection" || archiveType === ""; 
+        });
+        var archivedClutches = archiveData.filter(function(r) { 
+          var archiveType = (r["ARCHIVE TYPE"] || "").toLowerCase().trim();
+          return archiveType === "clutch"; 
+        });
+        
+        // If no ARCHIVE TYPE is set, show all as animals
+        if (archivedAnimals.length === 0 && archivedClutches.length === 0 && archiveData.length > 0) {
+          archivedAnimals = archiveData;
+        }
         
         // Archived Animals
         if (archivedAnimals.length > 0) {
