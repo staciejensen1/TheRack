@@ -1,21 +1,18 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.2
+  Version: 2.10.4
   Last Updated: 2026-01-07
   
   Changelog:
-  - 2.10.2: Fixed Edit/Delete buttons - proper closure capture for row data in forEach loop
-  - 2.10.1: Fixed Archive function (clean data, updated headers), fixed Edit button
-  - 2.10.0: Filter dropdowns (Sex, Status, Species), clickable gene tags, maturity auto-calc, monochrome status badges
-  - 2.9.1: Fixed Edit button on all table views, added fallback headers
-  - 2.9.0: Delete button on all table views, stats cards restored, Settings tab integration
-  - 2.8.9: Fixed QR codes to be square in tables
-  - 2.8.0: Archive feature - delete moves to Archive tab, can restore from Archive view
+  - 2.10.4: Made Hatchlings/Sales table stats monochrome, removed Clutches section from Dashboard
+  - 2.10.3: Complete rewrite of Edit/Delete using event delegation and data attributes
+  - 2.10.0: Filter dropdowns, clickable gene tags, maturity auto-calc, status badges
+  - 2.9.0: Delete button on all table views, stats cards, Settings tab integration
+  - 2.8.0: Archive feature - delete moves to Archive tab
   - 2.7.0: MorphMarket CSV import with field mapping
-  - 2.6.0: QR code generation and scanning for quick activity logging
-  - 2.5.0: Mobile-friendly redesign with hamburger menu
-  - 2.4.0: Added last year sales comparison on dashboard
+  - 2.6.0: QR code generation and scanning
+  - 2.5.0: Mobile-friendly redesign
   - 2.0.0: Apps Script API backend
   - 1.0.0: Initial release
 -->
@@ -544,7 +541,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.2";
+    var VERSION = "2.10.4";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -1285,15 +1282,6 @@
       html += statCard("Holdbacks", stats.holdbacks, "amber", null, "state.activeTab=&#39;collection&#39;; renderNavTabs(); renderCurrentView();");
       html += '</div></div>';
 
-      // Clutches Section
-      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Clutches</div>';
-      html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
-      html += statCard("Incubating", stats.incubating, "green", null, "state.activeTab=&#39;clutches&#39;; renderNavTabs(); renderCurrentView();");
-      html += statCard("Hatched (Year)", stats.hatchedThisYear, "emerald", null, "state.activeTab=&#39;clutches&#39;; renderNavTabs(); renderCurrentView();");
-      html += statCard("Avg Days to Hatch", stats.avgDaysToHatch, "teal");
-      html += statCard("Avg Fertile Eggs", stats.avgFertileEggs, "cyan");
-      html += '</div></div>';
-
       // Hatchlings Section
       html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Hatchlings</div>';
       html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
@@ -1556,135 +1544,135 @@
         return;
       }
 
-      rows.forEach(function(row) {
-        var tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50";
+      // Build table using innerHTML for simplicity and reliability
+      var tbodyHtml = '';
+      
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        var rowIdx = row.__rowIndex;
+        var rowClass = "hover:bg-slate-50";
         
         // Check if this clutch is overdue (for Incubator view)
         var isOverdue = false;
         if (state.activeTab === "clutches") {
           var estHatchDate = row["EST. HATCH DATE"] || row["EST HATCH DATE"] || row["ESTIMATED HATCH DATE"] || "";
-          var status = (row.STATUS || "").toLowerCase();
-          if (estHatchDate && status === "incubating") {
+          var rowStatus = (row.STATUS || "").toLowerCase();
+          if (estHatchDate && rowStatus === "incubating") {
             var estDate = parseDate(estHatchDate);
             var today = new Date();
             today.setHours(0, 0, 0, 0);
             if (estDate && estDate < today) {
               isOverdue = true;
-              tr.className = "hover:bg-gray-200 bg-gray-200";
+              rowClass = "hover:bg-gray-200 bg-gray-200";
             }
           }
         }
         
-        // Actions FIRST (sticky left)
-        var actionTd = document.createElement("td");
-        actionTd.className = "px-3 py-3 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100";
+        tbodyHtml += '<tr class="' + rowClass + '">';
         
-        // Edit button - use IIFE to capture row properly
-        var editBtn = document.createElement("button");
-        editBtn.className = "px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1";
-        editBtn.textContent = "Edit";
-        editBtn.onclick = (function(capturedRow) {
-          return function() { openEditModal(capturedRow); };
-        })(row);
-        actionTd.appendChild(editBtn);
-
+        // Actions column
+        tbodyHtml += '<td class="px-3 py-3 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100">';
+        
+        // Edit button
+        tbodyHtml += '<button class="action-edit px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1" data-row-index="' + rowIdx + '">Edit</button>';
+        
+        // Hatch button (only for clutches)
         if (showHatch) {
-          var hatchBtn = document.createElement("button");
-          hatchBtn.className = "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1";
-          hatchBtn.textContent = "Hatch";
-          hatchBtn.onclick = (function(capturedRow) {
-            return function() { openHatchModal(capturedRow); };
-          })(row);
-          actionTd.appendChild(hatchBtn);
+          tbodyHtml += '<button class="action-hatch px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1" data-row-index="' + rowIdx + '">Hatch</button>';
         }
-
+        
+        // Sell and Holdback buttons (only for hatchlings)
         if (showSale) {
-          var saleBtn = document.createElement("button");
-          saleBtn.className = "px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1";
-          saleBtn.textContent = "Sell";
-          saleBtn.onclick = (function(capturedRow) {
-            return function() { openSaleModal(capturedRow); };
-          })(row);
-          actionTd.appendChild(saleBtn);
-          
-          var holdbackBtn = document.createElement("button");
-          holdbackBtn.className = "px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1";
-          holdbackBtn.textContent = "+ Holdback";
-          holdbackBtn.onclick = (function(capturedRow) {
-            return function() { markAsHoldback(capturedRow); };
-          })(row);
-          actionTd.appendChild(holdbackBtn);
+          tbodyHtml += '<button class="action-sell px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1" data-row-index="' + rowIdx + '">Sell</button>';
+          tbodyHtml += '<button class="action-holdback px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1" data-row-index="' + rowIdx + '">+ Holdback</button>';
         }
-
-        // Delete button for all views (archives to Archive tab)
-        // Map view to source tab name
-        var tabMapping = {
-          "collection": "Collection",
-          "clutches": "Clutch",
-          "hatchlings": "Collection",
-          "sales": "Collection",
-          "activity": "Activity"
-        };
-        var sourceTab = tabMapping[state.activeTab];
-        if (sourceTab && state.activeTab !== "activity") {
-          var archiveBtn = document.createElement("button");
-          archiveBtn.className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200";
-          archiveBtn.textContent = "Delete";
-          archiveBtn.onclick = (function(capturedRowIndex, capturedTab) {
-            return function() { archiveRecord(capturedRowIndex, capturedTab); };
-          })(row.__rowIndex, sourceTab);
-          actionTd.appendChild(archiveBtn);
+        
+        // Delete button (for all except activity)
+        if (state.activeTab !== "activity") {
+          var sourceTab = state.activeTab === "clutches" ? "Clutch" : "Collection";
+          tbodyHtml += '<button class="action-delete px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200" data-row-index="' + rowIdx + '" data-source-tab="' + sourceTab + '">Delete</button>';
         }
-
-        tr.appendChild(actionTd);
+        
+        tbodyHtml += '</td>';
         
         // Data columns
-        columns.forEach(function(col, colIdx) {
-          var td = document.createElement("td");
-          td.className = "px-3 py-3 text-slate-700 whitespace-nowrap text-sm";
+        for (var j = 0; j < columns.length; j++) {
+          var col = columns[j];
+          tbodyHtml += '<td class="px-3 py-3 text-slate-700 whitespace-nowrap text-sm">';
           
-          // Special handling for QR column
           if (col === "QR") {
             var animalId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || "";
             if (animalId) {
               var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + animalId);
-              td.innerHTML = '<img src="' + qrUrl + '" alt="QR" style="width:40px; height:40px; min-width:40px; min-height:40px;" />';
+              tbodyHtml += '<img src="' + qrUrl + '" alt="QR" style="width:40px; height:40px; min-width:40px; min-height:40px;" />';
             } else {
-              td.textContent = "—";
+              tbodyHtml += '—';
             }
-          }
-          // MATURITY - auto-calculated from DOB
-          else if (col === "MATURITY") {
+          } else if (col === "MATURITY") {
             var maturity = calculateMaturity(row["DATE OF BIRTH"]);
-            td.innerHTML = '<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">' + maturity + '</span>';
-          }
-          // STATUS - monochrome badge
-          else if (col === "STATUS") {
-            var status = row[col] || "—";
-            td.innerHTML = '<span class="px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs font-medium">' + escapeHtml(status) + '</span>';
-          }
-          // GENETIC SUMMARY - clickable gene tags
-          else if (col === "GENETIC SUMMARY") {
+            tbodyHtml += '<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">' + maturity + '</span>';
+          } else if (col === "STATUS") {
+            var statusVal = row[col] || "—";
+            tbodyHtml += '<span class="px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs font-medium">' + escapeHtml(statusVal) + '</span>';
+          } else if (col === "GENETIC SUMMARY") {
             var genes = row[col] || "";
             if (genes) {
-              td.className = "px-3 py-3 text-slate-700 text-sm";
-              td.innerHTML = renderGeneTags(genes);
+              tbodyHtml += renderGeneTags(genes);
             } else {
-              td.textContent = "—";
+              tbodyHtml += '—';
             }
-          }
-          // Add warning icon to first data column if overdue
-          else if (colIdx === 1 && isOverdue) {
-            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
+          } else if (j === 0 && isOverdue) {
+            tbodyHtml += '<span class="text-gray-900 mr-1" title="Overdue">⚠️</span>' + escapeHtml(row[col] || "—");
           } else {
-            td.textContent = row[col] || "—";
+            tbodyHtml += escapeHtml(row[col] || "—");
           }
-          tr.appendChild(td);
-        });
-
-        tbody.appendChild(tr);
-      });
+          
+          tbodyHtml += '</td>';
+        }
+        
+        tbodyHtml += '</tr>';
+      }
+      
+      tbody.innerHTML = tbodyHtml;
+      
+      // Attach event listeners using event delegation
+      tbody.onclick = function(e) {
+        var btn = e.target;
+        if (btn.tagName !== 'BUTTON') return;
+        
+        var rowIndex = parseInt(btn.getAttribute('data-row-index'), 10);
+        if (isNaN(rowIndex)) return;
+        
+        // Find the row data
+        var sheetKey = getSheetKey(state.activeTab);
+        var allRows = state.data[sheetKey] || [];
+        var rowData = null;
+        for (var k = 0; k < allRows.length; k++) {
+          if (allRows[k].__rowIndex === rowIndex) {
+            rowData = allRows[k];
+            break;
+          }
+        }
+        
+        if (!rowData) {
+          setStatus("Could not find row data for index " + rowIndex, true);
+          return;
+        }
+        
+        // Handle button actions
+        if (btn.classList.contains('action-edit')) {
+          openEditModal(rowData);
+        } else if (btn.classList.contains('action-hatch')) {
+          openHatchModal(rowData);
+        } else if (btn.classList.contains('action-sell')) {
+          openSaleModal(rowData);
+        } else if (btn.classList.contains('action-holdback')) {
+          markAsHoldback(rowData);
+        } else if (btn.classList.contains('action-delete')) {
+          var sourceTab = btn.getAttribute('data-source-tab');
+          archiveRecord(rowIndex, sourceTab);
+        }
+      };
     }
     
     function calculateMaturity(dob) {
@@ -1867,9 +1855,9 @@
         
       } else if (state.activeTab === "hatchlings") {
         html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
-        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-green-600">Listed</div>';
-        html += '<div class="text-2xl font-black text-green-700">' + stats.listed + '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Listed</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.listed + '</div>';
         html += '</div>';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Unlisted</div>';
@@ -1879,9 +1867,9 @@
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Holdbacks</div>';
         html += '<div class="text-2xl font-black text-gray-900">' + stats.holdbacks + '</div>';
         html += '</div>';
-        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
-        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">On Hold</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.onHold + '</div>';
         html += '</div>';
         html += '</div>';
         statsView.innerHTML = html;
@@ -1890,21 +1878,21 @@
       } else if (state.activeTab === "sales") {
         var year = new Date().getFullYear();
         html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
-        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-green-600">Sold (' + year + ')</div>';
-        html += '<div class="text-2xl font-black text-green-700">' + stats.soldThisYear + '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Sold (' + year + ')</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.soldThisYear + '</div>';
         html += '</div>';
-        html += '<div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-3 border border-emerald-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-emerald-600">Revenue</div>';
-        html += '<div class="text-2xl font-black text-emerald-700">' + stats.revenueDisplay + '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Revenue</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.revenueDisplay + '</div>';
         html += '</div>';
-        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
-        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">On Hold</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.onHold + '</div>';
         html += '</div>';
-        html += '<div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-red-600">Unshipped</div>';
-        html += '<div class="text-2xl font-black text-red-700">' + stats.unshipped + '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Unshipped</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.unshipped + '</div>';
         html += '</div>';
         html += '</div>';
         statsView.innerHTML = html;
@@ -3196,16 +3184,28 @@
     }
 
     function archiveRecord(rowIndex, sourceTab) {
-      console.log("archiveRecord called with rowIndex:", rowIndex, "sourceTab:", sourceTab);
+      // Get source data based on tab
+      var sourceData;
+      if (sourceTab === "Collection") {
+        sourceData = state.data.collection;
+      } else if (sourceTab === "Clutch") {
+        sourceData = state.data.clutch;
+      } else {
+        setStatus("Unknown source tab: " + sourceTab, true);
+        return;
+      }
       
-      var sourceData = sourceTab === "Collection" ? state.data.collection : state.data.clutch;
-      console.log("sourceData length:", sourceData.length);
-      
-      var record = sourceData.find(function(r) { return r.__rowIndex === rowIndex; });
-      console.log("Found record:", record);
+      // Find the record
+      var record = null;
+      for (var i = 0; i < sourceData.length; i++) {
+        if (sourceData[i].__rowIndex === rowIndex) {
+          record = sourceData[i];
+          break;
+        }
+      }
       
       if (!record) {
-        setStatus("Record not found (rowIndex: " + rowIndex + ")", true);
+        setStatus("Record not found", true);
         return;
       }
       
@@ -3217,21 +3217,22 @@
       
       setStatus("Archiving...");
       
-      // Create clean archive data (remove internal properties)
+      // Create clean archive data
       var archiveData = {};
-      Object.keys(record).forEach(function(key) {
+      var keys = Object.keys(record);
+      for (var j = 0; j < keys.length; j++) {
+        var key = keys[j];
         if (key !== "__rowIndex" && key !== "__raw") {
           archiveData[key] = record[key];
         }
-      });
+      }
       archiveData["ARCHIVE TYPE"] = sourceTab;
       archiveData["DATE ARCHIVED"] = new Date().toISOString().split('T')[0];
       
-      // First, save to Archive tab
+      // Save to Archive tab, then delete from original
       apiCall('saveRecord', { tab: 'Archive', data: archiveData })
         .then(function(response) {
           if (response.success) {
-            // Then delete from original tab
             return apiCall('deleteRecord', { tab: sourceTab, rowIndex: rowIndex });
           } else {
             throw new Error(response.error || "Failed to archive");
@@ -3240,7 +3241,7 @@
         .then(function(response) {
           if (response.success) {
             setStatus("Moved to Archive");
-            loadData(); // Refresh all data
+            loadData();
           } else {
             throw new Error(response.error || "Failed to delete original");
           }
