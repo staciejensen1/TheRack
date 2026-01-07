@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.4.1
+  Version: 2.5.0
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.5.0: Mobile-friendly redesign with hamburger menu, quick add bar always visible
   - 2.4.1: Fixed sales section labels (This Year / Last Year)
   - 2.4.0: Added last year sales comparison on dashboard, version display in header
   - 2.3.0: New double helix logo, Inter font
@@ -34,12 +35,20 @@
   
   <div id="app" class="max-w-7xl mx-auto p-4 md:p-6">
     <!-- Header -->
-    <header class="bg-white rounded-2xl p-4 md:p-6 shadow-sm mb-6 border border-gray-200">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <header class="bg-white rounded-2xl p-4 md:p-6 shadow-sm mb-4 md:mb-6 border border-gray-200">
+      <div class="flex items-center justify-between gap-4">
+        <!-- Hamburger + Logo -->
         <div class="flex items-center gap-3">
+          <!-- Hamburger Menu Button (mobile only) -->
+          <button id="menuBtn" onclick="toggleMobileMenu()" class="md:hidden p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+          
           <!-- Logo SVG -->
-          <svg viewBox="0 0 200 50" class="h-10 md:h-12" xmlns="http://www.w3.org/2000/svg">
-            <g transform="translate(28, 25)">
+          <svg viewBox="0 0 320 60" class="h-10 md:h-14" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(30, 25)">
               <path d="M-16 -14 L-8 -14 L0 -6 L-8 2 L0 10 L-8 18 L-16 18" 
                     stroke="#000" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M16 -14 L8 -14 L0 -6 L8 2 L0 10 L8 18 L16 18" 
@@ -47,12 +56,14 @@
               <circle cx="-16" cy="-14" r="2" fill="#000"/>
               <circle cx="16" cy="-14" r="2" fill="#000"/>
             </g>
-            <text x="58" y="32" fill="#000" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="18" letter-spacing="-0.5">THE RACK</text>
+            <text x="62" y="32" fill="#000" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="26" letter-spacing="-1">THE RACK</text>
+            <text x="62" y="48" fill="#888" font-family="Inter, system-ui, sans-serif" font-weight="500" font-size="8" letter-spacing="2">RACK IT. TRACK IT. RUN IT.</text>
           </svg>
-          <span id="versionTag" class="text-xs text-gray-400 hidden md:inline">v2.4.0</span>
+          <span id="versionTag" class="text-xs text-gray-400 hidden md:inline">v2.4.1</span>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2 md:gap-3">
+        <!-- Desktop: Login/Connected -->
+        <div class="hidden md:flex flex-wrap items-center gap-2 md:gap-3">
           <!-- Login Form (shown when not logged in) -->
           <div id="loginGroup" class="flex flex-wrap items-center gap-2">
             <input
@@ -83,6 +94,34 @@
             </button>
           </div>
         </div>
+
+        <!-- Mobile: Sync button only when logged in -->
+        <div id="mobileSyncBtn" class="md:hidden hidden">
+          <button onclick="loadData()" class="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200" title="Sync">
+            🔄
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Login Form -->
+      <div id="mobileLoginGroup" class="md:hidden mt-4 hidden">
+        <div class="flex flex-col gap-2">
+          <input
+            type="email"
+            id="mobileEmailInput"
+            placeholder="Email (from purchase)"
+            class="px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 text-sm focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+          />
+          <input
+            type="text"
+            id="mobileAccessCodeInput"
+            placeholder="Access Code"
+            class="px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 mono text-sm focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+          />
+          <button id="mobileLoginBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+            Log In
+          </button>
+        </div>
       </div>
 
       <div class="mt-3 flex items-center gap-4 text-sm">
@@ -90,30 +129,80 @@
       </div>
     </header>
 
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleMobileMenu()"></div>
+    
+    <!-- Mobile Slide-out Menu -->
+    <aside id="mobileMenu" class="fixed top-0 left-0 h-full w-72 bg-white shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 md:hidden overflow-y-auto">
+      <div class="p-4">
+        <div class="flex items-center justify-between mb-6">
+          <span class="font-bold text-gray-900">Menu</span>
+          <button onclick="toggleMobileMenu()" class="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Mobile User Info -->
+        <div id="mobileUserInfo" class="mb-6 p-3 bg-gray-50 rounded-xl hidden">
+          <div id="mobileUserEmail" class="text-sm text-gray-600 truncate"></div>
+          <button onclick="handleSignOut(); toggleMobileMenu();" class="mt-2 text-sm text-red-600 hover:text-red-700">Sign out</button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="mb-6">
+          <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Navigation</div>
+          <nav id="mobileNavTabs" class="flex flex-col gap-1"></nav>
+        </div>
+
+        <!-- Quick Add -->
+        <div class="mb-6">
+          <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Quick Add</div>
+          <div class="flex flex-col gap-1">
+            <button onclick="openAddModal('collection'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Breeder</button>
+            <button onclick="openAddModal('clutch'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Clutch</button>
+            <button onclick="openAddModal('hatchling'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Hatchling</button>
+            <button onclick="openAddModal('activity'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Activity</button>
+          </div>
+        </div>
+
+        <!-- Tools -->
+        <div class="pt-4 border-t border-gray-100">
+          <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
+          <div class="flex flex-col gap-1">
+            <button onclick="exportCSV('collection'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
+            <button onclick="exportCSV('clutch'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
+            <button onclick="showDataHealth(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
     <div class="flex flex-col md:flex-row gap-6">
-      <!-- Sidebar -->
-      <aside class="w-full md:w-56 shrink-0">
-        <div class="bg-white rounded-2xl p-4 shadow-sm md:sticky md:top-6 border border-gray-200">
+      <!-- Desktop Sidebar -->
+      <aside class="hidden md:block w-56 shrink-0">
+        <div class="bg-white rounded-2xl p-4 shadow-sm sticky top-6 border border-gray-200">
           <!-- Quick Add -->
-          <div class="mb-4 md:mb-6">
+          <div class="mb-6">
             <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Quick Add</div>
-            <div class="flex flex-wrap md:flex-col gap-1">
-              <button onclick="openAddModal('collection')" class="py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Breeder</button>
-              <button onclick="openAddModal('clutch')" class="py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Clutch</button>
-              <button onclick="openAddModal('hatchling')" class="py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Hatchling</button>
-              <button onclick="openAddModal('activity')" class="py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Activity</button>
+            <div class="flex flex-col gap-1">
+              <button onclick="openAddModal('collection')" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Breeder</button>
+              <button onclick="openAddModal('clutch')" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Clutch</button>
+              <button onclick="openAddModal('hatchling')" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Hatchling</button>
+              <button onclick="openAddModal('activity')" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Activity</button>
             </div>
           </div>
           
           <!-- Navigation -->
           <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Navigation</div>
-          <nav id="navTabs" class="flex flex-wrap md:flex-col gap-1">
+          <nav id="navTabs" class="flex flex-col gap-1">
           </nav>
 
           <!-- Tools -->
-          <div class="mt-4 md:mt-6 pt-4 border-t border-gray-100">
+          <div class="mt-6 pt-4 border-t border-gray-100">
             <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
-            <div class="flex flex-wrap md:flex-col gap-1">
+            <div class="flex flex-col gap-1">
               <button onclick="exportCSV('collection')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
               <button onclick="exportCSV('clutch')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
               <button onclick="showDataHealth()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
@@ -124,6 +213,16 @@
 
       <!-- Main content -->
       <main class="flex-1 min-w-0">
+        <!-- Mobile Quick Add Bar -->
+        <div class="md:hidden bg-white rounded-2xl p-3 shadow-sm border border-gray-200 mb-4">
+          <div class="flex items-center justify-between gap-2 overflow-x-auto">
+            <button onclick="openAddModal('collection')" class="flex-shrink-0 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200">+ Breeder</button>
+            <button onclick="openAddModal('clutch')" class="flex-shrink-0 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200">+ Clutch</button>
+            <button onclick="openAddModal('hatchling')" class="flex-shrink-0 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200">+ Hatchling</button>
+            <button onclick="openAddModal('activity')" class="flex-shrink-0 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200">+ Activity</button>
+          </div>
+        </div>
+
         <div class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-200">
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
@@ -252,7 +351,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.4.1";
+    var VERSION = "2.5.0";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -308,9 +407,73 @@
       }
 
       document.getElementById("loginBtn").addEventListener("click", handleLogin);
+      document.getElementById("mobileLoginBtn").addEventListener("click", handleMobileLogin);
       document.getElementById("signOutBtn").addEventListener("click", handleSignOut);
 
       renderNavTabs();
+    }
+
+    // ============ MOBILE MENU ============
+    function toggleMobileMenu() {
+      var menu = document.getElementById("mobileMenu");
+      var overlay = document.getElementById("mobileMenuOverlay");
+      var isOpen = !menu.classList.contains("-translate-x-full");
+      
+      if (isOpen) {
+        menu.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+        document.body.style.overflow = "";
+      } else {
+        menu.classList.remove("-translate-x-full");
+        overlay.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+    }
+
+    function handleMobileLogin() {
+      var email = document.getElementById("mobileEmailInput").value.trim().toLowerCase();
+      var code = document.getElementById("mobileAccessCodeInput").value.trim();
+
+      if (!email) {
+        setStatus("Please enter your email", true);
+        return;
+      }
+      if (!code) {
+        setStatus("Please enter your access code", true);
+        return;
+      }
+
+      setStatus("Logging in...");
+      document.getElementById("mobileLoginBtn").textContent = "Logging in...";
+      document.getElementById("mobileLoginBtn").disabled = true;
+
+      var url = API_URL + "?action=login&email=" + encodeURIComponent(email) + "&code=" + encodeURIComponent(code);
+      
+      fetch(url)
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+          if (data.success) {
+            state.email = email;
+            state.sheetId = data.sheetId;
+            state.isLoggedIn = true;
+
+            localStorage.setItem("therack_email", email);
+            localStorage.setItem("therack_sheet_id", data.sheetId);
+
+            setStatus("Logged in! Loading your data...");
+            updateUI();
+            loadData();
+          } else {
+            setStatus(data.error || "Invalid email or access code", true);
+          }
+        })
+        .catch(function(error) {
+          setStatus("Login failed: " + error.message, true);
+        })
+        .finally(function() {
+          document.getElementById("mobileLoginBtn").textContent = "Log In";
+          document.getElementById("mobileLoginBtn").disabled = false;
+        });
     }
 
     // ============ API HELPER ============
@@ -393,6 +556,8 @@
 
       document.getElementById("emailInput").value = "";
       document.getElementById("accessCodeInput").value = "";
+      document.getElementById("mobileEmailInput").value = "";
+      document.getElementById("mobileAccessCodeInput").value = "";
 
       updateUI();
       renderCurrentView();
@@ -402,14 +567,24 @@
     function updateUI() {
       var loginGroup = document.getElementById("loginGroup");
       var connectedGroup = document.getElementById("connectedGroup");
+      var mobileLoginGroup = document.getElementById("mobileLoginGroup");
+      var mobileSyncBtn = document.getElementById("mobileSyncBtn");
+      var mobileUserInfo = document.getElementById("mobileUserInfo");
 
       if (state.isLoggedIn) {
         loginGroup.classList.add("hidden");
         connectedGroup.classList.remove("hidden");
+        mobileLoginGroup.classList.add("hidden");
+        mobileSyncBtn.classList.remove("hidden");
+        mobileUserInfo.classList.remove("hidden");
         document.getElementById("userEmail").textContent = state.email;
+        document.getElementById("mobileUserEmail").textContent = state.email;
       } else {
         loginGroup.classList.remove("hidden");
         connectedGroup.classList.add("hidden");
+        mobileLoginGroup.classList.remove("hidden");
+        mobileSyncBtn.classList.add("hidden");
+        mobileUserInfo.classList.add("hidden");
       }
     }
 
@@ -485,6 +660,8 @@
         { key: "sales", label: "Sales" },
         { key: "activity", label: "Activity" }
       ];
+      
+      // Desktop nav
       var nav = document.getElementById("navTabs");
       nav.innerHTML = "";
       tabs.forEach(function(tab) {
@@ -494,6 +671,18 @@
           (state.activeTab === tab.key ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100");
         btn.onclick = function() { navigateTo(tab.key); };
         nav.appendChild(btn);
+      });
+
+      // Mobile nav
+      var mobileNav = document.getElementById("mobileNavTabs");
+      mobileNav.innerHTML = "";
+      tabs.forEach(function(tab) {
+        var btn = document.createElement("button");
+        btn.textContent = tab.label;
+        btn.className = "px-3 py-2 text-sm rounded-lg font-medium text-left " + 
+          (state.activeTab === tab.key ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100");
+        btn.onclick = function() { navigateTo(tab.key); toggleMobileMenu(); };
+        mobileNav.appendChild(btn);
       });
     }
 
