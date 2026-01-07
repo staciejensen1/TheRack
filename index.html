@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.5.0
+  Version: 2.5.1
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.5.1: Added support ticket link
   - 2.5.0: Mobile-friendly redesign with hamburger menu, quick add bar always visible
   - 2.4.1: Fixed sales section labels (This Year / Last Year)
   - 2.4.0: Added last year sales comparison on dashboard, version display in header
@@ -176,6 +177,13 @@
             <button onclick="showDataHealth(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
           </div>
         </div>
+
+        <!-- Support -->
+        <div class="mt-6 pt-4 border-t border-gray-100">
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSdKm3APRB2lOVgGNBnKgLKiY3pGSM-oVJubqftwP5wPkCBzFg/viewform" target="_blank" onclick="toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block">
+            Submit Support Ticket
+          </a>
+        </div>
       </div>
     </aside>
 
@@ -207,6 +215,13 @@
               <button onclick="exportCSV('clutch')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
               <button onclick="showDataHealth()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
             </div>
+          </div>
+
+          <!-- Support -->
+          <div class="mt-6 pt-4 border-t border-gray-100">
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSdKm3APRB2lOVgGNBnKgLKiY3pGSM-oVJubqftwP5wPkCBzFg/viewform" target="_blank" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block">
+              Submit Support Ticket
+            </a>
           </div>
         </div>
       </aside>
@@ -351,7 +366,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.5.0";
+    var VERSION = "2.5.1";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
