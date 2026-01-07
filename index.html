@@ -1505,12 +1505,15 @@
       }
 
       var sheetName = SHEET_TABS[state.modalTab];
+      var savedTab = state.modalTab;
+      var savedFormData = Object.assign({}, state.formData);
+      var isAdd = state.modalMode === "add";
 
       document.getElementById("saveBtn").textContent = "Saving...";
       document.getElementById("saveBtn").disabled = true;
 
       var promise;
-      if (state.modalMode === "add") {
+      if (isAdd) {
         promise = apiCall('saveRecord', {
           tab: sheetName,
           data: state.formData
@@ -1525,9 +1528,18 @@
 
       promise.then(function(response) {
         if (response.success) {
-          setStatus("Saved!");
+          // Optimistic UI: Add to local data immediately
+          if (isAdd) {
+            var newRow = Object.assign({ __rowIndex: state.data[savedTab].length }, savedFormData);
+            state.data[savedTab].push(newRow);
+          }
+          
+          setStatus("Saved! ✓");
           closeModal();
-          loadData();
+          renderCurrentView(); // Render immediately with local data
+          
+          // Then refresh from server in background
+          loadDataQuietly();
         } else {
           document.getElementById("modalError").textContent = response.error || "Save failed";
         }
@@ -1537,6 +1549,30 @@
         document.getElementById("saveBtn").textContent = "Save";
         document.getElementById("saveBtn").disabled = false;
       });
+    }
+    
+    // Silent data refresh (no loading message)
+    function loadDataQuietly() {
+      apiCall('getData', {})
+        .then(function(response) {
+          if (response.success) {
+            var data = response.data;
+            state.headers = {
+              collection: data.collection ? data.collection.headers : [],
+              clutch: data.clutch ? data.clutch.headers : [],
+              activity: data.activity ? data.activity.headers : []
+            };
+            state.data = {
+              collection: data.collection ? data.collection.rows : [],
+              clutch: data.clutch ? data.clutch.rows : [],
+              activity: data.activity ? data.activity.rows : []
+            };
+            renderCurrentView();
+          }
+        })
+        .catch(function() {
+          // Silently fail - we already have optimistic data
+        });
     }
 
     function colLetter(n) {
