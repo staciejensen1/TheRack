@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.9.0
+  Version: 2.10.0
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.10.0: Filter dropdowns (Sex, Status, Species), clickable gene tags, maturity auto-calc, monochrome status badges
+  - 2.9.1: Fixed Edit button on all table views, added fallback headers
   - 2.9.0: Delete button on all table views, stats cards restored, Settings tab integration
   - 2.8.9: Fixed QR codes to be square in tables
   - 2.8.8: Removed stats cards from table pages (dashboard only), fixed QR print to use image API
@@ -12,20 +14,13 @@
   - 2.8.6: Fixed stats cards to use correct property names from calculateStats
   - 2.8.5: Fixed MorphMarket import mapping (GENETIC SUMMARY, WT PURCHASE, BREEDER SOURCE)
   - 2.8.4: Added QR code column to Collection and Hatchlings tables
-  - 2.8.3: Fixed QR preview to check MANUAL OVERRIDE
-  - 2.8.2: Added stats cards above tables (removed in 2.8.8)
-  - 2.8.1: Moved Actions column to first position (sticky), fixed MANUAL OVERRIDE mapping
   - 2.8.0: Archive feature - delete moves to Archive tab, can restore from Archive view
-  - 2.7.1: Import duplicate detection - updates existing by MANUAL OVERRIDE
   - 2.7.0: MorphMarket CSV import with field mapping
   - 2.6.0: QR code generation and scanning for quick activity logging
-  - 2.5.0: Mobile-friendly redesign with hamburger menu, quick add bar always visible
-  - 2.4.0: Added last year sales comparison on dashboard, version display in header
-  - 2.3.0: New double helix logo, Inter font
-  - 2.2.0: Fixed counting to skip empty placeholder rows
-  - 2.1.0: Email + Access Code login (no Google OAuth), Sync button, Back button
+  - 2.5.0: Mobile-friendly redesign with hamburger menu
+  - 2.4.0: Added last year sales comparison on dashboard
   - 2.0.0: Apps Script API backend
-  - 1.0.0: Initial release with Google OAuth
+  - 1.0.0: Initial release
 -->
 <html lang="en">
 <head>
@@ -280,7 +275,37 @@
           <div id="dashboardView"></div>
 
           <!-- Stats Cards (shown on table pages) -->
-          <div id="tableStatsView" class="hidden mb-6"></div>
+          <div id="tableStatsView" class="hidden mb-4"></div>
+
+          <!-- Filter Bar (shown on table pages) -->
+          <div id="filterBar" class="hidden mb-4 flex flex-wrap gap-2 items-center">
+            <select id="filterSex" onchange="applyFilter('sex', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+              <option value="">All Sex</option>
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+            <select id="filterStatus" onchange="applyFilter('status', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+              <option value="">All Status</option>
+              <option value="Breeder">Breeder</option>
+              <option value="Listed">Listed</option>
+              <option value="Unlisted">Unlisted</option>
+              <option value="Holdback">Holdback</option>
+              <option value="On Hold">On Hold</option>
+              <option value="Sold">Sold</option>
+              <option value="On Loan">On Loan</option>
+            </select>
+            <select id="filterSpecies" onchange="applyFilter('species', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+              <option value="">All Species</option>
+            </select>
+            <span id="geneFilterDisplay" class="hidden px-3 py-1 bg-gray-100 border border-gray-300 rounded-full text-sm flex items-center gap-2">
+              <span id="geneFilterText"></span>
+              <button onclick="clearGeneFilter()" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </span>
+            <button id="clearFiltersBtn" onclick="clearAllFilters()" class="hidden px-3 py-2 text-gray-500 hover:text-gray-700 text-sm">
+              Clear Filters
+            </button>
+          </div>
 
           <!-- Data table -->
           <div id="tableView" class="overflow-x-auto hidden">
@@ -522,7 +547,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.9.1";
+    var VERSION = "2.10.0";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -563,7 +588,14 @@
       saleAnimalRow: null,
       saleForm: {},
       // QR scan pending action
-      qrPending: null
+      qrPending: null,
+      // Table filters
+      filters: {
+        sex: "",
+        status: "",
+        species: "",
+        gene: ""
+      }
     };
 
     // ============ INITIALIZATION ============
@@ -1488,6 +1520,16 @@
 
       // Render stats cards for this view
       renderTableStats();
+      
+      // Show/hide filter bar (only for collection-based views)
+      var filterBar = document.getElementById("filterBar");
+      var sheetKey = getSheetKey(state.activeTab);
+      if (sheetKey === "collection" && state.activeTab !== "sales") {
+        filterBar.classList.remove("hidden");
+        populateSpeciesFilter();
+      } else {
+        filterBar.classList.add("hidden");
+      }
 
       // Header
       var headerRow = document.getElementById("tableHead").querySelector("tr");
@@ -1606,6 +1648,26 @@
               td.textContent = "—";
             }
           }
+          // MATURITY - auto-calculated from DOB
+          else if (col === "MATURITY") {
+            var maturity = calculateMaturity(row["DATE OF BIRTH"]);
+            td.innerHTML = '<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">' + maturity + '</span>';
+          }
+          // STATUS - monochrome badge
+          else if (col === "STATUS") {
+            var status = row[col] || "—";
+            td.innerHTML = '<span class="px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs font-medium">' + escapeHtml(status) + '</span>';
+          }
+          // GENETIC SUMMARY - clickable gene tags
+          else if (col === "GENETIC SUMMARY") {
+            var genes = row[col] || "";
+            if (genes) {
+              td.className = "px-3 py-3 text-slate-700 text-sm";
+              td.innerHTML = renderGeneTags(genes);
+            } else {
+              td.textContent = "—";
+            }
+          }
           // Add warning icon to first data column if overdue
           else if (colIdx === 1 && isOverdue) {
             td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
@@ -1616,6 +1678,117 @@
         });
 
         tbody.appendChild(tr);
+      });
+    }
+    
+    function calculateMaturity(dob) {
+      if (!dob) return "UNK";
+      var birthDate = parseDate(dob);
+      if (!birthDate) return "UNK";
+      
+      var today = new Date();
+      var months = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
+      
+      if (months < 6) return "HTCH";
+      if (months < 18) return "SUB";
+      return "ADULT";
+    }
+    
+    function renderGeneTags(genes) {
+      if (!genes) return "—";
+      
+      // Split by common delimiters and clean up
+      var geneList = genes.split(/[\s,]+/).filter(function(g) { 
+        return g.trim().length > 0; 
+      });
+      
+      // Group consecutive words that might be one gene (e.g., "desert ghost" -> "Desert Ghost")
+      var parsedGenes = [];
+      var hetBuffer = "";
+      
+      for (var i = 0; i < geneList.length; i++) {
+        var gene = geneList[i].trim();
+        if (!gene) continue;
+        
+        // Check for het/possible het patterns
+        if (gene.toLowerCase() === "het" || gene.toLowerCase() === "poss" || gene.toLowerCase() === "100%") {
+          hetBuffer = gene;
+          continue;
+        }
+        
+        // If we have a het buffer, combine with next gene
+        if (hetBuffer) {
+          parsedGenes.push(hetBuffer + " " + gene);
+          hetBuffer = "";
+        } else {
+          parsedGenes.push(gene);
+        }
+      }
+      
+      // Render as clickable tags (max 5 shown, then "+X more")
+      var maxShow = 5;
+      var html = '<div class="flex flex-wrap gap-1">';
+      
+      for (var j = 0; j < Math.min(parsedGenes.length, maxShow); j++) {
+        var g = parsedGenes[j];
+        html += '<span class="px-2 py-0.5 bg-gray-100 border border-gray-300 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200" onclick="filterByGene(\'' + escapeHtml(g).replace(/'/g, "\\'") + '\')">' + escapeHtml(g) + '</span>';
+      }
+      
+      if (parsedGenes.length > maxShow) {
+        html += '<span class="px-2 py-0.5 text-gray-500 text-xs">+' + (parsedGenes.length - maxShow) + ' more</span>';
+      }
+      
+      html += '</div>';
+      return html;
+    }
+    
+    function filterByGene(gene) {
+      state.filters.gene = gene;
+      document.getElementById("geneFilterText").textContent = gene;
+      document.getElementById("geneFilterDisplay").classList.remove("hidden");
+      document.getElementById("clearFiltersBtn").classList.remove("hidden");
+      renderTable();
+    }
+    
+    function clearGeneFilter() {
+      state.filters.gene = "";
+      document.getElementById("geneFilterDisplay").classList.add("hidden");
+      updateClearFiltersVisibility();
+      renderTable();
+    }
+    
+    function applyFilter(filterType, value) {
+      state.filters[filterType] = value;
+      updateClearFiltersVisibility();
+      renderTable();
+    }
+    
+    function clearAllFilters() {
+      state.filters = { sex: "", status: "", species: "", gene: "" };
+      document.getElementById("filterSex").value = "";
+      document.getElementById("filterStatus").value = "";
+      document.getElementById("filterSpecies").value = "";
+      document.getElementById("geneFilterDisplay").classList.add("hidden");
+      document.getElementById("clearFiltersBtn").classList.add("hidden");
+      renderTable();
+    }
+    
+    function updateClearFiltersVisibility() {
+      var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene;
+      document.getElementById("clearFiltersBtn").classList.toggle("hidden", !hasFilters);
+    }
+    
+    function populateSpeciesFilter() {
+      var species = {};
+      state.data.collection.forEach(function(r) {
+        var sp = (r.SPECIES || "").trim();
+        if (sp) species[sp] = true;
+      });
+      
+      var select = document.getElementById("filterSpecies");
+      select.innerHTML = '<option value="">All Species</option>';
+      Object.keys(species).sort().forEach(function(sp) {
+        select.innerHTML += '<option value="' + escapeHtml(sp) + '">' + escapeHtml(sp) + '</option>';
       });
     }
 
@@ -1739,16 +1912,17 @@
 
     function getColumns() {
       var prefs = {
-        collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "GENETIC SUMMARY", "STATUS"],
+        collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
         clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
-        hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "SEX", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
+        hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
         sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "DATE SOLD", "BUYER NAME"],
         activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
       };
       var h = state.headers[getSheetKey(state.activeTab)] || [];
       var wanted = prefs[state.activeTab] || [];
-      // QR is a virtual column, don't filter it out
-      var result = wanted.filter(function(w) { return w === "QR" || h.indexOf(w) >= 0; });
+      // QR and MATURITY are virtual columns, don't filter them out
+      var virtualCols = ["QR", "MATURITY"];
+      var result = wanted.filter(function(w) { return virtualCols.indexOf(w) >= 0 || h.indexOf(w) >= 0; });
       return result.length ? result : h.slice(0, 6);
     }
 
@@ -1758,18 +1932,47 @@
       
       return rows.filter(function(r) {
         var st = (r.STATUS || "").toLowerCase().trim();
+        
+        // Tab-specific base filter
+        var passesBaseFilter = true;
         if (state.activeTab === "collection") {
-          return st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
+          passesBaseFilter = st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
+        } else if (state.activeTab === "clutches") {
+          passesBaseFilter = st !== "hatched";
+        } else if (state.activeTab === "hatchlings") {
+          passesBaseFilter = st === "listed" || st === "unlisted" || st === "for sale";
+        } else if (state.activeTab === "sales") {
+          passesBaseFilter = st === "on hold" || st === "hold" || st === "sold";
         }
-        if (state.activeTab === "clutches") {
-          return st !== "hatched";
+        
+        if (!passesBaseFilter) return false;
+        
+        // Apply user filters (only for collection-based views)
+        if (sheetKey === "collection") {
+          // Sex filter
+          if (state.filters.sex && (r.SEX || "").toLowerCase() !== state.filters.sex.toLowerCase()) {
+            return false;
+          }
+          
+          // Status filter
+          if (state.filters.status && st !== state.filters.status.toLowerCase()) {
+            return false;
+          }
+          
+          // Species filter
+          if (state.filters.species && (r.SPECIES || "") !== state.filters.species) {
+            return false;
+          }
+          
+          // Gene filter
+          if (state.filters.gene) {
+            var genes = (r["GENETIC SUMMARY"] || "").toLowerCase();
+            if (genes.indexOf(state.filters.gene.toLowerCase()) === -1) {
+              return false;
+            }
+          }
         }
-        if (state.activeTab === "hatchlings") {
-          return st === "listed" || st === "unlisted" || st === "for sale";
-        }
-        if (state.activeTab === "sales") {
-          return st === "on hold" || st === "hold" || st === "sold";
-        }
+        
         return true;
       });
     }
