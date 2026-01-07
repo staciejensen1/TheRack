@@ -557,7 +557,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.19";
+    var VERSION = "2.10.21";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -2084,83 +2084,81 @@
       var sheetKey = getSheetKey(state.activeTab);
       var rows = state.data[sheetKey] || [];
       
-      // Debug logging
-      console.log("getFilteredRows - activeTab:", state.activeTab, "sheetKey:", sheetKey, "total rows:", rows.length);
+      console.log("=== getFilteredRows DEBUG ===");
+      console.log("activeTab:", state.activeTab);
+      console.log("sheetKey:", sheetKey);
+      console.log("Total rows in state.data[" + sheetKey + "]:", rows.length);
       
-      // Debug logging for hatchlings
-      if (state.activeTab === "hatchlings" || state.activeTab === "clutches") {
-        var statusCounts = {};
-        rows.forEach(function(r) {
-          var st = (r.STATUS || "").toLowerCase().trim();
-          statusCounts[st] = (statusCounts[st] || 0) + 1;
+      // For clutches, show ALL rows (no filter)
+      if (state.activeTab === "clutches") {
+        console.log("Returning ALL clutch rows:", rows.length);
+        return rows.filter(function(r) {
+          // Only filter out completely empty rows
+          return r["CLUTCH ID"] || r["SIRE"] || r["DAM"] || r["STATUS"];
         });
-        console.log("Status counts for", state.activeTab, ":", statusCounts);
       }
       
-      var filtered = rows.filter(function(r) {
-        var st = (r.STATUS || "").toLowerCase().trim();
-        
-        // Tab-specific base filter
-        var passesBaseFilter = true;
-        if (state.activeTab === "collection") {
-          passesBaseFilter = st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
-        } else if (state.activeTab === "clutches") {
-          // Show all clutches except hatched ones
-          passesBaseFilter = true; // Show all for now to debug
-        } else if (state.activeTab === "hatchlings") {
-          passesBaseFilter = st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale";
-        } else if (state.activeTab === "sales") {
-          passesBaseFilter = st === "on hold" || st === "hold" || st === "sold";
-        }
-        
-        if (!passesBaseFilter) return false;
-        
-        // Apply year filter for sales
-        if (state.activeTab === "sales" && state.filters.salesYear) {
-          var soldDate = parseDate(r["DATE SOLD"]);
-          if (!soldDate || soldDate.getFullYear() !== parseInt(state.filters.salesYear)) {
-            return false;
-          }
-        }
-        
-        // Apply status filter for sales
-        if (state.activeTab === "sales" && state.filters.salesStatus) {
-          if (st !== state.filters.salesStatus.toLowerCase()) {
-            return false;
-          }
-        }
-        
-        // Apply user filters (only for collection-based views)
-        if (sheetKey === "collection") {
-          // Sex filter
-          if (state.filters.sex && (r.SEX || "").toLowerCase() !== state.filters.sex.toLowerCase()) {
-            return false;
-          }
+      // For hatchlings, show Listed/Unlisted/Not listed/For Sale
+      if (state.activeTab === "hatchlings") {
+        var result = rows.filter(function(r) {
+          var st = (r.STATUS || "").toLowerCase().trim();
+          return st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale";
+        });
+        console.log("Hatchlings filtered result:", result.length);
+        return result;
+      }
+      
+      // For collection, show Breeder/Holdback/On Loan
+      if (state.activeTab === "collection") {
+        return rows.filter(function(r) {
+          var st = (r.STATUS || "").toLowerCase().trim();
+          var passes = st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
           
-          // Status filter
-          if (state.filters.status && st !== state.filters.status.toLowerCase()) {
-            return false;
+          // Apply user filters
+          if (passes && state.filters.sex && (r.SEX || "").toLowerCase() !== state.filters.sex.toLowerCase()) {
+            passes = false;
           }
-          
-          // Species filter
-          if (state.filters.species && (r.SPECIES || "") !== state.filters.species) {
-            return false;
+          if (passes && state.filters.status && st !== state.filters.status.toLowerCase()) {
+            passes = false;
           }
-          
-          // Gene filter
-          if (state.filters.gene) {
+          if (passes && state.filters.species && (r.SPECIES || "") !== state.filters.species) {
+            passes = false;
+          }
+          if (passes && state.filters.gene) {
             var genes = (r["GENETIC SUMMARY"] || "").toLowerCase();
             if (genes.indexOf(state.filters.gene.toLowerCase()) === -1) {
-              return false;
+              passes = false;
             }
           }
-        }
-        
-        return true;
-      });
+          return passes;
+        });
+      }
       
-      console.log("Filtered rows count:", filtered.length);
-      return filtered;
+      // For sales, show On Hold/Sold
+      if (state.activeTab === "sales") {
+        return rows.filter(function(r) {
+          var st = (r.STATUS || "").toLowerCase().trim();
+          var passes = st === "on hold" || st === "hold" || st === "sold";
+          
+          if (passes && state.filters.salesYear) {
+            var soldDate = parseDate(r["DATE SOLD"]);
+            if (!soldDate || soldDate.getFullYear() !== parseInt(state.filters.salesYear)) {
+              passes = false;
+            }
+          }
+          if (passes && state.filters.salesStatus) {
+            if (st !== state.filters.salesStatus.toLowerCase()) {
+              passes = false;
+            }
+          }
+          return passes;
+        });
+      }
+      
+      // Default - return all non-empty rows
+      return rows.filter(function(r) {
+        return r.STATUS || r["UNIQUE ID"] || r["CLUTCH ID"];
+      });
     }
 
     function getSheetKey(tab) {
@@ -3359,8 +3357,13 @@
     function openSettingsModal() {
       console.log("openSettingsModal called");
       console.log("state.settings:", state.settings);
-      var html = '<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)closeSettingsModal()">';
-      html += '<div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">';
+      
+      // Remove any existing settings modal first
+      var existingModal = document.getElementById('settingsModal');
+      if (existingModal) existingModal.remove();
+      
+      var html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style="z-index: 9999;" onclick="if(event.target===this)closeSettingsModal()">';
+      html += '<div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">';
       html += '<div class="p-6">';
       html += '<div class="flex justify-between items-center mb-6">';
       html += '<h2 class="text-xl font-bold text-gray-900">Settings</h2>';
