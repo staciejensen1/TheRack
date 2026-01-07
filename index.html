@@ -1,22 +1,26 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.9
+  Version: 2.8.3
   Last Updated: 2026-01-07
   
   Changelog:
-  - 2.10.9: Fixed Edit for imported rows - falls back to finding row by UNIQUE ID if __rowIndex missing
-  - 2.10.7: Fixed filter bar and stats cards showing on Dashboard
-  - 2.10.6: NEW approach for Edit/Delete - uses global row array with inline onclick handlers
-  - 2.10.5: Fixed MorphMarket import - year-only DOB now becomes 01/01/YYYY
-  - 2.10.4: Made Hatchlings/Sales table stats monochrome, removed Clutches section from Dashboard
-  - 2.10.0: Filter dropdowns, clickable gene tags, maturity auto-calc, status badges
-  - 2.9.0: Delete button on all table views, stats cards, Settings tab integration
-  - 2.8.0: Archive feature - delete moves to Archive tab
+  - 2.8.2: Added stats cards above tables (Collection, Incubator, Hatchlings, Sales)
+  - 2.8.1: Moved Actions column to first position (sticky), fixed MANUAL OVERRIDE mapping for import
+  - 2.8.0: Archive feature - delete moves to Archive tab, can restore from Archive view
+  - 2.7.1: Import duplicate detection - updates existing by MANUAL ID instead of creating duplicates
   - 2.7.0: MorphMarket CSV import with field mapping
-  - 2.5.0: Mobile-friendly redesign
-  - 2.0.0: Apps Script API backend
-  - 1.0.0: Initial release
+  - 2.6.0: QR code generation and scanning for quick activity logging
+  - 2.5.2: Fixed support ticket form link
+  - 2.5.1: Added support ticket link
+  - 2.5.0: Mobile-friendly redesign with hamburger menu, quick add bar always visible
+  - 2.4.1: Fixed sales section labels (This Year / Last Year)
+  - 2.4.0: Added last year sales comparison on dashboard, version display in header
+  - 2.3.0: New double helix logo, Inter font
+  - 2.2.0: Fixed counting to skip empty placeholder rows
+  - 2.1.0: Email + Access Code login (no Google OAuth), Sync button, Back button, optimistic UI
+  - 2.0.0: Apps Script API backend, removed direct Google Sheets API calls
+  - 1.0.0: Initial release with Google OAuth
 -->
 <html lang="en">
 <head>
@@ -189,7 +193,6 @@
             <button onclick="exportCSV('clutch'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
             <button onclick="showDataHealth(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
             <button onclick="openQRGenerator(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print QR Codes</button>
-            <button onclick="openSettingsModal(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Settings</button>
           </div>
         </div>
 
@@ -231,7 +234,6 @@
               <button onclick="exportCSV('clutch')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
               <button onclick="openQRGenerator()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print QR Codes</button>
               <button onclick="showDataHealth()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
-              <button onclick="openSettingsModal()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Settings</button>
             </div>
           </div>
 
@@ -264,7 +266,7 @@
               </button>
               <h2 id="pageTitle" class="text-xl font-bold text-gray-900 capitalize">Dashboard</h2>
             </div>
-            <button id="addBtn" onclick="openAddForCurrentTab()" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black hidden text-sm">
+            <button id="addBtn" onclick="openAddModal(state.activeTab)" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black hidden text-sm">
               + Add New
             </button>
           </div>
@@ -273,49 +275,7 @@
           <div id="dashboardView"></div>
 
           <!-- Stats Cards (shown on table pages) -->
-          <div id="tableStatsView" class="hidden mb-4"></div>
-
-          <!-- Filter Bar (shown on table pages) -->
-          <div id="filterBar" class="hidden mb-4 flex flex-wrap gap-2 items-center">
-            <select id="filterSex" onchange="applyFilter('sex', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
-              <option value="">All Sex</option>
-              <option value="Female">Female</option>
-              <option value="Male">Male</option>
-              <option value="Unknown">Unknown</option>
-            </select>
-            <select id="filterStatus" onchange="applyFilter('status', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
-              <option value="">All Status</option>
-              <option value="Breeder">Breeder</option>
-              <option value="Listed">Listed</option>
-              <option value="Unlisted">Unlisted</option>
-              <option value="Holdback">Holdback</option>
-              <option value="On Hold">On Hold</option>
-              <option value="Sold">Sold</option>
-              <option value="On Loan">On Loan</option>
-            </select>
-            <select id="filterSpecies" onchange="applyFilter('species', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
-              <option value="">All Species</option>
-            </select>
-            <span id="geneFilterDisplay" class="hidden px-3 py-1 bg-gray-100 border border-gray-300 rounded-full text-sm flex items-center gap-2">
-              <span id="geneFilterText"></span>
-              <button onclick="clearGeneFilter()" class="text-gray-500 hover:text-gray-700">&times;</button>
-            </span>
-            <button id="clearFiltersBtn" onclick="clearAllFilters()" class="hidden px-3 py-2 text-gray-500 hover:text-gray-700 text-sm">
-              Clear Filters
-            </button>
-          </div>
-          
-          <!-- Sales Filter Bar -->
-          <div id="salesFilterBar" class="hidden mb-4 flex flex-wrap gap-2 items-center">
-            <select id="filterSalesYear" onchange="applyFilter('salesYear', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
-              <option value="">All Years</option>
-            </select>
-            <select id="filterSalesStatus" onchange="applyFilter('salesStatus', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
-              <option value="">All Status</option>
-              <option value="On Hold">On Hold</option>
-              <option value="Sold">Sold</option>
-            </select>
-          </div>
+          <div id="tableStatsView" class="hidden mb-6"></div>
 
           <!-- Data table -->
           <div id="tableView" class="overflow-x-auto hidden">
@@ -557,15 +517,14 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.22";
-    var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
+    var VERSION = "2.8.6";
+    var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
       collection: "Collection",
       clutch: "Clutch", 
       activity: "Activity",
-      archive: "Archive",
-      settings: "Settings"
+      archive: "Archive"
     };
 
     var FIELD_OPTIONS = {
@@ -584,9 +543,8 @@
       isLoggedIn: false,
       isLoading: false,
       activeTab: "dashboard",
-      data: { collection: [], clutch: [], activity: [], archive: [], settings: {} },
+      data: { collection: [], clutch: [], activity: [], archive: [] },
       headers: { collection: [], clutch: [], activity: [], archive: [] },
-      settings: {},
       modalMode: "add",
       modalTab: null,
       editRowIndex: null,
@@ -598,16 +556,7 @@
       saleAnimalRow: null,
       saleForm: {},
       // QR scan pending action
-      qrPending: null,
-      // Table filters
-      filters: {
-        sex: "",
-        status: "",
-        species: "",
-        gene: "",
-        salesYear: "",
-        salesStatus: ""
-      }
+      qrPending: null
     };
 
     // ============ INITIALIZATION ============
@@ -878,27 +827,6 @@
               activity: data.activity ? data.activity.rows : [],
               archive: data.archive ? data.archive.rows : []
             };
-            
-            console.log("=== DATA LOAD DEBUG ===");
-            console.log("API Response data:", data);
-            console.log("data.clutch:", data.clutch);
-            console.log("state.data.clutch:", state.data.clutch);
-            console.log("state.data.clutch.length:", state.data.clutch.length);
-            console.log("state.data.collection.length:", state.data.collection.length);
-            console.log("state.data.archive:", state.data.archive);
-            console.log("=== END DATA LOAD DEBUG ===");
-
-            // Parse settings (key-value pairs)
-            state.settings = {};
-            if (data.settings && data.settings.rows) {
-              data.settings.rows.forEach(function(row) {
-                var field = row["FIELD"] || row["Field"] || "";
-                var value = row["VALUE"] || row["Value"] || "";
-                if (field) {
-                  state.settings[field.toUpperCase()] = value;
-                }
-              });
-            }
 
             // Count only non-empty rows for display
             var animalCount = state.data.collection.filter(function(r) {
@@ -914,9 +842,6 @@
             setStatus("Loaded " + animalCount + " animals, " + 
                       clutchCount + " clutches, " + 
                       activityCount + " activities");
-            
-            // Update UI with settings
-            updateUIWithSettings();
             renderCurrentView();
             
             // Check for pending QR action
@@ -934,17 +859,6 @@
         .finally(function() {
           state.isLoading = false;
         });
-    }
-    
-    function updateUIWithSettings() {
-      // Update business name in header if set
-      var businessName = state.settings["BUSINESS NAME"];
-      if (businessName) {
-        var taglineEl = document.querySelector('.tagline-text');
-        if (taglineEl) {
-          taglineEl.textContent = businessName;
-        }
-      }
     }
 
     function setStatus(msg, isError) {
@@ -1117,7 +1031,7 @@
       var tabs = [
         { key: "dashboard", label: "Dashboard" },
         { key: "collection", label: "Collection" },
-        { key: "clutches", label: "Clutches" },
+        { key: "clutches", label: "Incubator" },
         { key: "hatchlings", label: "Hatchlings" },
         { key: "sales", label: "Sales" },
         { key: "activity", label: "Activity" },
@@ -1170,7 +1084,7 @@
       var titles = {
         dashboard: "Dashboard",
         collection: "Collection",
-        clutches: "Clutches",
+        clutches: "Incubator",
         hatchlings: "Hatchlings",
         sales: "Sales",
         activity: "Activity",
@@ -1182,13 +1096,6 @@
       document.getElementById("dashboardView").classList.toggle("hidden", !isDash);
       document.getElementById("tableView").classList.toggle("hidden", isDash || isArchive);
       document.getElementById("addBtn").classList.toggle("hidden", isDash || isArchive);
-      
-      // Always hide filter bar and stats on dashboard/archive
-      if (isDash || isArchive) {
-        document.getElementById("filterBar").classList.add("hidden");
-        document.getElementById("tableStatsView").classList.add("hidden");
-        document.getElementById("tableStatsView").innerHTML = '';
-      }
       
       // Show/hide back button
       document.getElementById("backBtn").classList.toggle("hidden", navHistory.length === 0);
@@ -1317,7 +1224,7 @@
       html += '</div></div>';
 
       // Clutches Section
-      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Incubator</div>';
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Clutches</div>';
       html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
       html += statCard("Incubating", stats.incubating, "green", null, "state.activeTab=&#39;clutches&#39;; renderNavTabs(); renderCurrentView();");
       html += statCard("Hatched (Year)", stats.hatchedThisYear, "emerald", null, "state.activeTab=&#39;clutches&#39;; renderNavTabs(); renderCurrentView();");
@@ -1441,7 +1348,7 @@
           s.listed++;
           countSex(sex, s, "hatch");
         }
-        if (st === "unlisted" || st === "not listed") {
+        if (st === "unlisted") {
           s.unlisted++;
           countSex(sex, s, "hatch");
           // Needs sexing (unlisted with unknown sex)
@@ -1548,24 +1455,6 @@
 
       // Render stats cards for this view
       renderTableStats();
-      
-      // Show/hide filter bar (only for collection-based views)
-      var filterBar = document.getElementById("filterBar");
-      var sheetKey = getSheetKey(state.activeTab);
-      // Show/hide filter bars based on tab
-      var salesFilterBar = document.getElementById("salesFilterBar");
-      if (sheetKey === "collection" && state.activeTab !== "sales") {
-        filterBar.classList.remove("hidden");
-        salesFilterBar.classList.add("hidden");
-        populateSpeciesFilter();
-      } else if (state.activeTab === "sales") {
-        filterBar.classList.add("hidden");
-        salesFilterBar.classList.remove("hidden");
-        populateSalesYearFilter();
-      } else {
-        filterBar.classList.add("hidden");
-        salesFilterBar.classList.add("hidden");
-      }
 
       // Header
       var headerRow = document.getElementById("tableHead").querySelector("tr");
@@ -1595,347 +1484,97 @@
         return;
       }
 
-      // Store displayed rows globally so buttons can access them
-      window._displayedRows = rows;
-      
-      // Build table using innerHTML
-      var tbodyHtml = '';
-      
-      for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        var rowClass = "hover:bg-slate-50";
+      rows.forEach(function(row) {
+        var tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50";
         
         // Check if this clutch is overdue (for Incubator view)
         var isOverdue = false;
         if (state.activeTab === "clutches") {
           var estHatchDate = row["EST. HATCH DATE"] || row["EST HATCH DATE"] || row["ESTIMATED HATCH DATE"] || "";
-          var rowStatus = (row.STATUS || "").toLowerCase();
-          if (estHatchDate && rowStatus === "incubating") {
+          var status = (row.STATUS || "").toLowerCase();
+          if (estHatchDate && status === "incubating") {
             var estDate = parseDate(estHatchDate);
             var today = new Date();
             today.setHours(0, 0, 0, 0);
             if (estDate && estDate < today) {
               isOverdue = true;
-              rowClass = "hover:bg-gray-200 bg-gray-200";
+              tr.className = "hover:bg-gray-200 bg-gray-200";
             }
           }
         }
         
-        tbodyHtml += '<tr class="' + rowClass + '">';
+        // Actions FIRST (sticky left)
+        var actionTd = document.createElement("td");
+        actionTd.className = "px-3 py-3 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100";
         
-        // Actions column - use display index (i) not __rowIndex
-        tbodyHtml += '<td class="px-3 py-3 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100">';
-        
-        // Edit button - onclick directly calls function with display index
-        tbodyHtml += '<button onclick="handleEdit(' + i + ')" class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1">Edit</button>';
-        
-        // Hatch button (only for clutches)
+        var editBtn = document.createElement("button");
+        editBtn.className = "px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1";
+        editBtn.textContent = "Edit";
+        editBtn.onclick = function() { openEditModal(row); };
+        actionTd.appendChild(editBtn);
+
         if (showHatch) {
-          tbodyHtml += '<button onclick="handleHatch(' + i + ')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1">Hatch</button>';
+          var hatchBtn = document.createElement("button");
+          hatchBtn.className = "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1";
+          hatchBtn.textContent = "Hatch";
+          hatchBtn.onclick = function() { openHatchModal(row); };
+          actionTd.appendChild(hatchBtn);
         }
-        
-        // Sell and Holdback buttons (only for hatchlings)
+
         if (showSale) {
-          tbodyHtml += '<button onclick="handleSell(' + i + ')" class="px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1">Sell</button>';
-          tbodyHtml += '<button onclick="handleHoldback(' + i + ')" class="px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1">+ Holdback</button>';
+          var saleBtn = document.createElement("button");
+          saleBtn.className = "px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1";
+          saleBtn.textContent = "Sell";
+          saleBtn.onclick = function() { openSaleModal(row); };
+          actionTd.appendChild(saleBtn);
+          
+          var holdbackBtn = document.createElement("button");
+          holdbackBtn.className = "px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1";
+          holdbackBtn.textContent = "+ Holdback";
+          holdbackBtn.onclick = function() { markAsHoldback(row); };
+          actionTd.appendChild(holdbackBtn);
         }
-        
-        // Delete button (for all except activity)
-        if (state.activeTab !== "activity") {
-          var sourceTab = state.activeTab === "clutches" ? "Clutch" : "Collection";
-          tbodyHtml += '<button onclick="handleDelete(' + i + ', \'' + sourceTab + '\')" class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Delete</button>';
+
+        // Archive button for collection and clutches
+        if (state.activeTab === "collection" || state.activeTab === "clutches") {
+          var archiveTab = state.activeTab === "collection" ? "Collection" : "Clutch";
+          var archiveBtn = document.createElement("button");
+          archiveBtn.className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200";
+          archiveBtn.textContent = "Delete";
+          archiveBtn.onclick = (function(rowIndex, tab) {
+            return function() { archiveRecord(rowIndex, tab); };
+          })(row.__rowIndex, archiveTab);
+          actionTd.appendChild(archiveBtn);
         }
-        
-        tbodyHtml += '</td>';
+
+        tr.appendChild(actionTd);
         
         // Data columns
-        for (var j = 0; j < columns.length; j++) {
-          var col = columns[j];
-          tbodyHtml += '<td class="px-3 py-3 text-slate-700 whitespace-nowrap text-sm">';
+        columns.forEach(function(col, colIdx) {
+          var td = document.createElement("td");
+          td.className = "px-3 py-3 text-slate-700 whitespace-nowrap text-sm";
           
+          // Special handling for QR column
           if (col === "QR") {
             var animalId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || "";
             if (animalId) {
               var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + animalId);
-              tbodyHtml += '<img src="' + qrUrl + '" alt="QR" style="width:40px; height:40px; min-width:40px; min-height:40px;" />';
+              td.innerHTML = '<img src="' + qrUrl + '" alt="QR" class="w-10 h-10" />';
             } else {
-              tbodyHtml += '—';
+              td.textContent = "—";
             }
-          } else if (col === "MATURITY") {
-            var maturity = calculateMaturity(row["DATE OF BIRTH"]);
-            tbodyHtml += '<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">' + maturity + '</span>';
-          } else if (col === "STATUS") {
-            var statusVal = row[col] || "—";
-            tbodyHtml += '<span class="px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs font-medium">' + escapeHtml(statusVal) + '</span>';
-          } else if (col === "GENETIC SUMMARY") {
-            var genes = row[col] || "";
-            if (genes) {
-              tbodyHtml += renderGeneTags(genes);
-            } else {
-              tbodyHtml += '—';
-            }
-          } else if (j === 0 && isOverdue) {
-            tbodyHtml += '<span class="text-gray-900 mr-1" title="Overdue">⚠️</span>' + escapeHtml(row[col] || "—");
+          }
+          // Add warning icon to first data column if overdue
+          else if (colIdx === 1 && isOverdue) {
+            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
           } else {
-            tbodyHtml += escapeHtml(row[col] || "—");
+            td.textContent = row[col] || "—";
           }
-          
-          tbodyHtml += '</td>';
-        }
-        
-        tbodyHtml += '</tr>';
-      }
-      
-      tbody.innerHTML = tbodyHtml;
-    }
-    
-    // Simple button handlers that use window._displayedRows
-    function handleEdit(displayIndex) {
-      console.log("handleEdit called with displayIndex:", displayIndex);
-      console.log("window._displayedRows:", window._displayedRows);
-      console.log("window._displayedRows length:", window._displayedRows ? window._displayedRows.length : 0);
-      
-      var row = window._displayedRows[displayIndex];
-      console.log("Retrieved row:", row);
-      
-      if (!row) {
-        setStatus("Row not found at index " + displayIndex, true);
-        return;
-      }
-      openEditModal(row);
-    }
-    
-    function handleHatch(displayIndex) {
-      var row = window._displayedRows[displayIndex];
-      if (!row) {
-        setStatus("Row not found", true);
-        return;
-      }
-      openHatchModal(row);
-    }
-    
-    function handleSell(displayIndex) {
-      var row = window._displayedRows[displayIndex];
-      if (!row) {
-        setStatus("Row not found", true);
-        return;
-      }
-      openSaleModal(row);
-    }
-    
-    function handleHoldback(displayIndex) {
-      var row = window._displayedRows[displayIndex];
-      if (!row) {
-        setStatus("Row not found", true);
-        return;
-      }
-      markAsHoldback(row);
-    }
-    
-    function handleDelete(displayIndex, sourceTab) {
-      var row = window._displayedRows[displayIndex];
-      if (!row) {
-        setStatus("Row not found", true);
-        return;
-      }
-      
-      var recordName = row["ANIMAL NAME"] || row["CLUTCH ID"] || "this record";
-      
-      if (!confirm("Move \"" + recordName + "\" to Archive?\n\nYou can restore it later from the Archive tab.")) {
-        return;
-      }
-      
-      setStatus("Archiving...");
-      
-      // Create clean archive data
-      var archiveData = {};
-      var keys = Object.keys(row);
-      for (var j = 0; j < keys.length; j++) {
-        var key = keys[j];
-        if (key !== "__rowIndex" && key !== "__raw") {
-          archiveData[key] = row[key];
-        }
-      }
-      archiveData["ARCHIVE TYPE"] = sourceTab;
-      archiveData["DATE ARCHIVED"] = new Date().toISOString().split('T')[0];
-      
-      // Get the actual row index for deletion
-      var rowIndex = row.__rowIndex;
-      
-      // If no __rowIndex, we need to find it by matching UNIQUE ID or CLUTCH ID
-      if (rowIndex === undefined) {
-        var sheetKey = sourceTab === "Clutch" ? "clutch" : "collection";
-        var allRows = state.data[sheetKey] || [];
-        var uniqueId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || row["CLUTCH ID"];
-        
-        for (var k = 0; k < allRows.length; k++) {
-          var r = allRows[k];
-          var rId = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || r["CLUTCH ID"];
-          if (rId && rId === uniqueId) {
-            rowIndex = r.__rowIndex;
-            break;
-          }
-        }
-      }
-      
-      if (rowIndex === undefined) {
-        setStatus("Could not find row index for deletion", true);
-        return;
-      }
-      
-      // Save to Archive tab, then delete from original
-      apiCall('saveRecord', { tab: 'Archive', data: archiveData })
-        .then(function(response) {
-          if (response.success) {
-            return apiCall('deleteRecord', { tab: sourceTab, rowIndex: rowIndex });
-          } else {
-            throw new Error(response.error || "Failed to archive");
-          }
-        })
-        .then(function(response) {
-          if (response.success) {
-            setStatus("Moved to Archive");
-            loadData();
-          } else {
-            throw new Error(response.error || "Failed to delete original");
-          }
-        })
-        .catch(function(error) {
-          setStatus("Error: " + error.message, true);
+          tr.appendChild(td);
         });
-    }
-    
-    function calculateMaturity(dob) {
-      if (!dob) return "UNK";
-      var birthDate = parseDate(dob);
-      if (!birthDate) return "UNK";
-      
-      var today = new Date();
-      var months = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
-      
-      if (months < 6) return "HTCH";
-      if (months < 18) return "SUB";
-      return "ADULT";
-    }
-    
-    function renderGeneTags(genes) {
-      if (!genes) return "—";
-      
-      // Split by common delimiters and clean up
-      var geneList = genes.split(/[\s,]+/).filter(function(g) { 
-        return g.trim().length > 0; 
-      });
-      
-      // Group consecutive words that might be one gene (e.g., "desert ghost" -> "Desert Ghost")
-      var parsedGenes = [];
-      var hetBuffer = "";
-      
-      for (var i = 0; i < geneList.length; i++) {
-        var gene = geneList[i].trim();
-        if (!gene) continue;
-        
-        // Check for het/possible het patterns
-        if (gene.toLowerCase() === "het" || gene.toLowerCase() === "poss" || gene.toLowerCase() === "100%") {
-          hetBuffer = gene;
-          continue;
-        }
-        
-        // If we have a het buffer, combine with next gene
-        if (hetBuffer) {
-          parsedGenes.push(hetBuffer + " " + gene);
-          hetBuffer = "";
-        } else {
-          parsedGenes.push(gene);
-        }
-      }
-      
-      // Render as clickable tags (max 5 shown, then "+X more")
-      var maxShow = 5;
-      var html = '<div class="flex flex-wrap gap-1">';
-      
-      for (var j = 0; j < Math.min(parsedGenes.length, maxShow); j++) {
-        var g = parsedGenes[j];
-        html += '<span class="px-2 py-0.5 bg-gray-100 border border-gray-300 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200" onclick="filterByGene(\'' + escapeHtml(g).replace(/'/g, "\\'") + '\')">' + escapeHtml(g) + '</span>';
-      }
-      
-      if (parsedGenes.length > maxShow) {
-        html += '<span class="px-2 py-0.5 text-gray-500 text-xs">+' + (parsedGenes.length - maxShow) + ' more</span>';
-      }
-      
-      html += '</div>';
-      return html;
-    }
-    
-    function filterByGene(gene) {
-      state.filters.gene = gene;
-      document.getElementById("geneFilterText").textContent = gene;
-      document.getElementById("geneFilterDisplay").classList.remove("hidden");
-      document.getElementById("clearFiltersBtn").classList.remove("hidden");
-      renderTable();
-    }
-    
-    function clearGeneFilter() {
-      state.filters.gene = "";
-      document.getElementById("geneFilterDisplay").classList.add("hidden");
-      updateClearFiltersVisibility();
-      renderTable();
-    }
-    
-    function applyFilter(filterType, value) {
-      state.filters[filterType] = value;
-      updateClearFiltersVisibility();
-      renderTable();
-    }
-    
-    function clearAllFilters() {
-      state.filters = { sex: "", status: "", species: "", gene: "", salesYear: "", salesStatus: "" };
-      document.getElementById("filterSex").value = "";
-      document.getElementById("filterStatus").value = "";
-      document.getElementById("filterSpecies").value = "";
-      var salesYearSelect = document.getElementById("filterSalesYear");
-      if (salesYearSelect) salesYearSelect.value = "";
-      var salesStatusSelect = document.getElementById("filterSalesStatus");
-      if (salesStatusSelect) salesStatusSelect.value = "";
-      document.getElementById("geneFilterDisplay").classList.add("hidden");
-      document.getElementById("clearFiltersBtn").classList.add("hidden");
-      renderTable();
-    }
-    
-    function updateClearFiltersVisibility() {
-      var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene || state.filters.salesYear || state.filters.salesStatus;
-      document.getElementById("clearFiltersBtn").classList.toggle("hidden", !hasFilters);
-    }
-    
-    function populateSpeciesFilter() {
-      var species = {};
-      state.data.collection.forEach(function(r) {
-        var sp = (r.SPECIES || "").trim();
-        if (sp) species[sp] = true;
-      });
-      
-      var select = document.getElementById("filterSpecies");
-      select.innerHTML = '<option value="">All Species</option>';
-      Object.keys(species).sort().forEach(function(sp) {
-        select.innerHTML += '<option value="' + escapeHtml(sp) + '">' + escapeHtml(sp) + '</option>';
-      });
-    }
 
-    function populateSalesYearFilter() {
-      var years = {};
-      state.data.collection.forEach(function(r) {
-        var st = (r.STATUS || "").toLowerCase().trim();
-        if (st === "sold" || st === "on hold" || st === "hold") {
-          var soldDate = parseDate(r["DATE SOLD"]);
-          if (soldDate) {
-            years[soldDate.getFullYear()] = true;
-          }
-        }
-      });
-      
-      var select = document.getElementById("filterSalesYear");
-      select.innerHTML = '<option value="">All Years</option>';
-      Object.keys(years).sort().reverse().forEach(function(yr) {
-        select.innerHTML += '<option value="' + yr + '">' + yr + '</option>';
+        tbody.appendChild(tr);
       });
     }
 
@@ -1944,13 +1583,13 @@
       var stats = calculateStats();
       var html = '';
       
-      // Count on loan separately
+      // Count on loan separately since calculateStats doesn't track it separately
       var onLoanCount = 0;
       state.data.collection.forEach(function(r) {
         if ((r.STATUS || "").toLowerCase().trim() === "on loan") onLoanCount++;
       });
       
-      // Count clutch stats
+      // Count clutch stats that aren't in calculateStats
       var hatchedCount = 0;
       var failedCount = 0;
       var totalEggs = 0;
@@ -1963,7 +1602,8 @@
       });
       
       if (state.activeTab === "collection") {
-        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
+        // Breeder stats
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Breeders</div>';
         html += '<div class="text-2xl font-black text-gray-900">' + stats.totalBreeders + '</div>';
@@ -1981,11 +1621,11 @@
         html += '<div class="text-2xl font-black text-gray-900">' + onLoanCount + '</div>';
         html += '</div>';
         html += '</div>';
-        statsView.innerHTML = html;
         statsView.classList.remove("hidden");
         
       } else if (state.activeTab === "clutches") {
-        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
+        // Incubator stats
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Incubating</div>';
         html += '<div class="text-2xl font-black text-gray-900">' + stats.incubating + '</div>';
@@ -2003,14 +1643,14 @@
         html += '<div class="text-2xl font-black text-gray-900">' + totalEggs + '</div>';
         html += '</div>';
         html += '</div>';
-        statsView.innerHTML = html;
         statsView.classList.remove("hidden");
         
       } else if (state.activeTab === "hatchlings") {
-        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Listed</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.listed + '</div>';
+        // Hatchling stats
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
+        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-green-600">Listed</div>';
+        html += '<div class="text-2xl font-black text-green-700">' + stats.listed + '</div>';
         html += '</div>';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Unlisted</div>';
@@ -2020,69 +1660,56 @@
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Holdbacks</div>';
         html += '<div class="text-2xl font-black text-gray-900">' + stats.holdbacks + '</div>';
         html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">On Hold</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.onHold + '</div>';
+        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
+        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
         html += '</div>';
         html += '</div>';
-        statsView.innerHTML = html;
         statsView.classList.remove("hidden");
         
       } else if (state.activeTab === "sales") {
+        // Sales stats
         var year = new Date().getFullYear();
-        
-        // Year filter dropdown
-        html += '<div class="mb-4 flex items-center gap-2">';
-        html += '<label class="text-sm text-gray-600">Show sales from:</label>';
-        html += '<select onchange="state.filters.salesYear=this.value; renderCurrentView();" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">';
-        html += '<option value="">All Years</option>';
-        for (var y = year; y >= year - 5; y--) {
-          var selected = state.filters.salesYear === String(y) ? ' selected' : '';
-          html += '<option value="' + y + '"' + selected + '>' + y + '</option>';
-        }
-        html += '</select>';
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
+        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-green-600">Sold (' + year + ')</div>';
+        html += '<div class="text-2xl font-black text-green-700">' + stats.soldThisYear + '</div>';
         html += '</div>';
-        
-        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Sold (' + year + ')</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.soldThisYear + '</div>';
+        html += '<div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-3 border border-emerald-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-emerald-600">Revenue</div>';
+        html += '<div class="text-2xl font-black text-emerald-700">' + stats.revenueDisplay + '</div>';
         html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Revenue</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.revenueDisplay + '</div>';
+        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
+        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
         html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">On Hold</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.onHold + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Unshipped</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.unshipped + '</div>';
+        html += '<div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-red-600">Unshipped</div>';
+        html += '<div class="text-2xl font-black text-red-700">' + stats.unshipped + '</div>';
         html += '</div>';
         html += '</div>';
-        statsView.innerHTML = html;
         statsView.classList.remove("hidden");
         
       } else {
+        // Activity or other - hide stats
         statsView.classList.add("hidden");
-        statsView.innerHTML = '';
       }
+      
+      statsView.innerHTML = html;
     }
 
     function getColumns() {
       var prefs = {
-        collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
+        collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "GENETIC SUMMARY", "STATUS"],
         clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
-        hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
+        hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "SEX", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
         sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "DATE SOLD", "BUYER NAME"],
         activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
       };
       var h = state.headers[getSheetKey(state.activeTab)] || [];
       var wanted = prefs[state.activeTab] || [];
-      // QR and MATURITY are virtual columns, don't filter them out
-      var virtualCols = ["QR", "MATURITY"];
-      var result = wanted.filter(function(w) { return virtualCols.indexOf(w) >= 0 || h.indexOf(w) >= 0; });
+      // QR is a virtual column, don't filter it out
+      var result = wanted.filter(function(w) { return w === "QR" || h.indexOf(w) >= 0; });
       return result.length ? result : h.slice(0, 6);
     }
 
@@ -2090,80 +1717,21 @@
       var sheetKey = getSheetKey(state.activeTab);
       var rows = state.data[sheetKey] || [];
       
-      console.log("=== getFilteredRows DEBUG ===");
-      console.log("activeTab:", state.activeTab);
-      console.log("sheetKey:", sheetKey);
-      console.log("Total rows in state.data[" + sheetKey + "]:", rows.length);
-      
-      // For clutches, show ALL rows (no filter)
-      if (state.activeTab === "clutches") {
-        console.log("Returning ALL clutch rows:", rows.length);
-        return rows.filter(function(r) {
-          // Only filter out completely empty rows
-          return r["CLUTCH ID"] || r["SIRE"] || r["DAM"] || r["STATUS"];
-        });
-      }
-      
-      // For hatchlings, show Listed/Unlisted/Not listed/For Sale
-      if (state.activeTab === "hatchlings") {
-        var result = rows.filter(function(r) {
-          var st = (r.STATUS || "").toLowerCase().trim();
-          return st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale";
-        });
-        console.log("Hatchlings filtered result:", result.length);
-        return result;
-      }
-      
-      // For collection, show Breeder/Holdback/On Loan
-      if (state.activeTab === "collection") {
-        return rows.filter(function(r) {
-          var st = (r.STATUS || "").toLowerCase().trim();
-          var passes = st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
-          
-          // Apply user filters
-          if (passes && state.filters.sex && (r.SEX || "").toLowerCase() !== state.filters.sex.toLowerCase()) {
-            passes = false;
-          }
-          if (passes && state.filters.status && st !== state.filters.status.toLowerCase()) {
-            passes = false;
-          }
-          if (passes && state.filters.species && (r.SPECIES || "") !== state.filters.species) {
-            passes = false;
-          }
-          if (passes && state.filters.gene) {
-            var genes = (r["GENETIC SUMMARY"] || "").toLowerCase();
-            if (genes.indexOf(state.filters.gene.toLowerCase()) === -1) {
-              passes = false;
-            }
-          }
-          return passes;
-        });
-      }
-      
-      // For sales, show On Hold/Sold
-      if (state.activeTab === "sales") {
-        return rows.filter(function(r) {
-          var st = (r.STATUS || "").toLowerCase().trim();
-          var passes = st === "on hold" || st === "hold" || st === "sold";
-          
-          if (passes && state.filters.salesYear) {
-            var soldDate = parseDate(r["DATE SOLD"]);
-            if (!soldDate || soldDate.getFullYear() !== parseInt(state.filters.salesYear)) {
-              passes = false;
-            }
-          }
-          if (passes && state.filters.salesStatus) {
-            if (st !== state.filters.salesStatus.toLowerCase()) {
-              passes = false;
-            }
-          }
-          return passes;
-        });
-      }
-      
-      // Default - return all non-empty rows
       return rows.filter(function(r) {
-        return r.STATUS || r["UNIQUE ID"] || r["CLUTCH ID"];
+        var st = (r.STATUS || "").toLowerCase().trim();
+        if (state.activeTab === "collection") {
+          return st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
+        }
+        if (state.activeTab === "clutches") {
+          return st !== "hatched";
+        }
+        if (state.activeTab === "hatchlings") {
+          return st === "listed" || st === "unlisted" || st === "for sale";
+        }
+        if (state.activeTab === "sales") {
+          return st === "on hold" || st === "hold" || st === "sold";
+        }
+        return true;
       });
     }
 
@@ -2239,52 +1807,13 @@
     }
 
     function openEditModal(row) {
-      console.log("openEditModal called with row:", row);
-      console.log("row.__rowIndex:", row.__rowIndex);
-      console.log("row UNIQUE ID:", row["UNIQUE ID"]);
-      console.log("row MANUAL OVERRIDE:", row["MANUAL OVERRIDE"]);
-      
       if (!state.isLoggedIn) { setStatus("Log in first", true); return; }
       
-      // Map view tab to actual sheet tab
       var sheetKey = getSheetKey(state.activeTab);
-      console.log("sheetKey:", sheetKey);
-      console.log("state.data[sheetKey] length:", (state.data[sheetKey] || []).length);
-      
       state.modalMode = "edit";
       state.modalTab = sheetKey;
+      state.editRowIndex = row.__rowIndex;
       state.formData = Object.assign({}, row);
-      state.formType = null; // Clear formType for edit mode
-      
-      // Get row index - if missing, find by UNIQUE ID or MANUAL OVERRIDE
-      var rowIndex = row.__rowIndex;
-      console.log("Initial rowIndex:", rowIndex);
-      
-      if (rowIndex === undefined) {
-        var allRows = state.data[sheetKey] || [];
-        var uniqueId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || row["CLUTCH ID"];
-        console.log("Looking for uniqueId:", uniqueId);
-        
-        for (var i = 0; i < allRows.length; i++) {
-          var r = allRows[i];
-          var rId = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || r["CLUTCH ID"];
-          console.log("Checking row", i, "rId:", rId, "__rowIndex:", r.__rowIndex);
-          if (rId && rId === uniqueId && r.__rowIndex !== undefined) {
-            rowIndex = r.__rowIndex;
-            console.log("Found match at rowIndex:", rowIndex);
-            break;
-          }
-        }
-      }
-      
-      console.log("Final rowIndex:", rowIndex);
-      
-      if (rowIndex === undefined) {
-        setStatus("Cannot edit - please click Sync first to reload data", true);
-        return;
-      }
-      
-      state.editRowIndex = rowIndex;
 
       document.getElementById("modalTitle").textContent = "Edit Record";
       
@@ -2299,7 +1828,7 @@
         idDisplay.classList.add("hidden");
       }
 
-      renderModalForm(sheetKey);
+      renderModalForm(state.activeTab);
       document.getElementById("modal").classList.remove("hidden");
     }
 
@@ -2316,31 +1845,21 @@
         headers = ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE", "SOLD DATE", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SALE SOURCE", "PAYMENT STATUS", "SHIP DATE", "SHIPPING FEE", "PAIRED WITH"];
       }
       
-      // Fallback headers for collection if none loaded
-      if (state.modalTab === "collection" && headers.length === 0) {
-        headers = ["ANIMAL NAME", "SEX", "DATE OF BIRTH", "SPECIES", "GENETIC SUMMARY", "STATUS", "WT PURCHASE (G)", "PURCHASE PRICE", "BREEDER SOURCE", "MANUAL OVERRIDE", "NOTES", "CLUTCH ID", "SIRE", "DAM", "HATCH WEIGHT (G)", "HATCH DATE", "LIST PRICE", "SOLD PRICE", "DATE SOLD", "BUYER NAME", "BUYER EMAIL"];
-      }
-      
-      // Fallback headers for clutch if none loaded
-      if (state.modalTab === "clutch" && headers.length === 0) {
-        headers = ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# EGGS", "# FERTILE", "# SLUGS", "STATUS", "NOTES"];
-      }
-      
       // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
-      var skipFields = ["__rowIndex", "__raw", "QR CODE", "SHEET ID"];
+      var skipFields = ["__rowIndex", "__raw"];
       if (state.modalTab !== "activity") {
         skipFields.push("UNIQUE ID");
         skipFields.push("CLUTCH ID");
       }
       
       // Fields to skip for clutch ADD form (these are set via Hatch modal)
-      var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID", "QR CODE"];
+      var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID"];
       
       // Fields to skip for breeder ADD form (hatchling/sale specific fields)
-      var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "MANUAL OVERRIDE", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM", "QR CODE"];
+      var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "MANUAL OVERRIDE", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM"];
       
       // Fields to skip for hatchling ADD form
-      var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "QR CODE"];
+      var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS"];
       
       // Fields to show at the end for hatchling form
       var hatchlingEndFields = ["MANUAL OVERRIDE", "NOTES"];
@@ -2388,10 +1907,6 @@
       headers.forEach(function(h) {
         if (skipFields.indexOf(h) >= 0) return;
         if (h.includes("(RESERVED)")) return;
-        // Skip fields that look like Sheet IDs (long alphanumeric strings, may contain / or other chars)
-        if (/^[A-Z0-9_\-\/]{15,}$/i.test(h)) return;
-        // Also skip any field that starts with a number and is very long
-        if (/^\d/.test(h) && h.length > 10) return;
         
         // Collection form - hide sale fields unless status is on hold/sold
         if (state.modalTab === "collection" && saleFields.indexOf(h) >= 0 && !showSaleFields) return;
@@ -3347,152 +2862,21 @@
             "Listed animals missing sex: " + listedNoSex);
     }
 
-    function openAddForCurrentTab() {
-      // Map activeTab to the correct add form type
-      var formMap = {
-        "collection": "collection",
-        "clutches": "clutch",
-        "hatchlings": "hatchling",
-        "sales": "hatchling",
-        "activity": "activity"
-      };
-      var formType = formMap[state.activeTab] || "collection";
-      openAddModal(formType);
-    }
-
-    function openSettingsModal() {
-      console.log("openSettingsModal called");
-      console.log("state.settings:", state.settings);
-      
-      // Remove any existing settings modal first
-      var existingModal = document.getElementById('settingsModal');
-      if (existingModal) existingModal.remove();
-      
-      var html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style="z-index: 9999;" onclick="if(event.target===this)closeSettingsModal()">';
-      html += '<div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">';
-      html += '<div class="p-6">';
-      html += '<div class="flex justify-between items-center mb-6">';
-      html += '<h2 class="text-xl font-bold text-gray-900">Settings</h2>';
-      html += '<button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>';
-      html += '</div>';
-      
-      // Settings fields
-      var settingsFields = [
-        { key: "BUSINESS NAME", label: "Business Name", placeholder: "Your breeding business name" },
-        { key: "OWNER NAME", label: "Owner Name", placeholder: "Your name" },
-        { key: "LOGO URL", label: "Logo URL", placeholder: "https://..." },
-        { key: "EMAIL", label: "Email", placeholder: "contact@yourbusiness.com" },
-        { key: "PHONE", label: "Phone", placeholder: "(555) 123-4567" },
-        { key: "CITY, STATE, ZIP", label: "Location", placeholder: "City, State ZIP" },
-        { key: "WEBSITE", label: "Website", placeholder: "https://..." },
-        { key: "INSTAGRAM", label: "Instagram", placeholder: "@yourhandle" },
-        { key: "DEFAULT SPECIES", label: "Default Species", placeholder: "Ball Pythons" },
-        { key: "INCUBATION DAYS", label: "Default Incubation Days", placeholder: "55" }
-      ];
-      
-      html += '<div class="space-y-4">';
-      settingsFields.forEach(function(field) {
-        var value = state.settings[field.key] || "";
-        html += '<div>';
-        html += '<label class="block text-sm font-medium text-gray-700 mb-1">' + field.label + '</label>';
-        html += '<input type="text" id="setting_' + field.key.replace(/[^a-zA-Z0-9]/g, '_') + '" value="' + escapeHtml(value) + '" placeholder="' + field.placeholder + '" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm">';
-        html += '</div>';
-      });
-      html += '</div>';
-      
-      html += '<div class="mt-6 flex gap-3">';
-      html += '<button onclick="saveSettings()" class="flex-1 px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">Save Settings</button>';
-      html += '<button onclick="closeSettingsModal()" class="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 text-sm">Cancel</button>';
-      html += '</div>';
-      
-      html += '</div></div></div>';
-      
-      var modal = document.createElement('div');
-      modal.id = 'settingsModal';
-      modal.innerHTML = html;
-      document.body.appendChild(modal);
-    }
-
-    function closeSettingsModal() {
-      var modal = document.getElementById('settingsModal');
-      if (modal) modal.remove();
-    }
-
-    function saveSettings() {
-      var settingsFields = [
-        "BUSINESS NAME", "OWNER NAME", "LOGO URL", "EMAIL", "PHONE", 
-        "CITY, STATE, ZIP", "WEBSITE", "INSTAGRAM", "DEFAULT SPECIES", "INCUBATION DAYS"
-      ];
-      
-      var updates = [];
-      settingsFields.forEach(function(field) {
-        var inputId = 'setting_' + field.replace(/[^a-zA-Z0-9]/g, '_');
-        var input = document.getElementById(inputId);
-        if (input) {
-          var newValue = input.value.trim();
-          var oldValue = state.settings[field] || "";
-          if (newValue !== oldValue) {
-            updates.push({ field: field, value: newValue });
-            state.settings[field] = newValue;
-          }
-        }
-      });
-      
-      if (updates.length === 0) {
-        closeSettingsModal();
-        return;
-      }
-      
-      setStatus("Saving settings...");
-      
-      // Save each setting to the Settings sheet
-      var savePromises = updates.map(function(update) {
-        return apiCall('saveRecord', { 
-          tab: 'Settings', 
-          data: { "FIELD": update.field, "VALUE": update.value }
-        });
-      });
-      
-      Promise.all(savePromises)
-        .then(function() {
-          setStatus("Settings saved!");
-          updateUIWithSettings();
-          closeSettingsModal();
-        })
-        .catch(function(error) {
-          setStatus("Error saving settings: " + error.message, true);
-        });
-    }
-
     // ============ ARCHIVE ============
     function renderArchiveView() {
       var archiveData = state.data.archive || [];
-      console.log("Archive data:", archiveData);
-      console.log("Archive data length:", archiveData.length);
-      console.log("Archive headers:", state.headers.archive);
       var html = '';
       
       if (archiveData.length === 0) {
         html = '<div class="text-center py-12 text-gray-500">';
-        html += '<div class="text-4xl mb-4">📦</div>';
+        html += '<div class="text-4xl mb-4">Empty</div>';
         html += '<p>No archived records yet.</p>';
         html += '<p class="text-sm mt-2">When you delete animals or clutches, they will appear here.</p>';
         html += '</div>';
       } else {
-        // Filter into animals and clutches - check for both exact match and case-insensitive
-        var archivedAnimals = archiveData.filter(function(r) { 
-          var archiveType = (r["ARCHIVE TYPE"] || "").toLowerCase().trim();
-          return archiveType === "collection" || archiveType === ""; 
-        });
-        var archivedClutches = archiveData.filter(function(r) { 
-          var archiveType = (r["ARCHIVE TYPE"] || "").toLowerCase().trim();
-          return archiveType === "clutch"; 
-        });
-        
-        // If no ARCHIVE TYPE is set, show all as animals
-        if (archivedAnimals.length === 0 && archivedClutches.length === 0 && archiveData.length > 0) {
-          archivedAnimals = archiveData;
-        }
+        // Filter into animals and clutches
+        var archivedAnimals = archiveData.filter(function(r) { return r["ARCHIVE TYPE"] === "Collection"; });
+        var archivedClutches = archiveData.filter(function(r) { return r["ARCHIVE TYPE"] === "Clutch"; });
         
         // Archived Animals
         if (archivedAnimals.length > 0) {
@@ -3552,25 +2936,8 @@
     }
 
     function archiveRecord(rowIndex, sourceTab) {
-      // Get source data based on tab
-      var sourceData;
-      if (sourceTab === "Collection") {
-        sourceData = state.data.collection;
-      } else if (sourceTab === "Clutch") {
-        sourceData = state.data.clutch;
-      } else {
-        setStatus("Unknown source tab: " + sourceTab, true);
-        return;
-      }
-      
-      // Find the record
-      var record = null;
-      for (var i = 0; i < sourceData.length; i++) {
-        if (sourceData[i].__rowIndex === rowIndex) {
-          record = sourceData[i];
-          break;
-        }
-      }
+      var sourceData = sourceTab === "Collection" ? state.data.collection : state.data.clutch;
+      var record = sourceData.find(function(r) { return r.__rowIndex === rowIndex; });
       
       if (!record) {
         setStatus("Record not found", true);
@@ -3585,22 +2952,16 @@
       
       setStatus("Archiving...");
       
-      // Create clean archive data
-      var archiveData = {};
-      var keys = Object.keys(record);
-      for (var j = 0; j < keys.length; j++) {
-        var key = keys[j];
-        if (key !== "__rowIndex" && key !== "__raw") {
-          archiveData[key] = record[key];
-        }
-      }
+      // Add archive metadata
+      var archiveData = Object.assign({}, record);
       archiveData["ARCHIVE TYPE"] = sourceTab;
       archiveData["DATE ARCHIVED"] = new Date().toISOString().split('T')[0];
       
-      // Save to Archive tab, then delete from original
+      // First, save to Archive tab
       apiCall('saveRecord', { tab: 'Archive', data: archiveData })
         .then(function(response) {
           if (response.success) {
+            // Then delete from original tab
             return apiCall('deleteRecord', { tab: sourceTab, rowIndex: rowIndex });
           } else {
             throw new Error(response.error || "Failed to archive");
@@ -3609,7 +2970,7 @@
         .then(function(response) {
           if (response.success) {
             setStatus("Moved to Archive");
-            loadData();
+            loadData(); // Refresh all data
           } else {
             throw new Error(response.error || "Failed to delete original");
           }
@@ -3683,50 +3044,62 @@
       var size = document.getElementById("qrSizeSelect").value;
       var preview = document.getElementById("qrPreview");
       
-      // Filter animals - include all with any ID
+      // Filter animals
       var animals = state.data.collection.filter(function(r) {
         var id = (r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "").trim();
-        var status = (r.STATUS || "").toLowerCase().trim();
+        var status = (r.STATUS || "").toLowerCase();
         if (!id) return false;
         
         if (filter === "breeders") {
           return status === "breeder" || status === "on loan";
         } else if (filter === "hatchlings") {
-          return status === "listed" || status === "unlisted" || status === "holdback" || status === "for sale";
+          return status === "listed" || status === "unlisted" || status === "holdback";
         }
         return true; // all
       });
       
       if (animals.length === 0) {
-        preview.innerHTML = '<p class="text-gray-500 text-sm">No animals found matching filter. Make sure animals have a STATUS set.</p>';
+        preview.innerHTML = '<p class="text-gray-500 text-sm">No animals found matching filter.</p>';
         return;
       }
       
       // Size settings
       var sizes = {
-        small: { box: 100, qr: 60, font: 9 },
-        medium: { box: 140, qr: 100, font: 11 },
-        large: { box: 180, qr: 140, font: 13 }
+        small: { box: 80, qr: 60, font: 8 },
+        medium: { box: 120, qr: 90, font: 10 },
+        large: { box: 160, qr: 120, font: 12 }
       };
       var s = sizes[size];
       
       var html = '<div id="qrPrintArea" class="flex flex-wrap gap-2">';
       
-      animals.forEach(function(animal) {
+      animals.forEach(function(animal, index) {
         var animalId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
         var animalName = animal["ANIMAL NAME"] || "";
-        var scanUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
-        var qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=" + s.qr + "x" + s.qr + "&data=" + encodeURIComponent(scanUrl);
+        var qrUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
         
         html += '<div class="qr-label bg-white border border-gray-300 rounded p-2 text-center" style="width:' + s.box + 'px;">';
-        html += '<img src="' + qrImageUrl + '" alt="QR" style="width:' + s.qr + 'px; height:' + s.qr + 'px; margin: 0 auto; display: block;" />';
-        html += '<div class="font-bold truncate" style="font-size:' + s.font + 'px; margin-top: 4px;">' + escapeHtml(animalName) + '</div>';
-        html += '<div class="text-gray-500 mono truncate" style="font-size:' + (s.font - 2) + 'px;">' + escapeHtml(animalId) + '</div>';
+        html += '<canvas id="qr-' + index + '" class="mx-auto"></canvas>';
+        html += '<div class="font-bold truncate" style="font-size:' + s.font + 'px;">' + animalName + '</div>';
+        html += '<div class="text-gray-500 mono truncate" style="font-size:' + (s.font - 2) + 'px;">' + animalId + '</div>';
         html += '</div>';
       });
       
       html += '</div>';
       preview.innerHTML = html;
+      
+      // Generate QR codes
+      animals.forEach(function(animal, index) {
+        var animalId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
+        var qrUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
+        var canvas = document.getElementById("qr-" + index);
+        
+        QRCode.toCanvas(canvas, qrUrl, {
+          width: s.qr,
+          margin: 1,
+          color: { dark: "#000000", light: "#ffffff" }
+        });
+      });
     }
 
     function printQRCodes() {
@@ -3851,11 +3224,7 @@
         else sex = "Unknown";
 
         // Parse DOB - MorphMarket uses various formats
-        // If it's just a year (4 digits), prepend 01/01/
-        var dob = (row[cols.dob] || "").trim();
-        if (dob && /^\d{4}$/.test(dob)) {
-          dob = "01/01/" + dob;
-        }
+        var dob = row[cols.dob] || "";
         
         // Get first photo URL only
         var photoUrls = row[cols.photoUrls] || "";
