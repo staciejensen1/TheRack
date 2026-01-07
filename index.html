@@ -30,25 +30,26 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2 md:gap-3">
-          <!-- Sign In Button (shown initially) -->
-          <button id="signInBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
-            Sign in with Google
-          </button>
-
-          <!-- Access Code Input (shown if no account found for email) -->
-          <div id="codeInputGroup" class="flex items-center gap-2 hidden">
+          <!-- Login Form (shown when not logged in) -->
+          <div id="loginGroup" class="flex flex-wrap items-center gap-2">
+            <input
+              type="email"
+              id="emailInput"
+              placeholder="Email (from purchase)"
+              class="px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 text-sm w-48 focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+            />
             <input
               type="text"
               id="accessCodeInput"
-              placeholder="Enter Access Code"
-              class="px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 mono text-sm w-64 md:w-80 focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+              placeholder="Access Code"
+              class="px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 mono text-sm w-48 focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
             />
-            <button id="activateBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
-              Activate
+            <button id="loginBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+              Log In
             </button>
           </div>
 
-          <!-- Connected Status (shown when fully connected) -->
+          <!-- Connected Status (shown when logged in) -->
           <div id="connectedGroup" class="flex items-center gap-2 hidden">
             <span id="userEmail" class="text-sm text-gray-600"></span>
             <button id="signOutBtn" class="px-3 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 text-sm">
@@ -218,14 +219,9 @@
     </div>
   </div>
 
-  <!-- Google APIs -->
-  <script src="https://apis.google.com/js/api.js" async defer></script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
   <script>
     // ============ CONFIGURATION ============
-    var CLIENT_ID = "897579592058-q22d2j07kj9ood4dn37nq4mpuqc5q17b.apps.googleusercontent.com";
-    var LICENSE_VALIDATOR_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
+    var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
       collection: "Collection",
@@ -244,9 +240,9 @@
 
     // ============ STATE ============
     var state = {
-      googleEmail: "",
+      email: localStorage.getItem("therack_email") || "",
       sheetId: localStorage.getItem("therack_sheet_id") || "",
-      isSignedIn: false,
+      isLoggedIn: false,
       isLoading: false,
       activeTab: "dashboard",
       data: { collection: [], clutch: [], activity: [] },
@@ -263,261 +259,166 @@
       saleForm: {}
     };
 
-    var tokenClient = null;
-    var gapiReady = false;
-    var gisReady = false;
-
     // ============ INITIALIZATION ============
     function init() {
-      document.getElementById("signInBtn").addEventListener("click", handleSignIn);
+      // Check for saved login
+      if (state.email && state.sheetId) {
+        state.isLoggedIn = true;
+        updateUI();
+        setStatus("Welcome back! Loading your data...");
+        loadData();
+      } else {
+        updateUI();
+        setStatus("Enter your email and access code to log in.");
+      }
+
+      document.getElementById("loginBtn").addEventListener("click", handleLogin);
       document.getElementById("signOutBtn").addEventListener("click", handleSignOut);
-      document.getElementById("activateBtn").addEventListener("click", activateCode);
 
       renderNavTabs();
-      checkGoogleAPIs();
     }
 
-    // ============ ACCOUNT LOOKUP ============
-    function lookupAccount(email) {
-      setStatus("Checking for existing account...");
+    // ============ API HELPER ============
+    function apiCall(action, params) {
+      var url = API_URL + "?action=" + action;
+      url += "&email=" + encodeURIComponent(state.email);
+      url += "&code=" + encodeURIComponent(state.sheetId);
       
-      fetch(LICENSE_VALIDATOR_URL + "?googleEmail=" + encodeURIComponent(email))
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-          if (data.success && data.sheetId) {
-            // Found existing account!
-            state.sheetId = data.sheetId;
-            localStorage.setItem("therack_sheet_id", data.sheetId);
-            setStatus("Welcome back! Loading your data...");
-            updateUI();
-            loadData();
-          } else if (data.notFound) {
-            // No account found - need to enter code
-            setStatus("No account found. Please enter your access code from your purchase email.");
-            showCodeInput();
-          } else {
-            setStatus(data.error || "Error looking up account", true);
-          }
-        })
-        .catch(function(error) {
-          setStatus("Error: " + error.message, true);
-        });
+      for (var key in params) {
+        if (params[key] !== undefined) {
+          var value = typeof params[key] === 'object' ? JSON.stringify(params[key]) : params[key];
+          url += "&" + key + "=" + encodeURIComponent(value);
+        }
+      }
+      
+      return fetch(url).then(function(response) { 
+        return response.json(); 
+      });
     }
 
-    function activateCode() {
+    // ============ LOGIN ============
+    function handleLogin() {
+      var email = document.getElementById("emailInput").value.trim().toLowerCase();
       var code = document.getElementById("accessCodeInput").value.trim();
+
+      if (!email) {
+        setStatus("Please enter your email", true);
+        return;
+      }
       if (!code) {
         setStatus("Please enter your access code", true);
         return;
       }
 
-      setStatus("Activating...");
-      document.getElementById("activateBtn").textContent = "Activating...";
-      document.getElementById("activateBtn").disabled = true;
+      setStatus("Logging in...");
+      document.getElementById("loginBtn").textContent = "Logging in...";
+      document.getElementById("loginBtn").disabled = true;
 
-      fetch(LICENSE_VALIDATOR_URL + "?code=" + encodeURIComponent(code) + "&googleEmail=" + encodeURIComponent(state.googleEmail))
+      // Validate email + code combo
+      var url = API_URL + "?action=login&email=" + encodeURIComponent(email) + "&code=" + encodeURIComponent(code);
+      
+      fetch(url)
         .then(function(response) { return response.json(); })
         .then(function(data) {
-          if (data.success && data.sheetId) {
+          if (data.success) {
+            // Login successful
+            state.email = email;
             state.sheetId = data.sheetId;
+            state.isLoggedIn = true;
+
+            // Save to localStorage for auto-login
+            localStorage.setItem("therack_email", email);
             localStorage.setItem("therack_sheet_id", data.sheetId);
-            setStatus("Access granted! Loading your data...");
-            hideCodeInput();
+
+            setStatus("Logged in! Loading your data...");
             updateUI();
             loadData();
           } else {
-            setStatus(data.error || "Invalid access code", true);
+            setStatus(data.error || "Invalid email or access code", true);
           }
         })
         .catch(function(error) {
           setStatus("Error: " + error.message, true);
         })
         .finally(function() {
-          document.getElementById("activateBtn").textContent = "Activate";
-          document.getElementById("activateBtn").disabled = false;
+          document.getElementById("loginBtn").textContent = "Log In";
+          document.getElementById("loginBtn").disabled = false;
         });
     }
 
-    function showCodeInput() {
-      document.getElementById("signInBtn").classList.add("hidden");
-      document.getElementById("codeInputGroup").classList.remove("hidden");
-      document.getElementById("connectedGroup").classList.add("hidden");
-    }
-
-    function hideCodeInput() {
-      document.getElementById("codeInputGroup").classList.add("hidden");
-    }
-
-    function updateUI() {
-      var signInBtn = document.getElementById("signInBtn");
-      var codeInputGroup = document.getElementById("codeInputGroup");
-      var connectedGroup = document.getElementById("connectedGroup");
-      
-      if (!state.isSignedIn) {
-        // Not signed in - show sign in button
-        signInBtn.classList.remove("hidden");
-        codeInputGroup.classList.add("hidden");
-        connectedGroup.classList.add("hidden");
-      } else if (!state.sheetId) {
-        // Signed in but no sheet - show code input
-        signInBtn.classList.add("hidden");
-        codeInputGroup.classList.remove("hidden");
-        connectedGroup.classList.add("hidden");
-      } else {
-        // Fully connected
-        signInBtn.classList.add("hidden");
-        codeInputGroup.classList.add("hidden");
-        connectedGroup.classList.remove("hidden");
-        document.getElementById("userEmail").textContent = state.googleEmail;
-      }
-    }
-
-    function checkGoogleAPIs() {
-      setStatus("Waiting for Google APIs...");
-      var checkInterval = setInterval(function() {
-        if (window.gapi && !gapiReady) {
-          window.gapi.load("client", function() {
-            window.gapi.client.init({
-              discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"]
-            }).then(function() {
-              gapiReady = true;
-              checkBothReady();
-            }).catch(function(e) {
-              setStatus("Google API error: " + e.message, true);
-            });
-          });
-        }
-
-        if (window.google && window.google.accounts && window.google.accounts.oauth2 && !gisReady) {
-          if (CLIENT_ID === "YOUR_CLIENT_ID_HERE") {
-            setStatus("⚠️ Add your Google Client ID to the code");
-            gisReady = true;
-            clearInterval(checkInterval);
-          } else {
-            tokenClient = window.google.accounts.oauth2.initTokenClient({
-              client_id: CLIENT_ID,
-              scope: "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email",
-              callback: function(response) {
-                if (response.access_token) {
-                  state.isSignedIn = true;
-                  // Get user's email
-                  fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-                    headers: { Authorization: "Bearer " + response.access_token }
-                  })
-                  .then(function(res) { return res.json(); })
-                  .then(function(userInfo) {
-                    state.googleEmail = userInfo.email;
-                    updateUI();
-                    // Look up their account by email
-                    lookupAccount(userInfo.email);
-                  })
-                  .catch(function(err) {
-                    setStatus("Error getting user info: " + err.message, true);
-                  });
-                }
-              }
-            });
-            gisReady = true;
-            checkBothReady();
-          }
-        }
-
-        if (gapiReady && gisReady) clearInterval(checkInterval);
-      }, 500);
-    }
-
-    function checkBothReady() {
-      if (gapiReady && gisReady) {
-        setStatus("Ready! Sign in with Google to get started.");
-      }
-    }
-
-    // ============ AUTH ============
-    function handleSignIn() {
-      if (CLIENT_ID === "YOUR_CLIENT_ID_HERE") {
-        setStatus("Configure your Google Client ID first", true);
-        return;
-      }
-      if (tokenClient) tokenClient.requestAccessToken();
-    }
-
     function handleSignOut() {
-      try {
-        var token = window.gapi && window.gapi.client && window.gapi.client.getToken();
-        if (token) window.google.accounts.oauth2.revoke(token.access_token);
-        window.gapi.client.setToken(null);
-      } catch (e) {}
-      
-      // Clear state
-      state.isSignedIn = false;
-      state.googleEmail = "";
+      state.isLoggedIn = false;
+      state.email = "";
       state.sheetId = "";
       state.data = { collection: [], clutch: [], activity: [] };
       state.headers = { collection: [], clutch: [], activity: [] };
-      
-      // Clear localStorage
+
+      localStorage.removeItem("therack_email");
       localStorage.removeItem("therack_sheet_id");
-      
-      // Reset UI
+
+      document.getElementById("emailInput").value = "";
+      document.getElementById("accessCodeInput").value = "";
+
       updateUI();
       renderCurrentView();
-      setStatus("Signed out. Sign in again to continue.");
+      setStatus("Signed out. Enter your email and access code to log in.");
     }
 
-    function updateAuthUI() {
-      updateUI();
+    function updateUI() {
+      var loginGroup = document.getElementById("loginGroup");
+      var connectedGroup = document.getElementById("connectedGroup");
+
+      if (state.isLoggedIn) {
+        loginGroup.classList.add("hidden");
+        connectedGroup.classList.remove("hidden");
+        document.getElementById("userEmail").textContent = state.email;
+      } else {
+        loginGroup.classList.remove("hidden");
+        connectedGroup.classList.add("hidden");
+      }
     }
 
     // ============ DATA LOADING ============
     function loadData() {
-      if (!state.sheetId) { 
-        setStatus("No account linked. Please enter your access code.", true); 
-        showCodeInput();
+      if (!state.isLoggedIn) { 
+        setStatus("Please log in first.", true); 
         return; 
       }
-      if (!gapiReady) { setStatus("API not ready", true); return; }
 
       state.isLoading = true;
       setStatus("Loading data...");
 
-      var ranges = [
-        SHEET_TABS.collection + "!A1:ZZ",
-        SHEET_TABS.clutch + "!A1:ZZ",
-        SHEET_TABS.activity + "!A1:ZZ"
-      ];
+      apiCall('getData', {})
+        .then(function(response) {
+          if (response.success) {
+            var data = response.data;
+            
+            state.headers = {
+              collection: data.collection ? data.collection.headers : [],
+              clutch: data.clutch ? data.clutch.headers : [],
+              activity: data.activity ? data.activity.headers : []
+            };
+            
+            state.data = {
+              collection: data.collection ? data.collection.rows : [],
+              clutch: data.clutch ? data.clutch.rows : [],
+              activity: data.activity ? data.activity.rows : []
+            };
 
-      window.gapi.client.sheets.spreadsheets.values.batchGet({
-        spreadsheetId: state.sheetId.trim(),
-        ranges: ranges
-      }).then(function(response) {
-        var vr = response.result.valueRanges || [];
-
-        function parse(data) {
-          var values = (data && data.values) || [];
-          if (!values.length) return { headers: [], rows: [] };
-          var headers = values[0] || [];
-          var rows = [];
-          for (var i = 1; i < values.length; i++) {
-            var obj = { __rowIndex: i - 1, __raw: values[i] || [] };
-            for (var j = 0; j < headers.length; j++) {
-              obj[headers[j]] = (values[i] && values[i][j]) || "";
-            }
-            rows.push(obj);
+            setStatus("Loaded " + state.data.collection.length + " animals, " + 
+                      state.data.clutch.length + " clutches, " + 
+                      state.data.activity.length + " activities");
+            renderCurrentView();
+          } else {
+            setStatus(response.error || "Failed to load data", true);
           }
-          return { headers: headers, rows: rows };
-        }
-
-        var c = parse(vr[0]), cl = parse(vr[1]), a = parse(vr[2]);
-        state.headers = { collection: c.headers, clutch: cl.headers, activity: a.headers };
-        state.data = { collection: c.rows, clutch: cl.rows, activity: a.rows };
-
-        setStatus("Loaded " + c.rows.length + " animals, " + cl.rows.length + " clutches, " + a.rows.length + " activities");
-        renderCurrentView();
-      }).catch(function(e) {
-        setStatus((e.result && e.result.error && e.result.error.message) || "Load failed", true);
-      }).finally(function() {
-        state.isLoading = false;
-      });
+        })
+        .catch(function(error) {
+          setStatus("Error loading data: " + error.message, true);
+        })
+        .finally(function() {
+          state.isLoading = false;
+        });
     }
 
     function setStatus(msg, isError) {
@@ -1603,7 +1504,6 @@
         }
       }
 
-      var rowData = headers.map(function(h) { return state.formData[h] || ""; });
       var sheetName = SHEET_TABS[state.modalTab];
 
       document.getElementById("saveBtn").textContent = "Saving...";
@@ -1611,29 +1511,28 @@
 
       var promise;
       if (state.modalMode === "add") {
-        promise = window.gapi.client.sheets.spreadsheets.values.append({
-          spreadsheetId: state.sheetId,
-          range: sheetName + "!A:A",
-          valueInputOption: "USER_ENTERED",
-          resource: { values: [rowData] }
+        promise = apiCall('saveRecord', {
+          tab: sheetName,
+          data: state.formData
         });
       } else {
-        var rowNum = state.editRowIndex + 2;
-        var lastCol = colLetter(headers.length - 1);
-        promise = window.gapi.client.sheets.spreadsheets.values.update({
-          spreadsheetId: state.sheetId,
-          range: sheetName + "!A" + rowNum + ":" + lastCol + rowNum,
-          valueInputOption: "USER_ENTERED",
-          resource: { values: [rowData] }
+        promise = apiCall('updateRecord', {
+          tab: sheetName,
+          rowIndex: state.editRowIndex,
+          data: state.formData
         });
       }
 
-      promise.then(function() {
-        setStatus("Saved!");
-        closeModal();
-        loadData();
+      promise.then(function(response) {
+        if (response.success) {
+          setStatus("Saved!");
+          closeModal();
+          loadData();
+        } else {
+          document.getElementById("modalError").textContent = response.error || "Save failed";
+        }
       }).catch(function(e) {
-        document.getElementById("modalError").textContent = (e.result && e.result.error && e.result.error.message) || "Save failed";
+        document.getElementById("modalError").textContent = e.message || "Save failed";
       }).finally(function() {
         document.getElementById("saveBtn").textContent = "Save";
         document.getElementById("saveBtn").disabled = false;
@@ -1688,33 +1587,28 @@
       var hatchDateIdx = headers.indexOf("HATCH DATE");
       if (statusIdx < 0) { document.getElementById("hatchModalError").textContent = "No STATUS column"; return; }
 
-      var rowNum = state.hatchClutchRow.__rowIndex + 2;
-      var updates = [];
-      
-      updates.push({
-        range: SHEET_TABS.clutch + "!" + colLetter(statusIdx) + rowNum,
-        values: [["Hatched"]]
-      });
-      
+      var updateData = { "STATUS": "Hatched" };
       if (hatchDateIdx >= 0) {
-        updates.push({
-          range: SHEET_TABS.clutch + "!" + colLetter(hatchDateIdx) + rowNum,
-          values: [[state.hatchDate]]
-        });
+        updateData["HATCH DATE"] = state.hatchDate;
       }
 
       document.getElementById("hatchOnlyBtn").textContent = "Saving...";
       document.getElementById("hatchOnlyBtn").disabled = true;
 
-      window.gapi.client.sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId: state.sheetId,
-        resource: { valueInputOption: "USER_ENTERED", data: updates }
-      }).then(function() {
-        setStatus("Clutch marked as hatched!");
-        closeHatchModal();
-        loadData();
+      apiCall('updateRecord', {
+        tab: SHEET_TABS.clutch,
+        rowIndex: state.hatchClutchRow.__rowIndex,
+        data: updateData
+      }).then(function(response) {
+        if (response.success) {
+          setStatus("Clutch marked as hatched!");
+          closeHatchModal();
+          loadData();
+        } else {
+          document.getElementById("hatchModalError").textContent = "Failed: " + response.error;
+        }
       }).catch(function(e) {
-        document.getElementById("hatchModalError").textContent = "Failed: " + ((e.result && e.result.error && e.result.error.message) || e.message);
+        document.getElementById("hatchModalError").textContent = "Failed: " + e.message;
       }).finally(function() {
         document.getElementById("hatchOnlyBtn").textContent = "Mark Hatched Only";
         document.getElementById("hatchOnlyBtn").disabled = false;
@@ -1876,76 +1770,65 @@
       if (!state.hatchClutchRow || !state.hatchDrafts.length) return;
       
       var headers = state.headers.collection || [];
-      var hatchlings = [];
-      
-      state.hatchDrafts.forEach(function(draft) {
-        var row = headers.map(function(h) {
-          var hUpper = h.toUpperCase();
-          if (hUpper === "UNIQUE ID" || hUpper === "MANUAL OVERRIDE") return draft.id;
-          if (hUpper === "CLUTCH ID") return draft.clutchId;
-          if (hUpper === "SIRE") return draft.sire;
-          if (hUpper === "DAM") return draft.dam;
-          if (hUpper === "HATCH DATE" || hUpper === "DATE OF BIRTH") return draft.hatchDate;
-          if (hUpper === "STATUS") return draft.status;
-          if (hUpper === "SEX") return draft.sex;
-          if (hUpper === "ANIMAL NAME") return draft.animalName;
-          if (hUpper === "GENETIC SUMMARY") return draft.geneticSummary;
-          if (hUpper === "NOTES") return draft.notes;
-          if (hUpper === "SPECIES") return "Ball Python";
-          if (hUpper === "BREEDER SOURCE") return "Produced In House";
-          return "";
-        });
-        hatchlings.push(row);
-      });
-
-      // Update clutch status
       var clutchHeaders = state.headers.clutch || [];
-      var statusIdx = clutchHeaders.indexOf("STATUS");
-      var hatchDateIdx = clutchHeaders.indexOf("HATCH DATE");
-      var numHatchedIdx = -1;
-      for (var i = 0; i < clutchHeaders.length; i++) {
-        if (clutchHeaders[i].toUpperCase() === "# HATCHED") {
-          numHatchedIdx = i;
-          break;
-        }
-      }
-      var clutchRowNum = state.hatchClutchRow.__rowIndex + 2;
       var hatchDate = state.hatchDrafts[0] ? state.hatchDrafts[0].hatchDate : "";
-      
-      var updates = [];
-      if (statusIdx >= 0) {
-        updates.push({ range: SHEET_TABS.clutch + "!" + colLetter(statusIdx) + clutchRowNum, values: [["Hatched"]] });
-      }
-      if (hatchDateIdx >= 0 && hatchDate) {
-        updates.push({ range: SHEET_TABS.clutch + "!" + colLetter(hatchDateIdx) + clutchRowNum, values: [[hatchDate]] });
-      }
-      if (numHatchedIdx >= 0) {
-        updates.push({ range: SHEET_TABS.clutch + "!" + colLetter(numHatchedIdx) + clutchRowNum, values: [[String(state.hatchDrafts.length)]] });
-      }
 
       document.getElementById("hatchAndCreateBtn").textContent = "Saving...";
       document.getElementById("hatchAndCreateBtn").disabled = true;
 
-      // Update clutch first, then append hatchlings
-      var clutchPromise = updates.length ? 
-        window.gapi.client.sheets.spreadsheets.values.batchUpdate({
-          spreadsheetId: state.sheetId,
-          resource: { valueInputOption: "USER_ENTERED", data: updates }
-        }) : Promise.resolve();
+      // First update the clutch status
+      var clutchUpdate = { "STATUS": "Hatched" };
+      if (clutchHeaders.indexOf("HATCH DATE") >= 0 && hatchDate) {
+        clutchUpdate["HATCH DATE"] = hatchDate;
+      }
+      var numHatchedIdx = -1;
+      for (var i = 0; i < clutchHeaders.length; i++) {
+        if (clutchHeaders[i].toUpperCase() === "# HATCHED") {
+          numHatchedIdx = i;
+          clutchUpdate[clutchHeaders[i]] = String(state.hatchDrafts.length);
+          break;
+        }
+      }
 
-      clutchPromise.then(function() {
-        return window.gapi.client.sheets.spreadsheets.values.append({
-          spreadsheetId: state.sheetId,
-          range: SHEET_TABS.collection + "!A:A",
-          valueInputOption: "USER_ENTERED",
-          resource: { values: hatchlings }
+      apiCall('updateRecord', {
+        tab: SHEET_TABS.clutch,
+        rowIndex: state.hatchClutchRow.__rowIndex,
+        data: clutchUpdate
+      }).then(function(response) {
+        if (!response.success) {
+          throw new Error(response.error || "Failed to update clutch");
+        }
+        // Now save each hatchling
+        var promises = state.hatchDrafts.map(function(draft) {
+          var hatchlingData = {};
+          headers.forEach(function(h) {
+            var hUpper = h.toUpperCase();
+            if (hUpper === "UNIQUE ID" || hUpper === "MANUAL OVERRIDE") hatchlingData[h] = draft.id;
+            else if (hUpper === "CLUTCH ID") hatchlingData[h] = draft.clutchId;
+            else if (hUpper === "SIRE") hatchlingData[h] = draft.sire;
+            else if (hUpper === "DAM") hatchlingData[h] = draft.dam;
+            else if (hUpper === "HATCH DATE" || hUpper === "DATE OF BIRTH") hatchlingData[h] = draft.hatchDate;
+            else if (hUpper === "STATUS") hatchlingData[h] = draft.status;
+            else if (hUpper === "SEX") hatchlingData[h] = draft.sex;
+            else if (hUpper === "ANIMAL NAME") hatchlingData[h] = draft.animalName;
+            else if (hUpper === "GENETIC SUMMARY") hatchlingData[h] = draft.geneticSummary;
+            else if (hUpper === "NOTES") hatchlingData[h] = draft.notes;
+            else if (hUpper === "SPECIES") hatchlingData[h] = "Ball Python";
+            else if (hUpper === "BREEDER SOURCE") hatchlingData[h] = "Produced In House";
+            else hatchlingData[h] = "";
+          });
+          return apiCall('saveRecord', {
+            tab: SHEET_TABS.collection,
+            data: hatchlingData
+          });
         });
+        return Promise.all(promises);
       }).then(function() {
         setStatus("Created " + state.hatchDrafts.length + " hatchlings!");
         closeHatchModal();
         loadData();
       }).catch(function(e) {
-        document.getElementById("hatchModalError").textContent = "Failed: " + ((e.result && e.result.error && e.result.error.message) || e.message);
+        document.getElementById("hatchModalError").textContent = "Failed: " + e.message;
       }).finally(function() {
         document.getElementById("hatchAndCreateBtn").textContent = "Save All Hatchlings";
         document.getElementById("hatchAndCreateBtn").disabled = false;
@@ -2031,43 +1914,37 @@
       if (!f.soldPrice) { document.getElementById("saleModalError").textContent = "Sold price required"; return; }
       if (!f.buyerName) { document.getElementById("saleModalError").textContent = "Buyer name required"; return; }
 
-      var headers = state.headers.collection || [];
-      var rowNum = state.saleAnimalRow.__rowIndex + 2;
-      var updates = [];
-
-      function addUpdate(col, val) {
-        var idx = headers.indexOf(col);
-        if (idx >= 0 && val) {
-          updates.push({ range: SHEET_TABS.collection + "!" + colLetter(idx) + rowNum, values: [[val]] });
-        }
-      }
-
-      addUpdate("STATUS", "Sold");
-      addUpdate("SOLD PRICE", f.soldPrice);
-      addUpdate("DATE SOLD", f.soldDate);
-      addUpdate("BUYER NAME", f.buyerName);
-      addUpdate("BUYER EMAIL", f.buyerEmail);
-      addUpdate("SHIPPING FEE", f.shippingFee);
-      addUpdate("SHIP DATE", f.shipDate);
-      
       // Calculate TOTAL PAID
       var total = (parseFloat(f.soldPrice) || 0) + (parseFloat(f.shippingFee) || 0);
-      addUpdate("TOTAL PAID", String(total));
 
-      if (!updates.length) { document.getElementById("saleModalError").textContent = "No fields to update"; return; }
+      var updateData = {
+        "STATUS": "Sold",
+        "SOLD PRICE": f.soldPrice,
+        "DATE SOLD": f.soldDate,
+        "BUYER NAME": f.buyerName,
+        "BUYER EMAIL": f.buyerEmail,
+        "SHIPPING FEE": f.shippingFee,
+        "SHIP DATE": f.shipDate,
+        "TOTAL PAID": String(total)
+      };
 
       document.getElementById("saveSaleBtn").textContent = "Saving...";
       document.getElementById("saveSaleBtn").disabled = true;
 
-      window.gapi.client.sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId: state.sheetId,
-        resource: { valueInputOption: "USER_ENTERED", data: updates }
-      }).then(function() {
-        setStatus("Sale recorded!");
-        closeSaleModal();
-        loadData();
+      apiCall('updateRecord', {
+        tab: SHEET_TABS.collection,
+        rowIndex: state.saleAnimalRow.__rowIndex,
+        data: updateData
+      }).then(function(response) {
+        if (response.success) {
+          setStatus("Sale recorded!");
+          closeSaleModal();
+          loadData();
+        } else {
+          document.getElementById("saleModalError").textContent = "Failed: " + response.error;
+        }
       }).catch(function(e) {
-        document.getElementById("saleModalError").textContent = "Failed: " + ((e.result && e.result.error && e.result.error.message) || e.message);
+        document.getElementById("saleModalError").textContent = "Failed: " + e.message;
       }).finally(function() {
         document.getElementById("saveSaleBtn").textContent = "Save Sale";
         document.getElementById("saveSaleBtn").disabled = false;
@@ -2076,33 +1953,26 @@
 
     // ============ HOLDBACK FUNCTION ============
     function markAsHoldback(row) {
-      if (!state.isSignedIn || !state.sheetId) {
-        setStatus("Not connected", true);
+      if (!state.isLoggedIn) {
+        setStatus("Not logged in", true);
         return;
       }
-      
-      var headers = state.headers.collection || [];
-      var statusIdx = headers.indexOf("STATUS");
-      if (statusIdx < 0) {
-        setStatus("STATUS column not found", true);
-        return;
-      }
-      
-      var rowNum = row.__rowIndex + 2;
-      var range = SHEET_TABS.collection + "!" + colLetter(statusIdx) + rowNum;
       
       setStatus("Updating to Holdback...");
       
-      window.gapi.client.sheets.spreadsheets.values.update({
-        spreadsheetId: state.sheetId,
-        range: range,
-        valueInputOption: "USER_ENTERED",
-        resource: { values: [["Holdback"]] }
-      }).then(function() {
-        setStatus("Marked as Holdback!");
-        loadData();
+      apiCall('updateRecord', {
+        tab: SHEET_TABS.collection,
+        rowIndex: row.__rowIndex,
+        data: { "STATUS": "Holdback" }
+      }).then(function(response) {
+        if (response.success) {
+          setStatus("Marked as Holdback!");
+          loadData();
+        } else {
+          setStatus("Failed: " + response.error, true);
+        }
       }).catch(function(e) {
-        setStatus("Failed: " + ((e.result && e.result.error && e.result.error.message) || e.message), true);
+        setStatus("Failed: " + e.message, true);
       });
     }
 
