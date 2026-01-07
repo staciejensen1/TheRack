@@ -1,20 +1,16 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.1
+  Version: 2.10.2
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.10.2: Fixed Edit/Delete buttons - proper closure capture for row data in forEach loop
   - 2.10.1: Fixed Archive function (clean data, updated headers), fixed Edit button
   - 2.10.0: Filter dropdowns (Sex, Status, Species), clickable gene tags, maturity auto-calc, monochrome status badges
   - 2.9.1: Fixed Edit button on all table views, added fallback headers
   - 2.9.0: Delete button on all table views, stats cards restored, Settings tab integration
   - 2.8.9: Fixed QR codes to be square in tables
-  - 2.8.8: Removed stats cards from table pages (dashboard only), fixed QR print to use image API
-  - 2.8.7: Fixed Print QR Codes to use image-based QR codes (api.qrserver.com)
-  - 2.8.6: Fixed stats cards to use correct property names from calculateStats
-  - 2.8.5: Fixed MorphMarket import mapping (GENETIC SUMMARY, WT PURCHASE, BREEDER SOURCE)
-  - 2.8.4: Added QR code column to Collection and Hatchlings tables
   - 2.8.0: Archive feature - delete moves to Archive tab, can restore from Archive view
   - 2.7.0: MorphMarket CSV import with field mapping
   - 2.6.0: QR code generation and scanning for quick activity logging
@@ -548,7 +544,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.1";
+    var VERSION = "2.10.2";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -1584,17 +1580,22 @@
         var actionTd = document.createElement("td");
         actionTd.className = "px-3 py-3 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100";
         
+        // Edit button - use IIFE to capture row properly
         var editBtn = document.createElement("button");
         editBtn.className = "px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1";
         editBtn.textContent = "Edit";
-        editBtn.onclick = function() { openEditModal(row); };
+        editBtn.onclick = (function(capturedRow) {
+          return function() { openEditModal(capturedRow); };
+        })(row);
         actionTd.appendChild(editBtn);
 
         if (showHatch) {
           var hatchBtn = document.createElement("button");
           hatchBtn.className = "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1";
           hatchBtn.textContent = "Hatch";
-          hatchBtn.onclick = function() { openHatchModal(row); };
+          hatchBtn.onclick = (function(capturedRow) {
+            return function() { openHatchModal(capturedRow); };
+          })(row);
           actionTd.appendChild(hatchBtn);
         }
 
@@ -1602,13 +1603,17 @@
           var saleBtn = document.createElement("button");
           saleBtn.className = "px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1";
           saleBtn.textContent = "Sell";
-          saleBtn.onclick = function() { openSaleModal(row); };
+          saleBtn.onclick = (function(capturedRow) {
+            return function() { openSaleModal(capturedRow); };
+          })(row);
           actionTd.appendChild(saleBtn);
           
           var holdbackBtn = document.createElement("button");
           holdbackBtn.className = "px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1";
           holdbackBtn.textContent = "+ Holdback";
-          holdbackBtn.onclick = function() { markAsHoldback(row); };
+          holdbackBtn.onclick = (function(capturedRow) {
+            return function() { markAsHoldback(capturedRow); };
+          })(row);
           actionTd.appendChild(holdbackBtn);
         }
 
@@ -1626,8 +1631,8 @@
           var archiveBtn = document.createElement("button");
           archiveBtn.className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200";
           archiveBtn.textContent = "Delete";
-          archiveBtn.onclick = (function(rowIndex, tab) {
-            return function() { archiveRecord(rowIndex, tab); };
+          archiveBtn.onclick = (function(capturedRowIndex, capturedTab) {
+            return function() { archiveRecord(capturedRowIndex, capturedTab); };
           })(row.__rowIndex, sourceTab);
           actionTd.appendChild(archiveBtn);
         }
@@ -3191,11 +3196,16 @@
     }
 
     function archiveRecord(rowIndex, sourceTab) {
+      console.log("archiveRecord called with rowIndex:", rowIndex, "sourceTab:", sourceTab);
+      
       var sourceData = sourceTab === "Collection" ? state.data.collection : state.data.clutch;
+      console.log("sourceData length:", sourceData.length);
+      
       var record = sourceData.find(function(r) { return r.__rowIndex === rowIndex; });
+      console.log("Found record:", record);
       
       if (!record) {
-        setStatus("Record not found", true);
+        setStatus("Record not found (rowIndex: " + rowIndex + ")", true);
         return;
       }
       
