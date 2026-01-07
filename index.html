@@ -543,7 +543,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.13";
+    var VERSION = "2.10.14";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -2025,7 +2025,7 @@
         } else if (state.activeTab === "clutches") {
           passesBaseFilter = st !== "hatched";
         } else if (state.activeTab === "hatchlings") {
-          passesBaseFilter = st === "listed" || st === "unlisted" || st === "for sale";
+          passesBaseFilter = st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale";
         } else if (state.activeTab === "sales") {
           passesBaseFilter = st === "on hold" || st === "hold" || st === "sold";
         }
