@@ -543,7 +543,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.11";
+    var VERSION = "2.10.13";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -1652,9 +1652,15 @@
     
     // Simple button handlers that use window._displayedRows
     function handleEdit(displayIndex) {
+      console.log("handleEdit called with displayIndex:", displayIndex);
+      console.log("window._displayedRows:", window._displayedRows);
+      console.log("window._displayedRows length:", window._displayedRows ? window._displayedRows.length : 0);
+      
       var row = window._displayedRows[displayIndex];
+      console.log("Retrieved row:", row);
+      
       if (!row) {
-        setStatus("Row not found", true);
+        setStatus("Row not found at index " + displayIndex, true);
         return;
       }
       openEditModal(row);
@@ -2128,10 +2134,18 @@
     }
 
     function openEditModal(row) {
+      console.log("openEditModal called with row:", row);
+      console.log("row.__rowIndex:", row.__rowIndex);
+      console.log("row UNIQUE ID:", row["UNIQUE ID"]);
+      console.log("row MANUAL OVERRIDE:", row["MANUAL OVERRIDE"]);
+      
       if (!state.isLoggedIn) { setStatus("Log in first", true); return; }
       
       // Map view tab to actual sheet tab
       var sheetKey = getSheetKey(state.activeTab);
+      console.log("sheetKey:", sheetKey);
+      console.log("state.data[sheetKey] length:", (state.data[sheetKey] || []).length);
+      
       state.modalMode = "edit";
       state.modalTab = sheetKey;
       state.formData = Object.assign({}, row);
@@ -2139,18 +2153,26 @@
       
       // Get row index - if missing, find by UNIQUE ID or MANUAL OVERRIDE
       var rowIndex = row.__rowIndex;
+      console.log("Initial rowIndex:", rowIndex);
+      
       if (rowIndex === undefined) {
         var allRows = state.data[sheetKey] || [];
         var uniqueId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || row["CLUTCH ID"];
+        console.log("Looking for uniqueId:", uniqueId);
+        
         for (var i = 0; i < allRows.length; i++) {
           var r = allRows[i];
           var rId = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || r["CLUTCH ID"];
+          console.log("Checking row", i, "rId:", rId, "__rowIndex:", r.__rowIndex);
           if (rId && rId === uniqueId && r.__rowIndex !== undefined) {
             rowIndex = r.__rowIndex;
+            console.log("Found match at rowIndex:", rowIndex);
             break;
           }
         }
       }
+      
+      console.log("Final rowIndex:", rowIndex);
       
       if (rowIndex === undefined) {
         setStatus("Cannot edit - please click Sync first to reload data", true);
@@ -2200,20 +2222,20 @@
       }
       
       // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
-      var skipFields = ["__rowIndex", "__raw"];
+      var skipFields = ["__rowIndex", "__raw", "QR CODE", "SHEET ID"];
       if (state.modalTab !== "activity") {
         skipFields.push("UNIQUE ID");
         skipFields.push("CLUTCH ID");
       }
       
       // Fields to skip for clutch ADD form (these are set via Hatch modal)
-      var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID"];
+      var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID", "QR CODE"];
       
       // Fields to skip for breeder ADD form (hatchling/sale specific fields)
-      var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "MANUAL OVERRIDE", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM"];
+      var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "MANUAL OVERRIDE", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM", "QR CODE"];
       
       // Fields to skip for hatchling ADD form
-      var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS"];
+      var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "QR CODE"];
       
       // Fields to show at the end for hatchling form
       var hatchlingEndFields = ["MANUAL OVERRIDE", "NOTES"];
@@ -2261,6 +2283,8 @@
       headers.forEach(function(h) {
         if (skipFields.indexOf(h) >= 0) return;
         if (h.includes("(RESERVED)")) return;
+        // Skip fields that look like Sheet IDs (long alphanumeric strings)
+        if (/^[A-Z0-9]{20,}$/i.test(h)) return;
         
         // Collection form - hide sale fields unless status is on hold/sold
         if (state.modalTab === "collection" && saleFields.indexOf(h) >= 0 && !showSaleFields) return;
