@@ -517,7 +517,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.8.2";
+    var VERSION = "2.8.5";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -1555,8 +1555,18 @@
           var td = document.createElement("td");
           td.className = "px-3 py-3 text-slate-700 whitespace-nowrap text-sm";
           
-          // Add warning icon to first column if overdue
-          if (colIdx === 0 && isOverdue) {
+          // Special handling for QR column
+          if (col === "QR") {
+            var animalId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || "";
+            if (animalId) {
+              var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + animalId);
+              td.innerHTML = '<img src="' + qrUrl + '" alt="QR" class="w-10 h-10" />';
+            } else {
+              td.textContent = "—";
+            }
+          }
+          // Add warning icon to first data column if overdue
+          else if (colIdx === 1 && isOverdue) {
             td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
           } else {
             td.textContent = row[col] || "—";
@@ -1672,15 +1682,16 @@
 
     function getColumns() {
       var prefs = {
-        collection: ["UNIQUE ID", "ANIMAL NAME", "SEX", "GENETIC SUMMARY", "STATUS"],
+        collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "GENETIC SUMMARY", "STATUS"],
         clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
-        hatchlings: ["UNIQUE ID", "CLUTCH ID", "SEX", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
+        hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "SEX", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
         sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "DATE SOLD", "BUYER NAME"],
         activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
       };
       var h = state.headers[getSheetKey(state.activeTab)] || [];
       var wanted = prefs[state.activeTab] || [];
-      var result = wanted.filter(function(w) { return h.indexOf(w) >= 0; });
+      // QR is a virtual column, don't filter it out
+      var result = wanted.filter(function(w) { return w === "QR" || h.indexOf(w) >= 0; });
       return result.length ? result : h.slice(0, 6);
     }
 
@@ -3017,7 +3028,7 @@
       
       // Filter animals
       var animals = state.data.collection.filter(function(r) {
-        var id = (r["UNIQUE ID"] || "").trim();
+        var id = (r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "").trim();
         var status = (r.STATUS || "").toLowerCase();
         if (!id) return false;
         
@@ -3045,7 +3056,7 @@
       var html = '<div id="qrPrintArea" class="flex flex-wrap gap-2">';
       
       animals.forEach(function(animal, index) {
-        var animalId = animal["UNIQUE ID"];
+        var animalId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
         var animalName = animal["ANIMAL NAME"] || "";
         var qrUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
         
@@ -3061,7 +3072,7 @@
       
       // Generate QR codes
       animals.forEach(function(animal, index) {
-        var animalId = animal["UNIQUE ID"];
+        var animalId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
         var qrUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
         var canvas = document.getElementById("qr-" + index);
         
@@ -3220,15 +3231,14 @@
           "SPECIES": row[cols.category] || "",
           "SEX": sex,
           "DATE OF BIRTH": dob,
-          "WEIGHT": row[cols.weight] || "",
-          "GENES": row[cols.traits] || "",
+          "WT PURCHASE (G)": row[cols.weight] || "",
+          "GENETIC SUMMARY": row[cols.traits] || "",
           "STATUS": status,
           "PURCHASE PRICE": purchasePrice,
           "LIST PRICE": listPrice,
           "SOLD PRICE": soldPrice,
-          "PHOTO URL": firstPhoto,
           "NOTES": notes,
-          "BREEDER/ORIGIN": row[cols.origin] || "",
+          "BREEDER SOURCE": row[cols.origin] || "",
           "SIRE": sire,
           "DAM": dam,
           "CLUTCH ID": row[cols.groupId] || ""
@@ -3302,7 +3312,7 @@
         html += '<td class="px-3 py-2 mono text-xs">' + escapeHtml(animal["MANUAL OVERRIDE"]) + '</td>';
         html += '<td class="px-3 py-2">' + animal["SEX"] + '</td>';
         html += '<td class="px-3 py-2"><span class="px-2 py-1 rounded text-xs ' + getStatusColor(animal["STATUS"]) + '">' + animal["STATUS"] + '</span></td>';
-        html += '<td class="px-3 py-2 text-xs max-w-xs truncate">' + escapeHtml(animal["GENES"]) + '</td>';
+        html += '<td class="px-3 py-2 text-xs max-w-xs truncate">' + escapeHtml(animal["GENETIC SUMMARY"]) + '</td>';
         html += '</tr>';
       });
 
