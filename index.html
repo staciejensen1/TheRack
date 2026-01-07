@@ -1,14 +1,20 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.8.3
+  Version: 2.8.8
   Last Updated: 2026-01-07
   
   Changelog:
-  - 2.8.2: Added stats cards above tables (Collection, Incubator, Hatchlings, Sales)
-  - 2.8.1: Moved Actions column to first position (sticky), fixed MANUAL OVERRIDE mapping for import
+  - 2.8.8: Removed stats cards from table pages (dashboard only), fixed QR print to use image API
+  - 2.8.7: Fixed Print QR Codes to use image-based QR codes (api.qrserver.com)
+  - 2.8.6: Fixed stats cards to use correct property names from calculateStats
+  - 2.8.5: Fixed MorphMarket import mapping (GENETIC SUMMARY, WT PURCHASE, BREEDER SOURCE)
+  - 2.8.4: Added QR code column to Collection and Hatchlings tables
+  - 2.8.3: Fixed QR preview to check MANUAL OVERRIDE
+  - 2.8.2: Added stats cards above tables (removed in 2.8.8)
+  - 2.8.1: Moved Actions column to first position (sticky), fixed MANUAL OVERRIDE mapping
   - 2.8.0: Archive feature - delete moves to Archive tab, can restore from Archive view
-  - 2.7.1: Import duplicate detection - updates existing by MANUAL ID instead of creating duplicates
+  - 2.7.1: Import duplicate detection - updates existing by MANUAL OVERRIDE
   - 2.7.0: MorphMarket CSV import with field mapping
   - 2.6.0: QR code generation and scanning for quick activity logging
   - 2.5.2: Fixed support ticket form link
@@ -517,7 +523,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.8.6";
+    var VERSION = "2.8.8";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -1580,122 +1586,9 @@
 
     function renderTableStats() {
       var statsView = document.getElementById("tableStatsView");
-      var stats = calculateStats();
-      var html = '';
-      
-      // Count on loan separately since calculateStats doesn't track it separately
-      var onLoanCount = 0;
-      state.data.collection.forEach(function(r) {
-        if ((r.STATUS || "").toLowerCase().trim() === "on loan") onLoanCount++;
-      });
-      
-      // Count clutch stats that aren't in calculateStats
-      var hatchedCount = 0;
-      var failedCount = 0;
-      var totalEggs = 0;
-      state.data.clutch.forEach(function(r) {
-        var st = (r.STATUS || "").toLowerCase().trim();
-        if (st === "hatched") hatchedCount++;
-        if (st === "failed") failedCount++;
-        var fertile = parseInt(r["# FERTILE"]) || 0;
-        totalEggs += fertile;
-      });
-      
-      if (state.activeTab === "collection") {
-        // Breeder stats
-        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Breeders</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.totalBreeders + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Males</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.maleBreeders + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Females</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.femaleBreeders + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">On Loan</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + onLoanCount + '</div>';
-        html += '</div>';
-        html += '</div>';
-        statsView.classList.remove("hidden");
-        
-      } else if (state.activeTab === "clutches") {
-        // Incubator stats
-        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Incubating</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.incubating + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Hatched</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + hatchedCount + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Failed</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + failedCount + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Total Eggs</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + totalEggs + '</div>';
-        html += '</div>';
-        html += '</div>';
-        statsView.classList.remove("hidden");
-        
-      } else if (state.activeTab === "hatchlings") {
-        // Hatchling stats
-        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
-        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-green-600">Listed</div>';
-        html += '<div class="text-2xl font-black text-green-700">' + stats.listed + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Unlisted</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.unlisted + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Holdbacks</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.holdbacks + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
-        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
-        html += '</div>';
-        html += '</div>';
-        statsView.classList.remove("hidden");
-        
-      } else if (state.activeTab === "sales") {
-        // Sales stats
-        var year = new Date().getFullYear();
-        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
-        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-green-600">Sold (' + year + ')</div>';
-        html += '<div class="text-2xl font-black text-green-700">' + stats.soldThisYear + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-3 border border-emerald-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-emerald-600">Revenue</div>';
-        html += '<div class="text-2xl font-black text-emerald-700">' + stats.revenueDisplay + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
-        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
-        html += '</div>';
-        html += '<div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">';
-        html += '<div class="text-xs uppercase tracking-wider text-red-600">Unshipped</div>';
-        html += '<div class="text-2xl font-black text-red-700">' + stats.unshipped + '</div>';
-        html += '</div>';
-        html += '</div>';
-        statsView.classList.remove("hidden");
-        
-      } else {
-        // Activity or other - hide stats
-        statsView.classList.add("hidden");
-      }
-      
-      statsView.innerHTML = html;
+      // Stats cards disabled - only show on dashboard
+      statsView.classList.add("hidden");
+      statsView.innerHTML = '';
     }
 
     function getColumns() {
@@ -3044,62 +2937,50 @@
       var size = document.getElementById("qrSizeSelect").value;
       var preview = document.getElementById("qrPreview");
       
-      // Filter animals
+      // Filter animals - include all with any ID
       var animals = state.data.collection.filter(function(r) {
         var id = (r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "").trim();
-        var status = (r.STATUS || "").toLowerCase();
+        var status = (r.STATUS || "").toLowerCase().trim();
         if (!id) return false;
         
         if (filter === "breeders") {
           return status === "breeder" || status === "on loan";
         } else if (filter === "hatchlings") {
-          return status === "listed" || status === "unlisted" || status === "holdback";
+          return status === "listed" || status === "unlisted" || status === "holdback" || status === "for sale";
         }
         return true; // all
       });
       
       if (animals.length === 0) {
-        preview.innerHTML = '<p class="text-gray-500 text-sm">No animals found matching filter.</p>';
+        preview.innerHTML = '<p class="text-gray-500 text-sm">No animals found matching filter. Make sure animals have a STATUS set.</p>';
         return;
       }
       
       // Size settings
       var sizes = {
-        small: { box: 80, qr: 60, font: 8 },
-        medium: { box: 120, qr: 90, font: 10 },
-        large: { box: 160, qr: 120, font: 12 }
+        small: { box: 100, qr: 60, font: 9 },
+        medium: { box: 140, qr: 100, font: 11 },
+        large: { box: 180, qr: 140, font: 13 }
       };
       var s = sizes[size];
       
       var html = '<div id="qrPrintArea" class="flex flex-wrap gap-2">';
       
-      animals.forEach(function(animal, index) {
+      animals.forEach(function(animal) {
         var animalId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
         var animalName = animal["ANIMAL NAME"] || "";
-        var qrUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
+        var scanUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
+        var qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=" + s.qr + "x" + s.qr + "&data=" + encodeURIComponent(scanUrl);
         
         html += '<div class="qr-label bg-white border border-gray-300 rounded p-2 text-center" style="width:' + s.box + 'px;">';
-        html += '<canvas id="qr-' + index + '" class="mx-auto"></canvas>';
-        html += '<div class="font-bold truncate" style="font-size:' + s.font + 'px;">' + animalName + '</div>';
-        html += '<div class="text-gray-500 mono truncate" style="font-size:' + (s.font - 2) + 'px;">' + animalId + '</div>';
+        html += '<img src="' + qrImageUrl + '" alt="QR" style="width:' + s.qr + 'px; height:' + s.qr + 'px; margin: 0 auto; display: block;" />';
+        html += '<div class="font-bold truncate" style="font-size:' + s.font + 'px; margin-top: 4px;">' + escapeHtml(animalName) + '</div>';
+        html += '<div class="text-gray-500 mono truncate" style="font-size:' + (s.font - 2) + 'px;">' + escapeHtml(animalId) + '</div>';
         html += '</div>';
       });
       
       html += '</div>';
       preview.innerHTML = html;
-      
-      // Generate QR codes
-      animals.forEach(function(animal, index) {
-        var animalId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
-        var qrUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
-        var canvas = document.getElementById("qr-" + index);
-        
-        QRCode.toCanvas(canvas, qrUrl, {
-          width: s.qr,
-          margin: 1,
-          color: { dark: "#000000", light: "#ffffff" }
-        });
-      });
     }
 
     function printQRCodes() {
