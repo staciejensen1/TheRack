@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.5
+  Version: 2.10.6
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.10.6: NEW approach for Edit/Delete - uses global row array with inline onclick handlers
   - 2.10.5: Fixed MorphMarket import - year-only DOB now becomes 01/01/YYYY
   - 2.10.4: Made Hatchlings/Sales table stats monochrome, removed Clutches section from Dashboard
   - 2.10.3: Complete rewrite of Edit/Delete using event delegation and data attributes
@@ -12,7 +13,6 @@
   - 2.9.0: Delete button on all table views, stats cards, Settings tab integration
   - 2.8.0: Archive feature - delete moves to Archive tab
   - 2.7.0: MorphMarket CSV import with field mapping
-  - 2.6.0: QR code generation and scanning
   - 2.5.0: Mobile-friendly redesign
   - 2.0.0: Apps Script API backend
   - 1.0.0: Initial release
@@ -542,7 +542,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.5";
+    var VERSION = "2.10.6";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -1545,12 +1545,14 @@
         return;
       }
 
-      // Build table using innerHTML for simplicity and reliability
+      // Store displayed rows globally so buttons can access them
+      window._displayedRows = rows;
+      
+      // Build table using innerHTML
       var tbodyHtml = '';
       
       for (var i = 0; i < rows.length; i++) {
         var row = rows[i];
-        var rowIdx = row.__rowIndex;
         var rowClass = "hover:bg-slate-50";
         
         // Check if this clutch is overdue (for Incubator view)
@@ -1571,27 +1573,27 @@
         
         tbodyHtml += '<tr class="' + rowClass + '">';
         
-        // Actions column
+        // Actions column - use display index (i) not __rowIndex
         tbodyHtml += '<td class="px-3 py-3 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100">';
         
-        // Edit button
-        tbodyHtml += '<button class="action-edit px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1" data-row-index="' + rowIdx + '">Edit</button>';
+        // Edit button - onclick directly calls function with display index
+        tbodyHtml += '<button onclick="handleEdit(' + i + ')" class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1">Edit</button>';
         
         // Hatch button (only for clutches)
         if (showHatch) {
-          tbodyHtml += '<button class="action-hatch px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1" data-row-index="' + rowIdx + '">Hatch</button>';
+          tbodyHtml += '<button onclick="handleHatch(' + i + ')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1">Hatch</button>';
         }
         
         // Sell and Holdback buttons (only for hatchlings)
         if (showSale) {
-          tbodyHtml += '<button class="action-sell px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1" data-row-index="' + rowIdx + '">Sell</button>';
-          tbodyHtml += '<button class="action-holdback px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1" data-row-index="' + rowIdx + '">+ Holdback</button>';
+          tbodyHtml += '<button onclick="handleSell(' + i + ')" class="px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1">Sell</button>';
+          tbodyHtml += '<button onclick="handleHoldback(' + i + ')" class="px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1">+ Holdback</button>';
         }
         
         // Delete button (for all except activity)
         if (state.activeTab !== "activity") {
           var sourceTab = state.activeTab === "clutches" ? "Clutch" : "Collection";
-          tbodyHtml += '<button class="action-delete px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200" data-row-index="' + rowIdx + '" data-source-tab="' + sourceTab + '">Delete</button>';
+          tbodyHtml += '<button onclick="handleDelete(' + i + ', \'' + sourceTab + '\')" class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Delete</button>';
         }
         
         tbodyHtml += '</td>';
@@ -1635,45 +1637,116 @@
       }
       
       tbody.innerHTML = tbodyHtml;
+    }
+    
+    // Simple button handlers that use window._displayedRows
+    function handleEdit(displayIndex) {
+      var row = window._displayedRows[displayIndex];
+      if (!row) {
+        setStatus("Row not found", true);
+        return;
+      }
+      openEditModal(row);
+    }
+    
+    function handleHatch(displayIndex) {
+      var row = window._displayedRows[displayIndex];
+      if (!row) {
+        setStatus("Row not found", true);
+        return;
+      }
+      openHatchModal(row);
+    }
+    
+    function handleSell(displayIndex) {
+      var row = window._displayedRows[displayIndex];
+      if (!row) {
+        setStatus("Row not found", true);
+        return;
+      }
+      openSaleModal(row);
+    }
+    
+    function handleHoldback(displayIndex) {
+      var row = window._displayedRows[displayIndex];
+      if (!row) {
+        setStatus("Row not found", true);
+        return;
+      }
+      markAsHoldback(row);
+    }
+    
+    function handleDelete(displayIndex, sourceTab) {
+      var row = window._displayedRows[displayIndex];
+      if (!row) {
+        setStatus("Row not found", true);
+        return;
+      }
       
-      // Attach event listeners using event delegation
-      tbody.onclick = function(e) {
-        var btn = e.target;
-        if (btn.tagName !== 'BUTTON') return;
-        
-        var rowIndex = parseInt(btn.getAttribute('data-row-index'), 10);
-        if (isNaN(rowIndex)) return;
-        
-        // Find the row data
-        var sheetKey = getSheetKey(state.activeTab);
+      var recordName = row["ANIMAL NAME"] || row["CLUTCH ID"] || "this record";
+      
+      if (!confirm("Move \"" + recordName + "\" to Archive?\n\nYou can restore it later from the Archive tab.")) {
+        return;
+      }
+      
+      setStatus("Archiving...");
+      
+      // Create clean archive data
+      var archiveData = {};
+      var keys = Object.keys(row);
+      for (var j = 0; j < keys.length; j++) {
+        var key = keys[j];
+        if (key !== "__rowIndex" && key !== "__raw") {
+          archiveData[key] = row[key];
+        }
+      }
+      archiveData["ARCHIVE TYPE"] = sourceTab;
+      archiveData["DATE ARCHIVED"] = new Date().toISOString().split('T')[0];
+      
+      // Get the actual row index for deletion
+      var rowIndex = row.__rowIndex;
+      
+      // If no __rowIndex, we need to find it by matching UNIQUE ID or CLUTCH ID
+      if (rowIndex === undefined) {
+        var sheetKey = sourceTab === "Clutch" ? "clutch" : "collection";
         var allRows = state.data[sheetKey] || [];
-        var rowData = null;
+        var uniqueId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || row["CLUTCH ID"];
+        
         for (var k = 0; k < allRows.length; k++) {
-          if (allRows[k].__rowIndex === rowIndex) {
-            rowData = allRows[k];
+          var r = allRows[k];
+          var rId = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || r["CLUTCH ID"];
+          if (rId && rId === uniqueId) {
+            rowIndex = r.__rowIndex;
             break;
           }
         }
-        
-        if (!rowData) {
-          setStatus("Could not find row data for index " + rowIndex, true);
-          return;
-        }
-        
-        // Handle button actions
-        if (btn.classList.contains('action-edit')) {
-          openEditModal(rowData);
-        } else if (btn.classList.contains('action-hatch')) {
-          openHatchModal(rowData);
-        } else if (btn.classList.contains('action-sell')) {
-          openSaleModal(rowData);
-        } else if (btn.classList.contains('action-holdback')) {
-          markAsHoldback(rowData);
-        } else if (btn.classList.contains('action-delete')) {
-          var sourceTab = btn.getAttribute('data-source-tab');
-          archiveRecord(rowIndex, sourceTab);
-        }
-      };
+      }
+      
+      if (rowIndex === undefined) {
+        setStatus("Could not find row index for deletion", true);
+        return;
+      }
+      
+      // Save to Archive tab, then delete from original
+      apiCall('saveRecord', { tab: 'Archive', data: archiveData })
+        .then(function(response) {
+          if (response.success) {
+            return apiCall('deleteRecord', { tab: sourceTab, rowIndex: rowIndex });
+          } else {
+            throw new Error(response.error || "Failed to archive");
+          }
+        })
+        .then(function(response) {
+          if (response.success) {
+            setStatus("Moved to Archive");
+            loadData();
+          } else {
+            throw new Error(response.error || "Failed to delete original");
+          }
+        })
+        .catch(function(error) {
+          setStatus("Error: " + error.message, true);
+        });
     }
     
     function calculateMaturity(dob) {
