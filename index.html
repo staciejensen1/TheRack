@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.2.0
+  Version: 2.4.0
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.4.0: Added last year sales comparison on dashboard
+  - 2.3.0: New double helix logo, Inter font
   - 2.2.0: Fixed counting to skip empty placeholder rows
   - 2.1.0: Email + Access Code login (no Google OAuth), Sync button, Back button, optimistic UI
   - 2.0.0: Apps Script API backend, removed direct Google Sheets API calls
@@ -15,9 +17,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Rack - Breeding Program Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    * { font-family: system-ui, -apple-system, sans-serif; }
+    * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     .mono { font-family: ui-monospace, monospace; }
     .modal-backdrop { backdrop-filter: blur(4px); }
     .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
@@ -30,14 +35,19 @@
     <!-- Header -->
     <header class="bg-white rounded-2xl p-4 md:p-6 shadow-sm mb-6 border border-gray-200">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-gray-800 to-black rounded-2xl flex items-center justify-center text-white text-xl md:text-2xl">
-            🐍
-          </div>
-          <div>
-            <h1 class="text-xl md:text-2xl font-extrabold text-gray-900">THE RACK</h1>
-            <p class="text-gray-500 text-sm">Breeding Program Management</p>
-          </div>
+        <div class="flex items-center gap-3">
+          <!-- Logo SVG -->
+          <svg viewBox="0 0 200 50" class="h-10 md:h-12" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(28, 25)">
+              <path d="M-16 -14 L-8 -14 L0 -6 L-8 2 L0 10 L-8 18 L-16 18" 
+                    stroke="#000" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16 -14 L8 -14 L0 -6 L8 2 L0 10 L8 18 L16 18" 
+                    stroke="#000" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-16" cy="-14" r="2" fill="#000"/>
+              <circle cx="16" cy="-14" r="2" fill="#000"/>
+            </g>
+            <text x="58" y="32" fill="#000" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="18" letter-spacing="-0.5">THE RACK</text>
+          </svg>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 md:gap-3">
@@ -657,12 +667,19 @@
       html += '</div></div>';
 
       // Sales Section
-      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Sales</div>';
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Sales (' + new Date().getFullYear() + ')</div>';
       html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
-      html += statCard("Sold (Year)", stats.soldThisYear, "green", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Sold", stats.soldThisYear, "green", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
       html += statCard("Revenue", stats.revenueDisplay, "emerald", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
       html += statCard("On Hold", stats.onHold, "orange", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
       html += statCard("Unshipped", stats.unshipped, "red", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
+      html += '</div></div>';
+
+      // Last Year Sales Section
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Last Year (' + (new Date().getFullYear() - 1) + ')</div>';
+      html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+      html += statCard("Sold", stats.soldLastYear, "slate", null, null);
+      html += statCard("Revenue", stats.revenueLastYearDisplay, "slate", null, null);
       html += '</div></div>';
 
       document.getElementById("dashboardView").innerHTML = html;
@@ -722,6 +739,8 @@
         incubating: 0, hatchedThisYear: 0, avgDaysToHatch: "—", avgFertileEggs: "—",
         listed: 0, unlisted: 0, hatchMales: 0, hatchFemales: 0, hatchUnknown: 0,
         soldThisYear: 0, revenue: 0, revenueDisplay: "$0", onHold: 0, unshipped: 0,
+        // Last year stats
+        soldLastYear: 0, revenueLastYear: 0, revenueLastYearDisplay: "$0",
         malePct: 0, femalePct: 0,
         // Alerts
         overdueClutches: 0, 
@@ -731,6 +750,8 @@
         unpaidDeposits: 0,
         shippingSoon: 0
       };
+      
+      var lastYear = year - 1;
 
       rows.forEach(function(r) {
         var st = (r.STATUS || "").toLowerCase().trim();
@@ -771,10 +792,15 @@
         }
         if (st === "sold") {
           var soldDate = parseDate(r["DATE SOLD"]);
+          var price = parseFloat(r["SOLD PRICE"]) || 0;
           if (soldDate && soldDate.getFullYear() === year) {
             s.soldThisYear++;
-            var price = parseFloat(r["SOLD PRICE"]) || 0;
             s.revenue += price;
+          }
+          // Last year sales
+          if (soldDate && soldDate.getFullYear() === lastYear) {
+            s.soldLastYear++;
+            s.revenueLastYear += price;
           }
           // Unshipped = ship date within next 7 days (or past due)
           if (shipDate && shipDate <= sevenDaysOut) {
@@ -828,6 +854,7 @@
       if (daysCount > 0) s.avgDaysToHatch = Math.round(daysSum / daysCount);
       if (fertileCount > 0) s.avgFertileEggs = Math.round(fertileSum / fertileCount);
       s.revenueDisplay = "$" + Math.round(s.revenue).toLocaleString();
+      s.revenueLastYearDisplay = "$" + Math.round(s.revenueLastYear).toLocaleString();
 
       return s;
     }
