@@ -517,7 +517,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.8.5";
+    var VERSION = "2.8.6";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -1583,24 +1583,42 @@
       var stats = calculateStats();
       var html = '';
       
+      // Count on loan separately since calculateStats doesn't track it separately
+      var onLoanCount = 0;
+      state.data.collection.forEach(function(r) {
+        if ((r.STATUS || "").toLowerCase().trim() === "on loan") onLoanCount++;
+      });
+      
+      // Count clutch stats that aren't in calculateStats
+      var hatchedCount = 0;
+      var failedCount = 0;
+      var totalEggs = 0;
+      state.data.clutch.forEach(function(r) {
+        var st = (r.STATUS || "").toLowerCase().trim();
+        if (st === "hatched") hatchedCount++;
+        if (st === "failed") failedCount++;
+        var fertile = parseInt(r["# FERTILE"]) || 0;
+        totalEggs += fertile;
+      });
+      
       if (state.activeTab === "collection") {
         // Breeder stats
         html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Breeders</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.breeders + '</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.totalBreeders + '</div>';
         html += '</div>';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Males</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.males + '</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.maleBreeders + '</div>';
         html += '</div>';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Females</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.females + '</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.femaleBreeders + '</div>';
         html += '</div>';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">On Loan</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.onLoan + '</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + onLoanCount + '</div>';
         html += '</div>';
         html += '</div>';
         statsView.classList.remove("hidden");
@@ -1614,15 +1632,15 @@
         html += '</div>';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Hatched</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.hatched + '</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + hatchedCount + '</div>';
         html += '</div>';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Failed</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.failed + '</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + failedCount + '</div>';
         html += '</div>';
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Total Eggs</div>';
-        html += '<div class="text-2xl font-black text-gray-900">' + stats.totalEggs + '</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + totalEggs + '</div>';
         html += '</div>';
         html += '</div>';
         statsView.classList.remove("hidden");
@@ -1655,7 +1673,7 @@
         html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
         html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
         html += '<div class="text-xs uppercase tracking-wider text-green-600">Sold (' + year + ')</div>';
-        html += '<div class="text-2xl font-black text-green-700">' + stats.sold + '</div>';
+        html += '<div class="text-2xl font-black text-green-700">' + stats.soldThisYear + '</div>';
         html += '</div>';
         html += '<div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-3 border border-emerald-200">';
         html += '<div class="text-xs uppercase tracking-wider text-emerald-600">Revenue</div>';
