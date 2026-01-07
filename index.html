@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.0
+  Version: 2.10.1
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.10.1: Fixed Archive function (clean data, updated headers), fixed Edit button
   - 2.10.0: Filter dropdowns (Sex, Status, Species), clickable gene tags, maturity auto-calc, monochrome status badges
   - 2.9.1: Fixed Edit button on all table views, added fallback headers
   - 2.9.0: Delete button on all table views, stats cards restored, Settings tab integration
@@ -547,7 +548,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.0";
+    var VERSION = "2.10.1";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -3206,8 +3207,13 @@
       
       setStatus("Archiving...");
       
-      // Add archive metadata
-      var archiveData = Object.assign({}, record);
+      // Create clean archive data (remove internal properties)
+      var archiveData = {};
+      Object.keys(record).forEach(function(key) {
+        if (key !== "__rowIndex" && key !== "__raw") {
+          archiveData[key] = record[key];
+        }
+      });
       archiveData["ARCHIVE TYPE"] = sourceTab;
       archiveData["DATE ARCHIVED"] = new Date().toISOString().split('T')[0];
       
