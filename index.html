@@ -30,30 +30,36 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2 md:gap-3">
-          <input
-            type="text"
-            id="sheetIdInput"
-            placeholder="Google Sheet ID"
-            class="px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 mono text-sm w-48 md:w-64 focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
-          />
-          
+          <!-- Sign In Button (shown initially) -->
           <button id="signInBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
-            Sign in
+            Sign in with Google
           </button>
 
-          <button id="loadDataBtn" class="px-4 py-2 bg-gray-700 text-white font-bold rounded-xl hover:bg-gray-800 disabled:opacity-50 hidden text-sm">
-            Load Data
-          </button>
+          <!-- Access Code Input (shown if no account found for email) -->
+          <div id="codeInputGroup" class="flex items-center gap-2 hidden">
+            <input
+              type="text"
+              id="accessCodeInput"
+              placeholder="Enter Access Code"
+              class="px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 mono text-sm w-64 md:w-80 focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+            />
+            <button id="activateBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+              Activate
+            </button>
+          </div>
 
-          <button id="signOutBtn" class="px-3 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 hidden text-sm">
-            Sign out
-          </button>
+          <!-- Connected Status (shown when fully connected) -->
+          <div id="connectedGroup" class="flex items-center gap-2 hidden">
+            <span id="userEmail" class="text-sm text-gray-600"></span>
+            <button id="signOutBtn" class="px-3 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 text-sm">
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
 
       <div class="mt-3 flex items-center gap-4 text-sm">
         <span id="statusText" class="text-gray-500">Starting up...</span>
-        <span id="connectedBadge" class="text-gray-900 font-medium hidden">✓ Connected</span>
       </div>
     </header>
 
@@ -219,6 +225,7 @@
   <script>
     // ============ CONFIGURATION ============
     var CLIENT_ID = "897579592058-q22d2j07kj9ood4dn37nq4mpuqc5q17b.apps.googleusercontent.com";
+    var LICENSE_VALIDATOR_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
       collection: "Collection",
@@ -237,6 +244,7 @@
 
     // ============ STATE ============
     var state = {
+      googleEmail: "",
       sheetId: localStorage.getItem("therack_sheet_id") || "",
       isSignedIn: false,
       isLoading: false,
@@ -261,19 +269,107 @@
 
     // ============ INITIALIZATION ============
     function init() {
-      document.getElementById("sheetIdInput").value = state.sheetId;
-      
-      document.getElementById("sheetIdInput").addEventListener("input", function() {
-        state.sheetId = this.value;
-        localStorage.setItem("therack_sheet_id", this.value);
-      });
-
       document.getElementById("signInBtn").addEventListener("click", handleSignIn);
       document.getElementById("signOutBtn").addEventListener("click", handleSignOut);
-      document.getElementById("loadDataBtn").addEventListener("click", loadData);
+      document.getElementById("activateBtn").addEventListener("click", activateCode);
 
       renderNavTabs();
       checkGoogleAPIs();
+    }
+
+    // ============ ACCOUNT LOOKUP ============
+    function lookupAccount(email) {
+      setStatus("Checking for existing account...");
+      
+      fetch(LICENSE_VALIDATOR_URL + "?googleEmail=" + encodeURIComponent(email))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+          if (data.success && data.sheetId) {
+            // Found existing account!
+            state.sheetId = data.sheetId;
+            localStorage.setItem("therack_sheet_id", data.sheetId);
+            setStatus("Welcome back! Loading your data...");
+            updateUI();
+            loadData();
+          } else if (data.notFound) {
+            // No account found - need to enter code
+            setStatus("No account found. Please enter your access code from your purchase email.");
+            showCodeInput();
+          } else {
+            setStatus(data.error || "Error looking up account", true);
+          }
+        })
+        .catch(function(error) {
+          setStatus("Error: " + error.message, true);
+        });
+    }
+
+    function activateCode() {
+      var code = document.getElementById("accessCodeInput").value.trim();
+      if (!code) {
+        setStatus("Please enter your access code", true);
+        return;
+      }
+
+      setStatus("Activating...");
+      document.getElementById("activateBtn").textContent = "Activating...";
+      document.getElementById("activateBtn").disabled = true;
+
+      fetch(LICENSE_VALIDATOR_URL + "?code=" + encodeURIComponent(code) + "&googleEmail=" + encodeURIComponent(state.googleEmail))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+          if (data.success && data.sheetId) {
+            state.sheetId = data.sheetId;
+            localStorage.setItem("therack_sheet_id", data.sheetId);
+            setStatus("Access granted! Loading your data...");
+            hideCodeInput();
+            updateUI();
+            loadData();
+          } else {
+            setStatus(data.error || "Invalid access code", true);
+          }
+        })
+        .catch(function(error) {
+          setStatus("Error: " + error.message, true);
+        })
+        .finally(function() {
+          document.getElementById("activateBtn").textContent = "Activate";
+          document.getElementById("activateBtn").disabled = false;
+        });
+    }
+
+    function showCodeInput() {
+      document.getElementById("signInBtn").classList.add("hidden");
+      document.getElementById("codeInputGroup").classList.remove("hidden");
+      document.getElementById("connectedGroup").classList.add("hidden");
+    }
+
+    function hideCodeInput() {
+      document.getElementById("codeInputGroup").classList.add("hidden");
+    }
+
+    function updateUI() {
+      var signInBtn = document.getElementById("signInBtn");
+      var codeInputGroup = document.getElementById("codeInputGroup");
+      var connectedGroup = document.getElementById("connectedGroup");
+      
+      if (!state.isSignedIn) {
+        // Not signed in - show sign in button
+        signInBtn.classList.remove("hidden");
+        codeInputGroup.classList.add("hidden");
+        connectedGroup.classList.add("hidden");
+      } else if (!state.sheetId) {
+        // Signed in but no sheet - show code input
+        signInBtn.classList.add("hidden");
+        codeInputGroup.classList.remove("hidden");
+        connectedGroup.classList.add("hidden");
+      } else {
+        // Fully connected
+        signInBtn.classList.add("hidden");
+        codeInputGroup.classList.add("hidden");
+        connectedGroup.classList.remove("hidden");
+        document.getElementById("userEmail").textContent = state.googleEmail;
+      }
     }
 
     function checkGoogleAPIs() {
@@ -300,12 +396,24 @@
           } else {
             tokenClient = window.google.accounts.oauth2.initTokenClient({
               client_id: CLIENT_ID,
-              scope: "https://www.googleapis.com/auth/spreadsheets",
+              scope: "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email",
               callback: function(response) {
                 if (response.access_token) {
                   state.isSignedIn = true;
-                  updateAuthUI();
-                  setStatus("Signed in!");
+                  // Get user's email
+                  fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+                    headers: { Authorization: "Bearer " + response.access_token }
+                  })
+                  .then(function(res) { return res.json(); })
+                  .then(function(userInfo) {
+                    state.googleEmail = userInfo.email;
+                    updateUI();
+                    // Look up their account by email
+                    lookupAccount(userInfo.email);
+                  })
+                  .catch(function(err) {
+                    setStatus("Error getting user info: " + err.message, true);
+                  });
                 }
               }
             });
@@ -319,7 +427,9 @@
     }
 
     function checkBothReady() {
-      if (gapiReady && gisReady) setStatus("Ready! Sign in to get started.");
+      if (gapiReady && gisReady) {
+        setStatus("Ready! Sign in with Google to get started.");
+      }
     }
 
     // ============ AUTH ============
@@ -337,28 +447,37 @@
         if (token) window.google.accounts.oauth2.revoke(token.access_token);
         window.gapi.client.setToken(null);
       } catch (e) {}
+      
+      // Clear state
       state.isSignedIn = false;
+      state.googleEmail = "";
+      state.sheetId = "";
       state.data = { collection: [], clutch: [], activity: [] };
       state.headers = { collection: [], clutch: [], activity: [] };
-      updateAuthUI();
+      
+      // Clear localStorage
+      localStorage.removeItem("therack_sheet_id");
+      
+      // Reset UI
+      updateUI();
       renderCurrentView();
-      setStatus("Signed out");
+      setStatus("Signed out. Sign in again to continue.");
     }
 
     function updateAuthUI() {
-      document.getElementById("signInBtn").classList.toggle("hidden", state.isSignedIn);
-      document.getElementById("signOutBtn").classList.toggle("hidden", !state.isSignedIn);
-      document.getElementById("loadDataBtn").classList.toggle("hidden", !state.isSignedIn);
-      document.getElementById("connectedBadge").classList.toggle("hidden", !state.isSignedIn);
+      updateUI();
     }
 
     // ============ DATA LOADING ============
     function loadData() {
-      if (!state.sheetId.trim()) { setStatus("Enter Sheet ID", true); return; }
+      if (!state.sheetId) { 
+        setStatus("No account linked. Please enter your access code.", true); 
+        showCodeInput();
+        return; 
+      }
       if (!gapiReady) { setStatus("API not ready", true); return; }
 
       state.isLoading = true;
-      document.getElementById("loadDataBtn").textContent = "Loading...";
       setStatus("Loading data...");
 
       var ranges = [
@@ -398,7 +517,6 @@
         setStatus((e.result && e.result.error && e.result.error.message) || "Load failed", true);
       }).finally(function() {
         state.isLoading = false;
-        document.getElementById("loadDataBtn").textContent = "Load Data";
       });
     }
 
