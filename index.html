@@ -543,7 +543,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.10";
+    var VERSION = "2.10.11";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -862,6 +862,9 @@
               activity: data.activity ? data.activity.rows : [],
               archive: data.archive ? data.archive.rows : []
             };
+            
+            console.log("Loaded archive from API:", data.archive);
+            console.log("state.data.archive:", state.data.archive);
 
             // Parse settings (key-value pairs)
             state.settings = {};
@@ -3216,6 +3219,9 @@
     // ============ ARCHIVE ============
     function renderArchiveView() {
       var archiveData = state.data.archive || [];
+      console.log("Archive data:", archiveData);
+      console.log("Archive data length:", archiveData.length);
+      console.log("Archive headers:", state.headers.archive);
       var html = '';
       
       if (archiveData.length === 0) {
