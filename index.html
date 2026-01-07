@@ -934,7 +934,7 @@
 
     // ============ ADD/EDIT MODAL ============
     function openAddModal(tab) {
-      if (!state.isSignedIn) { setStatus("Sign in first", true); return; }
+      if (!state.isLoggedIn) { setStatus("Log in first", true); return; }
       
       var sheetKey = getSheetKey(tab);
       if (tab === "hatchling") sheetKey = "collection";
@@ -997,7 +997,7 @@
     }
 
     function openEditModal(row) {
-      if (!state.isSignedIn) { setStatus("Sign in first", true); return; }
+      if (!state.isLoggedIn) { setStatus("Log in first", true); return; }
       
       var sheetKey = getSheetKey(state.activeTab);
       state.modalMode = "edit";
