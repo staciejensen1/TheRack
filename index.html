@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.8.0
+  Version: 2.8.2
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.8.2: Added stats cards above tables (Collection, Incubator, Hatchlings, Sales)
+  - 2.8.1: Moved Actions column to first position (sticky), fixed MANUAL OVERRIDE mapping for import
   - 2.8.0: Archive feature - delete moves to Archive tab, can restore from Archive view
   - 2.7.1: Import duplicate detection - updates existing by MANUAL ID instead of creating duplicates
   - 2.7.0: MorphMarket CSV import with field mapping
@@ -272,6 +274,9 @@
           <!-- Dashboard -->
           <div id="dashboardView"></div>
 
+          <!-- Stats Cards (shown on table pages) -->
+          <div id="tableStatsView" class="hidden mb-6"></div>
+
           <!-- Data table -->
           <div id="tableView" class="overflow-x-auto hidden">
             <table class="min-w-full text-sm">
@@ -512,7 +517,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.8.0";
+    var VERSION = "2.8.2";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -1448,6 +1453,9 @@
       var showHatch = state.activeTab === "clutches";
       var showSale = state.activeTab === "hatchlings";
 
+      // Render stats cards for this view
+      renderTableStats();
+
       // Header
       var headerRow = document.getElementById("tableHead").querySelector("tr");
       headerRow.innerHTML = "";
@@ -1558,6 +1566,108 @@
 
         tbody.appendChild(tr);
       });
+    }
+
+    function renderTableStats() {
+      var statsView = document.getElementById("tableStatsView");
+      var stats = calculateStats();
+      var html = '';
+      
+      if (state.activeTab === "collection") {
+        // Breeder stats
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Breeders</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.breeders + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Males</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.males + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Females</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.females + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">On Loan</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.onLoan + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.classList.remove("hidden");
+        
+      } else if (state.activeTab === "clutches") {
+        // Incubator stats
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Incubating</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.incubating + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Hatched</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.hatched + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Failed</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.failed + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Total Eggs</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.totalEggs + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.classList.remove("hidden");
+        
+      } else if (state.activeTab === "hatchlings") {
+        // Hatchling stats
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
+        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-green-600">Listed</div>';
+        html += '<div class="text-2xl font-black text-green-700">' + stats.listed + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Unlisted</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.unlisted + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Holdbacks</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + stats.holdbacks + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
+        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.classList.remove("hidden");
+        
+      } else if (state.activeTab === "sales") {
+        // Sales stats
+        var year = new Date().getFullYear();
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">';
+        html += '<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-green-600">Sold (' + year + ')</div>';
+        html += '<div class="text-2xl font-black text-green-700">' + stats.sold + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-3 border border-emerald-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-emerald-600">Revenue</div>';
+        html += '<div class="text-2xl font-black text-emerald-700">' + stats.revenueDisplay + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 border border-orange-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-orange-600">On Hold</div>';
+        html += '<div class="text-2xl font-black text-orange-700">' + stats.onHold + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-red-600">Unshipped</div>';
+        html += '<div class="text-2xl font-black text-red-700">' + stats.unshipped + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.classList.remove("hidden");
+        
+      } else {
+        // Activity or other - hide stats
+        statsView.classList.add("hidden");
+      }
+      
+      statsView.innerHTML = html;
     }
 
     function getColumns() {
