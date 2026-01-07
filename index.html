@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Rack - Breeding Program Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { font-family: system-ui, -apple-system, sans-serif; }
+    .mono { font-family: ui-monospace, monospace; }
+    .modal-backdrop { backdrop-filter: blur(4px); }
+    .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen">
+  
+  <div id="app" class="max-w-7xl mx-auto p-4 md:p-6">
+    <!-- Header -->
+    <header class="bg-white rounded-2xl p-4 md:p-6 shadow-sm mb-6 border border-gray-200">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-gray-800 to-black rounded-2xl flex items-center justify-center text-white text-xl md:text-2xl">
+            🐍
+          </div>
+          <div>
+            <h1 class="text-xl md:text-2xl font-extrabold text-gray-900">THE RACK</h1>
+            <p class="text-gray-500 text-sm">Breeding Program Management</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 md:gap-3">
+          <input
+            type="text"
+            id="sheetIdInput"
+            placeholder="Google Sheet ID"
+            class="px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 mono text-sm w-48 md:w-64 focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+          />
+          
+          <button id="signInBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+            Sign in
+          </button>
+
+          <button id="loadDataBtn" class="px-4 py-2 bg-gray-700 text-white font-bold rounded-xl hover:bg-gray-800 disabled:opacity-50 hidden text-sm">
+            Load Data
+          </button>
+
+          <button id="signOutBtn" class="px-3 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 hidden text-sm">
+            Sign out
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-3 flex items-center gap-4 text-sm">
+        <span id="statusText" class="text-gray-500">Starting up...</span>
+        <span id="connectedBadge" class="text-gray-900 font-medium hidden">✓ Connected</span>
+      </div>
+    </header>
+
+    <div class="flex flex-col md:flex-row gap-6">
+      <!-- Sidebar -->
+      <aside class="w-full md:w-56 shrink-0">
+        <div class="bg-white rounded-2xl p-4 shadow-sm md:sticky md:top-6 border border-gray-200">
+          <!-- Quick Add -->
+          <div class="mb-4 md:mb-6">
+            <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Quick Add</div>
+            <div class="flex flex-wrap md:flex-col gap-1">
+              <button onclick="openAddModal('collection')" class="py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Breeder</button>
+              <button onclick="openAddModal('clutch')" class="py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Clutch</button>
+              <button onclick="openAddModal('hatchling')" class="py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Hatchling</button>
+              <button onclick="openAddModal('activity')" class="py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Activity</button>
+            </div>
+          </div>
+          
+          <!-- Navigation -->
+          <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Navigation</div>
+          <nav id="navTabs" class="flex flex-wrap md:flex-col gap-1">
+          </nav>
+
+          <!-- Tools -->
+          <div class="mt-4 md:mt-6 pt-4 border-t border-gray-100">
+            <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
+            <div class="flex flex-wrap md:flex-col gap-1">
+              <button onclick="exportCSV('collection')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
+              <button onclick="exportCSV('clutch')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
+              <button onclick="showDataHealth()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="flex-1 min-w-0">
+        <div class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-200">
+          <div class="flex items-center justify-between mb-6">
+            <h2 id="pageTitle" class="text-xl font-bold text-gray-900 capitalize">Dashboard</h2>
+            <button id="addBtn" onclick="openAddModal(state.activeTab)" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black hidden text-sm">
+              + Add New
+            </button>
+          </div>
+          
+          <!-- Dashboard -->
+          <div id="dashboardView"></div>
+
+          <!-- Data table -->
+          <div id="tableView" class="overflow-x-auto hidden">
+            <table class="min-w-full text-sm">
+              <thead id="tableHead">
+                <tr class="border-b border-gray-200"></tr>
+              </thead>
+              <tbody id="tableBody" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="modal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-2xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 id="modalTitle" class="text-xl font-bold text-slate-900">Add New</h3>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <!-- Read-only ID display -->
+        <div id="modalIdDisplay" class="hidden px-4 md:px-6 pt-4">
+          <div class="bg-slate-100 rounded-xl px-4 py-3">
+            <div class="text-xs text-slate-500 uppercase">Unique ID</div>
+            <div id="modalIdValue" class="font-bold mono text-lg"></div>
+            <div class="text-xs text-slate-400">Auto-generated (read-only)</div>
+          </div>
+        </div>
+
+        <div id="modalBody" class="p-4 md:p-6 max-h-[60vh] overflow-auto"></div>
+
+        <div class="p-4 md:p-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <span id="modalError" class="text-red-600 text-sm"></span>
+          <div class="flex gap-3">
+            <button onclick="closeModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+              Cancel
+            </button>
+            <button id="saveBtn" onclick="saveRecord()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hatch Modal -->
+  <div id="hatchModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">Hatch Clutch</h3>
+            <p id="hatchClutchId" class="text-sm text-slate-500"></p>
+          </div>
+          <button onclick="closeHatchModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div id="hatchModalBody" class="p-4 md:p-6"></div>
+
+        <div class="p-4 md:p-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <span id="hatchModalError" class="text-red-600 text-sm"></span>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="closeHatchModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+              Cancel
+            </button>
+            <button id="hatchOnlyBtn" onclick="markHatchedOnly()" class="px-5 py-2.5 bg-gray-600 text-white font-bold rounded-xl hover:bg-gray-700">
+              Mark Hatched Only
+            </button>
+            <button id="hatchAndCreateBtn" onclick="hatchAndCreateHatchlings()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+              Hatch & Create Hatchlings
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sale Modal -->
+  <div id="saleModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-lg my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">Record Sale</h3>
+            <p id="saleAnimalId" class="text-sm text-slate-500 mono"></p>
+          </div>
+          <button onclick="closeSaleModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div id="saleModalBody" class="p-4 md:p-6"></div>
+
+        <div class="p-4 md:p-6 border-t border-slate-200 flex justify-between items-center">
+          <span id="saleModalError" class="text-red-600 text-sm"></span>
+          <div class="flex gap-3">
+            <button onclick="closeSaleModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+              Cancel
+            </button>
+            <button id="saveSaleBtn" onclick="saveSale()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+              Save Sale
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google APIs -->
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <script>
+    // ============ CONFIGURATION ============
+    var CLIENT_ID = "897579592058-q22d2j07kj9ood4dn37nq4mpuqc5q17b.apps.googleusercontent.com";
+    
+    var SHEET_TABS = {
+      collection: "Collection",
+      clutch: "Clutch", 
+      activity: "Activity"
+    };
+
+    var FIELD_OPTIONS = {
+      SEX: ["Female", "Male", "Unknown"],
+      STATUS: ["Breeder", "Holdback", "Listed", "Unlisted", "On Hold", "Sold", "Deceased", "Retired", "On Loan"],
+      CLUTCH_STATUS: ["Incubating", "Hatched", "Failed"],
+      ACTIVITY: ["Took Meal", "Refused Meal", "Weight", "Shed", "Note", "Health Hold", "Paired", "Lock", "Follicle Size", "Ovulation", "Pre Lay Shed", "Laid", "Sold"],
+      SALE_SOURCE: ["MorphMarket", "Instagram", "Facebook", "Repeat Buyer", "Local Show", "Website", "Other"],
+      PAYMENT_STATUS: ["Deposit", "Paid", "Refunded"]
+    };
+
+    // ============ STATE ============
+    var state = {
+      sheetId: localStorage.getItem("therack_sheet_id") || "",
+      isSignedIn: false,
+      isLoading: false,
+      activeTab: "dashboard",
+      data: { collection: [], clutch: [], activity: [] },
+      headers: { collection: [], clutch: [], activity: [] },
+      modalMode: "add",
+      modalTab: null,
+      editRowIndex: null,
+      formData: {},
+      hatchClutchRow: null,
+      hatchDate: "",
+      hatchCount: 1,
+      hatchDrafts: [],
+      saleAnimalRow: null,
+      saleForm: {}
+    };
+
+    var tokenClient = null;
+    var gapiReady = false;
+    var gisReady = false;
+
+    // ============ INITIALIZATION ============
+    function init() {
+      document.getElementById("sheetIdInput").value = state.sheetId;
+      
+      document.getElementById("sheetIdInput").addEventListener("input", function() {
+        state.sheetId = this.value;
+        localStorage.setItem("therack_sheet_id", this.value);
+      });
+
+      document.getElementById("signInBtn").addEventListener("click", handleSignIn);
+      document.getElementById("signOutBtn").addEventListener("click", handleSignOut);
+      document.getElementById("loadDataBtn").addEventListener("click", loadData);
+
+      renderNavTabs();
+      checkGoogleAPIs();
+    }
+
+    function checkGoogleAPIs() {
+      setStatus("Waiting for Google APIs...");
+      var checkInterval = setInterval(function() {
+        if (window.gapi && !gapiReady) {
+          window.gapi.load("client", function() {
+            window.gapi.client.init({
+              discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"]
+            }).then(function() {
+              gapiReady = true;
+              checkBothReady();
+            }).catch(function(e) {
+              setStatus("Google API error: " + e.message, true);
+            });
+          });
+        }
+
+        if (window.google && window.google.accounts && window.google.accounts.oauth2 && !gisReady) {
+          if (CLIENT_ID === "YOUR_CLIENT_ID_HERE") {
+            setStatus("⚠️ Add your Google Client ID to the code");
+            gisReady = true;
+            clearInterval(checkInterval);
+          } else {
+            tokenClient = window.google.accounts.oauth2.initTokenClient({
+              client_id: CLIENT_ID,
+              scope: "https://www.googleapis.com/auth/spreadsheets",
+              callback: function(response) {
+                if (response.access_token) {
+                  state.isSignedIn = true;
+                  updateAuthUI();
+                  setStatus("Signed in!");
+                }
+              }
+            });
+            gisReady = true;
+            checkBothReady();
+          }
+        }
+
+        if (gapiReady && gisReady) clearInterval(checkInterval);
+      }, 500);
+    }
+
+    function checkBothReady() {
+      if (gapiReady && gisReady) setStatus("Ready! Sign in to get started.");
+    }
+
+    // ============ AUTH ============
+    function handleSignIn() {
+      if (CLIENT_ID === "YOUR_CLIENT_ID_HERE") {
+        setStatus("Configure your Google Client ID first", true);
+        return;
+      }
+      if (tokenClient) tokenClient.requestAccessToken();
+    }
+
+    function handleSignOut() {
+      try {
+        var token = window.gapi && window.gapi.client && window.gapi.client.getToken();
+        if (token) window.google.accounts.oauth2.revoke(token.access_token);
+        window.gapi.client.setToken(null);
+      } catch (e) {}
+      state.isSignedIn = false;
+      state.data = { collection: [], clutch: [], activity: [] };
+      state.headers = { collection: [], clutch: [], activity: [] };
+      updateAuthUI();
+      renderCurrentView();
+      setStatus("Signed out");
+    }
+
+    function updateAuthUI() {
+      document.getElementById("signInBtn").classList.toggle("hidden", state.isSignedIn);
+      document.getElementById("signOutBtn").classList.toggle("hidden", !state.isSignedIn);
+      document.getElementById("loadDataBtn").classList.toggle("hidden", !state.isSignedIn);
+      document.getElementById("connectedBadge").classList.toggle("hidden", !state.isSignedIn);
+    }
+
+    // ============ DATA LOADING ============
+    function loadData() {
+      if (!state.sheetId.trim()) { setStatus("Enter Sheet ID", true); return; }
+      if (!gapiReady) { setStatus("API not ready", true); return; }
+
+      state.isLoading = true;
+      document.getElementById("loadDataBtn").textContent = "Loading...";
+      setStatus("Loading data...");
+
+      var ranges = [
+        SHEET_TABS.collection + "!A1:ZZ",
+        SHEET_TABS.clutch + "!A1:ZZ",
+        SHEET_TABS.activity + "!A1:ZZ"
+      ];
+
+      window.gapi.client.sheets.spreadsheets.values.batchGet({
+        spreadsheetId: state.sheetId.trim(),
+        ranges: ranges
+      }).then(function(response) {
+        var vr = response.result.valueRanges || [];
+
+        function parse(data) {
+          var values = (data && data.values) || [];
+          if (!values.length) return { headers: [], rows: [] };
+          var headers = values[0] || [];
+          var rows = [];
+          for (var i = 1; i < values.length; i++) {
+            var obj = { __rowIndex: i - 1, __raw: values[i] || [] };
+            for (var j = 0; j < headers.length; j++) {
+              obj[headers[j]] = (values[i] && values[i][j]) || "";
+            }
+            rows.push(obj);
+          }
+          return { headers: headers, rows: rows };
+        }
+
+        var c = parse(vr[0]), cl = parse(vr[1]), a = parse(vr[2]);
+        state.headers = { collection: c.headers, clutch: cl.headers, activity: a.headers };
+        state.data = { collection: c.rows, clutch: cl.rows, activity: a.rows };
+
+        setStatus("Loaded " + c.rows.length + " animals, " + cl.rows.length + " clutches, " + a.rows.length + " activities");
+        renderCurrentView();
+      }).catch(function(e) {
+        setStatus((e.result && e.result.error && e.result.error.message) || "Load failed", true);
+      }).finally(function() {
+        state.isLoading = false;
+        document.getElementById("loadDataBtn").textContent = "Load Data";
+      });
+    }
+
+    function setStatus(msg, isError) {
+      var el = document.getElementById("statusText");
+      el.textContent = msg;
+      el.className = isError ? "text-red-600" : "text-slate-500";
+    }
+
+    // ============ NAVIGATION ============
+    function renderNavTabs() {
+      var tabs = [
+        { key: "dashboard", label: "Dashboard" },
+        { key: "collection", label: "Collection" },
+        { key: "clutches", label: "Incubator" },
+        { key: "hatchlings", label: "Hatchlings" },
+        { key: "sales", label: "Sales" },
+        { key: "activity", label: "Activity" }
+      ];
+      var nav = document.getElementById("navTabs");
+      nav.innerHTML = "";
+      tabs.forEach(function(tab) {
+        var btn = document.createElement("button");
+        btn.textContent = tab.label;
+        btn.className = "px-3 py-2 text-sm rounded-lg font-medium text-left " + 
+          (state.activeTab === tab.key ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100");
+        btn.onclick = function() { state.activeTab = tab.key; renderNavTabs(); renderCurrentView(); };
+        nav.appendChild(btn);
+      });
+    }
+
+    function renderCurrentView() {
+      var titles = {
+        dashboard: "Dashboard",
+        collection: "Collection",
+        clutches: "Incubator",
+        hatchlings: "Hatchlings",
+        sales: "Sales",
+        activity: "Activity"
+      };
+      document.getElementById("pageTitle").textContent = titles[state.activeTab] || state.activeTab;
+      var isDash = state.activeTab === "dashboard";
+      document.getElementById("dashboardView").classList.toggle("hidden", !isDash);
+      document.getElementById("tableView").classList.toggle("hidden", isDash);
+      document.getElementById("addBtn").classList.toggle("hidden", isDash);
+      
+      if (isDash) renderDashboard();
+      else renderTable();
+    }
+
+    // ============ DASHBOARD ============
+    function renderDashboard() {
+      var stats = calculateStats();
+      var html = '';
+      
+      // Alerts Section (only show if there are alerts)
+      var hasAlerts = stats.overdueClutches > 0 || stats.clutchesDueSoon > 0 || stats.unshipped > 0 || 
+                      stats.needsSexing > 0 || stats.readyToList > 0 ||
+                      stats.unpaidDeposits > 0 || stats.shippingSoon > 0;
+      
+      if (hasAlerts) {
+        html += '<div class="mb-8">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-900 font-semibold mb-3">⚠️ Alerts</div>';
+        html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">';
+        
+        // 🥚 Overdue Clutches (DARKEST - most urgent)
+        if (stats.overdueClutches > 0) {
+          html += '<div onclick="state.activeTab=\'clutches\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-900 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div class="flex items-center justify-between">';
+          html += '<div>';
+          html += '<div class="text-xs uppercase tracking-wider text-gray-300">Overdue Clutches</div>';
+          html += '<div class="text-2xl font-black text-white">' + stats.overdueClutches + '</div>';
+          html += '</div>';
+          html += '<div class="text-3xl">🥚</div>';
+          html += '</div>';
+          html += '</div>';
+        }
+        
+        // ⏰ Clutches Due Soon (DARK)
+        if (stats.clutchesDueSoon > 0) {
+          html += '<div onclick="state.activeTab=\'clutches\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-500 to-gray-600 border-2 border-gray-700 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div class="flex items-center justify-between">';
+          html += '<div>';
+          html += '<div class="text-xs uppercase tracking-wider text-gray-200">Due Within 7 Days</div>';
+          html += '<div class="text-2xl font-black text-white">' + stats.clutchesDueSoon + '</div>';
+          html += '</div>';
+          html += '<div class="text-3xl">⏰</div>';
+          html += '</div>';
+          html += '</div>';
+        }
+        
+        // 📦 Unshipped Sales (MEDIUM-DARK)
+        if (stats.unshipped > 0) {
+          html += '<div onclick="state.activeTab=\'sales\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-400 to-gray-500 border-2 border-gray-600 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div class="flex items-center justify-between">';
+          html += '<div>';
+          html += '<div class="text-xs uppercase tracking-wider text-gray-100">Unshipped Sales</div>';
+          html += '<div class="text-2xl font-black text-white">' + stats.unshipped + '</div>';
+          html += '</div>';
+          html += '<div class="text-3xl">📦</div>';
+          html += '</div>';
+          html += '</div>';
+        }
+        
+        // 📅 Shipping Soon (MEDIUM)
+        if (stats.shippingSoon > 0) {
+          html += '<div onclick="state.activeTab=\'sales\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div class="flex items-center justify-between">';
+          html += '<div>';
+          html += '<div class="text-xs uppercase tracking-wider text-gray-700">Shipping in 3 Days</div>';
+          html += '<div class="text-2xl font-black text-gray-900">' + stats.shippingSoon + '</div>';
+          html += '</div>';
+          html += '<div class="text-3xl">📅</div>';
+          html += '</div>';
+          html += '</div>';
+        }
+        
+        // 💵 Unpaid Deposits (MEDIUM)
+        if (stats.unpaidDeposits > 0) {
+          html += '<div onclick="state.activeTab=\'sales\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div class="flex items-center justify-between">';
+          html += '<div>';
+          html += '<div class="text-xs uppercase tracking-wider text-gray-700">Unpaid Deposits</div>';
+          html += '<div class="text-2xl font-black text-gray-900">' + stats.unpaidDeposits + '</div>';
+          html += '</div>';
+          html += '<div class="text-3xl">💵</div>';
+          html += '</div>';
+          html += '</div>';
+        }
+        
+        // ❓ Needs Sexing (LIGHT)
+        if (stats.needsSexing > 0) {
+          html += '<div onclick="state.activeTab=\'hatchlings\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-gray-400 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div class="flex items-center justify-between">';
+          html += '<div>';
+          html += '<div class="text-xs uppercase tracking-wider text-gray-600">Needs Sexing</div>';
+          html += '<div class="text-2xl font-black text-gray-900">' + stats.needsSexing + '</div>';
+          html += '</div>';
+          html += '<div class="text-3xl">❓</div>';
+          html += '</div>';
+          html += '</div>';
+        }
+        
+        // 💰 Ready to List (LIGHTEST)
+        if (stats.readyToList > 0) {
+          html += '<div onclick="state.activeTab=\'hatchlings\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div class="flex items-center justify-between">';
+          html += '<div>';
+          html += '<div class="text-xs uppercase tracking-wider text-gray-600">Ready to List</div>';
+          html += '<div class="text-2xl font-black text-gray-900">' + stats.readyToList + '</div>';
+          html += '</div>';
+          html += '<div class="text-3xl">💰</div>';
+          html += '</div>';
+          html += '</div>';
+        }
+        
+        html += '</div></div>';
+      }
+      
+      // Breeders Section
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Breeders</div>';
+      html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+      html += statCard("Total Breeders", stats.totalBreeders, "slate", null, "state.activeTab=&#39;collection&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Males", stats.maleBreeders, "blue", Math.round(stats.malePct * 100) + "%", "state.activeTab=&#39;collection&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Females", stats.femaleBreeders, "pink", Math.round(stats.femalePct * 100) + "%", "state.activeTab=&#39;collection&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Holdbacks", stats.holdbacks, "amber", null, "state.activeTab=&#39;collection&#39;; renderNavTabs(); renderCurrentView();");
+      html += '</div></div>';
+
+      // Clutches Section
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Clutches</div>';
+      html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+      html += statCard("Incubating", stats.incubating, "green", null, "state.activeTab=&#39;clutches&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Hatched (Year)", stats.hatchedThisYear, "emerald", null, "state.activeTab=&#39;clutches&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Avg Days to Hatch", stats.avgDaysToHatch, "teal");
+      html += statCard("Avg Fertile Eggs", stats.avgFertileEggs, "cyan");
+      html += '</div></div>';
+
+      // Hatchlings Section
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Hatchlings</div>';
+      html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+      html += statCard("Listed", stats.listed, "violet", null, "state.activeTab=&#39;hatchlings&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Unlisted", stats.unlisted, "slate", null, "state.activeTab=&#39;hatchlings&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Females", stats.hatchFemales, "pink", "Unknown: " + stats.hatchUnknown, "state.activeTab=&#39;hatchlings&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Males", stats.hatchMales, "blue", "Unknown: " + stats.hatchUnknown, "state.activeTab=&#39;hatchlings&#39;; renderNavTabs(); renderCurrentView();");
+      html += '</div></div>';
+
+      // Sales Section
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Sales</div>';
+      html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+      html += statCard("Sold (Year)", stats.soldThisYear, "green", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Revenue", stats.revenueDisplay, "emerald", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("On Hold", stats.onHold, "orange", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Unshipped", stats.unshipped, "red", null, "state.activeTab=&#39;sales&#39;; renderNavTabs(); renderCurrentView();");
+      html += '</div></div>';
+
+      document.getElementById("dashboardView").innerHTML = html;
+    }
+
+    function statCard(label, value, color, subtitle, onclick) {
+      var colors = {
+        slate: "from-gray-50 to-gray-100 text-gray-900",
+        gray: "from-gray-50 to-gray-100 text-gray-900",
+        charcoal: "from-gray-200 to-gray-300 text-gray-900",
+        dark: "from-gray-300 to-gray-400 text-gray-900",
+        blue: "from-gray-100 to-gray-200 text-gray-900",
+        pink: "from-gray-100 to-gray-200 text-gray-900",
+        amber: "from-gray-200 to-gray-300 text-gray-900",
+        green: "from-gray-100 to-gray-200 text-gray-900",
+        emerald: "from-gray-150 to-gray-250 text-gray-900",
+        teal: "from-gray-100 to-gray-200 text-gray-900",
+        cyan: "from-gray-50 to-gray-100 text-gray-900",
+        violet: "from-gray-200 to-gray-300 text-gray-900",
+        orange: "from-gray-150 to-gray-250 text-gray-900",
+        red: "from-gray-300 to-gray-400 text-gray-900"
+      };
+      var sub = subtitle ? '<div class="text-xs opacity-60 mt-1">' + subtitle + '</div>' : '';
+      var clickClass = onclick ? ' cursor-pointer hover:shadow-lg transition-shadow' : '';
+      var clickAttr = onclick ? ' onclick="' + onclick + '"' : '';
+      return '<div class="bg-gradient-to-br ' + colors[color] + ' rounded-2xl p-4 md:p-5 stat-card border border-gray-200' + clickClass + '"' + clickAttr + '>' +
+             '<div class="text-xs uppercase tracking-wider opacity-70">' + label + '</div>' +
+             '<div class="text-2xl md:text-4xl font-black mt-1">' + value + '</div>' + sub + '</div>';
+    }
+
+    function calculateStats() {
+      var rows = state.data.collection;
+      var clutchRows = state.data.clutch;
+      var year = new Date().getFullYear();
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Date for "due soon" (7 days from now)
+      var sevenDaysOut = new Date(today);
+      sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
+      
+      // Date for "ready to list" (30 days ago)
+      var thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      // Date for "shipping soon" (3 days from now)
+      var threeDaysOut = new Date(today);
+      threeDaysOut.setDate(threeDaysOut.getDate() + 3);
+      
+      var s = {
+        totalBreeders: 0, maleBreeders: 0, femaleBreeders: 0, holdbacks: 0,
+        incubating: 0, hatchedThisYear: 0, avgDaysToHatch: "—", avgFertileEggs: "—",
+        listed: 0, unlisted: 0, hatchMales: 0, hatchFemales: 0, hatchUnknown: 0,
+        soldThisYear: 0, revenue: 0, revenueDisplay: "$0", onHold: 0, unshipped: 0,
+        malePct: 0, femalePct: 0,
+        // Alerts
+        overdueClutches: 0, 
+        clutchesDueSoon: 0,
+        needsSexing: 0,
+        readyToList: 0,
+        unpaidDeposits: 0,
+        shippingSoon: 0
+      };
+
+      rows.forEach(function(r) {
+        var st = (r.STATUS || "").toLowerCase().trim();
+        var sex = (r.SEX || "").toLowerCase().trim();
+        var dob = parseDate(r["DATE OF BIRTH"]);
+        var paymentStatus = (r["PAYMENT STATUS"] || "").toLowerCase().trim();
+        var shipDate = parseDate(r["SHIP DATE"]);
+        
+        // Breeders
+        if (st === "breeder" || st === "on loan") {
+          s.totalBreeders++;
+          if (sex.startsWith("m")) s.maleBreeders++;
+          if (sex.startsWith("f")) s.femaleBreeders++;
+        }
+        if (st === "holdback") s.holdbacks++;
+        
+        // Hatchlings (listed/unlisted)
+        if (st === "listed" || st === "for sale") {
+          s.listed++;
+          countSex(sex, s, "hatch");
+        }
+        if (st === "unlisted") {
+          s.unlisted++;
+          countSex(sex, s, "hatch");
+          // Needs sexing (unlisted with unknown sex)
+          if (!sex || sex === "unknown") s.needsSexing++;
+          // Ready to list (unlisted, 30+ days old)
+          if (dob && dob <= thirtyDaysAgo) s.readyToList++;
+        }
+        
+        // Sales
+        if (st === "on hold" || st === "hold") {
+          s.onHold++;
+          // Check for unpaid deposits
+          if (paymentStatus === "deposit") s.unpaidDeposits++;
+          // Check shipping soon
+          if (shipDate && shipDate >= today && shipDate <= threeDaysOut) s.shippingSoon++;
+        }
+        if (st === "sold") {
+          var soldDate = parseDate(r["DATE SOLD"]);
+          if (soldDate && soldDate.getFullYear() === year) {
+            s.soldThisYear++;
+            var price = parseFloat(r["SOLD PRICE"]) || 0;
+            s.revenue += price;
+          }
+          // Unshipped = ship date within next 7 days (or past due)
+          if (shipDate && shipDate <= sevenDaysOut) {
+            s.unshipped++;
+          }
+          // Check shipping soon for sold items too
+          if (shipDate && shipDate >= today && shipDate <= threeDaysOut) s.shippingSoon++;
+        }
+      });
+
+      // Breeder percentages
+      if (s.totalBreeders > 0) {
+        s.malePct = s.maleBreeders / s.totalBreeders;
+        s.femalePct = s.femaleBreeders / s.totalBreeders;
+      }
+
+      // Clutch stats
+      var daysSum = 0, daysCount = 0, fertileSum = 0, fertileCount = 0;
+      clutchRows.forEach(function(r) {
+        var st = (r.STATUS || "").toLowerCase().trim();
+        if (st === "incubating") {
+          s.incubating++;
+          // Check if overdue or due soon
+          var estHatchDate = r["EST. HATCH DATE"] || r["EST HATCH DATE"] || r["ESTIMATED HATCH DATE"] || "";
+          if (estHatchDate) {
+            var estDate = parseDate(estHatchDate);
+            if (estDate) {
+              if (estDate < today) {
+                s.overdueClutches++;
+              } else if (estDate >= today && estDate <= sevenDaysOut) {
+                s.clutchesDueSoon++;
+              }
+            }
+          }
+        }
+        if (st === "hatched") {
+          var hatchDate = parseDate(r["HATCH DATE"]);
+          if (hatchDate && hatchDate.getFullYear() === year) s.hatchedThisYear++;
+          
+          var layDate = parseDate(r["LAY DATE"]);
+          if (hatchDate && layDate) {
+            var days = Math.round((hatchDate - layDate) / 86400000);
+            if (days > 0 && days < 100) { daysSum += days; daysCount++; }
+          }
+          
+          var fertile = parseInt(r["# FERTILE"]) || 0;
+          if (fertile > 0) { fertileSum += fertile; fertileCount++; }
+        }
+      });
+      
+      if (daysCount > 0) s.avgDaysToHatch = Math.round(daysSum / daysCount);
+      if (fertileCount > 0) s.avgFertileEggs = Math.round(fertileSum / fertileCount);
+      s.revenueDisplay = "$" + Math.round(s.revenue).toLocaleString();
+
+      return s;
+    }
+
+    function countSex(sex, stats, prefix) {
+      if (sex.startsWith("m")) stats[prefix + "Males"]++;
+      else if (sex.startsWith("f")) stats[prefix + "Females"]++;
+      else stats[prefix + "Unknown"]++;
+    }
+
+    function parseDate(v) {
+      if (!v) return null;
+      var d = new Date(v);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    // ============ TABLE ============
+    function renderTable() {
+      var columns = getColumns();
+      var rows = getFilteredRows();
+      var showHatch = state.activeTab === "clutches";
+      var showSale = state.activeTab === "hatchlings";
+
+      // Header
+      var headerRow = document.getElementById("tableHead").querySelector("tr");
+      headerRow.innerHTML = "";
+      columns.forEach(function(col) {
+        var th = document.createElement("th");
+        th.className = "px-3 py-3 text-left font-semibold text-slate-600 bg-slate-50 whitespace-nowrap text-sm";
+        th.textContent = col;
+        headerRow.appendChild(th);
+      });
+      var actionTh = document.createElement("th");
+      actionTh.className = "px-3 py-3 text-left font-semibold text-slate-600 bg-slate-50 whitespace-nowrap text-sm";
+      actionTh.textContent = "Actions";
+      headerRow.appendChild(actionTh);
+
+      // Body
+      var tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+      
+      if (!rows.length) {
+        var tr = document.createElement("tr");
+        tr.innerHTML = '<td colspan="' + (columns.length + 1) + '" class="px-4 py-12 text-center text-slate-500">No data</td>';
+        tbody.appendChild(tr);
+        return;
+      }
+
+      rows.forEach(function(row) {
+        var tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50";
+        
+        // Check if this clutch is overdue (for Incubator view)
+        var isOverdue = false;
+        if (state.activeTab === "clutches") {
+          var estHatchDate = row["EST. HATCH DATE"] || row["EST HATCH DATE"] || row["ESTIMATED HATCH DATE"] || "";
+          var status = (row.STATUS || "").toLowerCase();
+          if (estHatchDate && status === "incubating") {
+            var estDate = parseDate(estHatchDate);
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (estDate && estDate < today) {
+              isOverdue = true;
+              tr.className = "hover:bg-gray-200 bg-gray-200";
+            }
+          }
+        }
+        
+        columns.forEach(function(col, colIdx) {
+          var td = document.createElement("td");
+          td.className = "px-3 py-3 text-slate-700 whitespace-nowrap text-sm";
+          
+          // Add warning icon to first column if overdue
+          if (colIdx === 0 && isOverdue) {
+            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
+          } else {
+            td.textContent = row[col] || "—";
+          }
+          tr.appendChild(td);
+        });
+
+        // Actions
+        var actionTd = document.createElement("td");
+        actionTd.className = "px-3 py-3 whitespace-nowrap";
+        
+        var editBtn = document.createElement("button");
+        editBtn.className = "px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1";
+        editBtn.textContent = "Edit";
+        editBtn.onclick = function() { openEditModal(row); };
+        actionTd.appendChild(editBtn);
+
+        if (showHatch) {
+          var hatchBtn = document.createElement("button");
+          hatchBtn.className = "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1";
+          hatchBtn.textContent = "Hatch";
+          hatchBtn.onclick = function() { openHatchModal(row); };
+          actionTd.appendChild(hatchBtn);
+        }
+
+        if (showSale) {
+          var saleBtn = document.createElement("button");
+          saleBtn.className = "px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1";
+          saleBtn.textContent = "Sell";
+          saleBtn.onclick = function() { openSaleModal(row); };
+          actionTd.appendChild(saleBtn);
+          
+          var holdbackBtn = document.createElement("button");
+          holdbackBtn.className = "px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500";
+          holdbackBtn.textContent = "+ Holdback";
+          holdbackBtn.onclick = function() { markAsHoldback(row); };
+          actionTd.appendChild(holdbackBtn);
+        }
+
+        tr.appendChild(actionTd);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function getColumns() {
+      var prefs = {
+        collection: ["UNIQUE ID", "ANIMAL NAME", "SEX", "GENETIC SUMMARY", "STATUS"],
+        clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
+        hatchlings: ["UNIQUE ID", "CLUTCH ID", "SEX", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
+        sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "DATE SOLD", "BUYER NAME"],
+        activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
+      };
+      var h = state.headers[getSheetKey(state.activeTab)] || [];
+      var wanted = prefs[state.activeTab] || [];
+      var result = wanted.filter(function(w) { return h.indexOf(w) >= 0; });
+      return result.length ? result : h.slice(0, 6);
+    }
+
+    function getFilteredRows() {
+      var sheetKey = getSheetKey(state.activeTab);
+      var rows = state.data[sheetKey] || [];
+      
+      return rows.filter(function(r) {
+        var st = (r.STATUS || "").toLowerCase().trim();
+        if (state.activeTab === "collection") {
+          return st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
+        }
+        if (state.activeTab === "clutches") {
+          return st !== "hatched";
+        }
+        if (state.activeTab === "hatchlings") {
+          return st === "listed" || st === "unlisted" || st === "for sale";
+        }
+        if (state.activeTab === "sales") {
+          return st === "on hold" || st === "hold" || st === "sold";
+        }
+        return true;
+      });
+    }
+
+    function getSheetKey(tab) {
+      if (tab === "clutches") return "clutch";
+      if (tab === "hatchlings" || tab === "sales" || tab === "collection") return "collection";
+      if (tab === "activity") return "activity";
+      return "collection";
+    }
+
+    // ============ ADD/EDIT MODAL ============
+    function openAddModal(tab) {
+      if (!state.isSignedIn) { setStatus("Sign in first", true); return; }
+      
+      var sheetKey = getSheetKey(tab);
+      if (tab === "hatchling") sheetKey = "collection";
+      if (tab === "clutch") sheetKey = "clutch";
+      if (tab === "activity") sheetKey = "activity";
+      
+      state.modalMode = "add";
+      state.modalTab = sheetKey;
+      state.editRowIndex = null;
+      state.formData = {};
+      
+      // Defaults
+      var today = new Date().toISOString().split("T")[0];
+      if (tab === "collection") {
+        state.formData.STATUS = "Breeder";
+        state.formData.SEX = "Female";
+        state.formData.SPECIES = "Ball Python";
+        state.formType = "breeder";
+      } else if (tab === "hatchling") {
+        state.formData.STATUS = "Unlisted";
+        state.formData.SEX = "Unknown";
+        state.formData.SPECIES = "Ball Python";
+        state.formData["BREEDER SOURCE"] = "Produced In House";
+        state.formData["DATE OF BIRTH"] = today;
+        state.formType = "hatchling";
+      } else if (tab === "clutch") {
+        state.formData.STATUS = "Incubating";
+        state.formData["LAY DATE"] = today;
+        state.formData.SEASON = String(new Date().getFullYear());
+        state.formType = "clutch";
+      } else if (tab === "activity") {
+        state.formData.DATE = today;
+        state.formData.ACTIVITY = "Note";
+        state.formType = "activity";
+      }
+
+      var title = tab === "hatchling" ? "Hatchling" : (tab === "collection" ? "Breeder" : sheetKey.charAt(0).toUpperCase() + sheetKey.slice(1));
+      document.getElementById("modalTitle").textContent = "Add " + title;
+      
+      // Show ID preview for new records (except Activity - that uses a lookup)
+      var idDisplay = document.getElementById("modalIdDisplay");
+      var idValue = document.getElementById("modalIdValue");
+      
+      if (tab === "hatchling") {
+        idDisplay.classList.remove("hidden");
+        idValue.textContent = generateHatchlingId();
+      } else if (tab === "clutch") {
+        idDisplay.classList.remove("hidden");
+        idValue.textContent = generateClutchId(today);
+      } else if (tab === "collection") {
+        idDisplay.classList.remove("hidden");
+        idValue.textContent = generateBreederId();
+      } else {
+        // Activity and others don't show the ID box
+        idDisplay.classList.add("hidden");
+      }
+
+      renderModalForm(tab);
+      document.getElementById("modal").classList.remove("hidden");
+    }
+
+    function openEditModal(row) {
+      if (!state.isSignedIn) { setStatus("Sign in first", true); return; }
+      
+      var sheetKey = getSheetKey(state.activeTab);
+      state.modalMode = "edit";
+      state.modalTab = sheetKey;
+      state.editRowIndex = row.__rowIndex;
+      state.formData = Object.assign({}, row);
+
+      document.getElementById("modalTitle").textContent = "Edit Record";
+      
+      // Show existing ID
+      var idDisplay = document.getElementById("modalIdDisplay");
+      var idValue = document.getElementById("modalIdValue");
+      var uid = row["UNIQUE ID"] || row["CLUTCH ID"] || "";
+      if (uid) {
+        idDisplay.classList.remove("hidden");
+        idValue.textContent = uid;
+      } else {
+        idDisplay.classList.add("hidden");
+      }
+
+      renderModalForm(state.activeTab);
+      document.getElementById("modal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("modal").classList.add("hidden");
+      document.getElementById("modalError").textContent = "";
+    }
+
+    function renderModalForm(tab) {
+      var headers = state.headers[state.modalTab] || [];
+      
+      // Fallback headers for activity if none loaded
+      if (state.modalTab === "activity" && headers.length === 0) {
+        headers = ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE", "SOLD DATE", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SALE SOURCE", "PAYMENT STATUS", "SHIP DATE", "SHIPPING FEE", "PAIRED WITH"];
+      }
+      
+      // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
+      var skipFields = ["__rowIndex", "__raw"];
+      if (state.modalTab !== "activity") {
+        skipFields.push("UNIQUE ID");
+        skipFields.push("CLUTCH ID");
+      }
+      
+      // Fields to skip for clutch ADD form (these are set via Hatch modal)
+      var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID"];
+      
+      // Fields to skip for breeder ADD form (hatchling/sale specific fields)
+      var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "MANUAL OVERRIDE", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM"];
+      
+      // Fields to skip for hatchling ADD form
+      var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS"];
+      
+      // Fields to show at the end for hatchling form
+      var hatchlingEndFields = ["MANUAL OVERRIDE", "NOTES"];
+      
+      // Fields that are read-only on hatchling form (auto-filled from clutch)
+      var hatchlingReadOnlyFields = ["SIRE", "DAM"];
+      
+      // Activity form - conditional fields based on ACTIVITY type
+      var activityType = (state.formData.ACTIVITY || "").toLowerCase();
+      var isSaleActivity = (activityType === "sold");
+      var isPairingActivity = (activityType === "paired" || activityType === "lock");
+      
+      // Fields only shown for specific activities
+      var activitySaleFields = ["SOLD DATE", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SALE SOURCE", "PAYMENT STATUS", "SHIP DATE", "SHIPPING FEE"];
+      var activityPairingFields = ["PAIRED WITH"];
+      
+      // Determine which fields to show based on STATUS
+      var status = (state.formData.STATUS || "").toLowerCase();
+      var showSaleFields = (status === "on hold" || status === "sold");
+      var saleFields = ["SOLD PRICE", "DATE SOLD", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE"];
+      
+      // Check if this is a hatchling form - ONLY for hatchling, not clutch or anything else
+      var isHatchlingForm = (state.formType === "hatchling" && state.modalMode === "add" && state.modalTab === "collection");
+
+      var html = '';
+      
+      // Show estimated hatch date preview for clutch form
+      if ((tab === "clutch" || state.modalTab === "clutch") && state.formData["LAY DATE"]) {
+        var estHatch = calculateEstHatchDate(state.formData["LAY DATE"]);
+        html += '<div class="mb-4 bg-gray-100 border border-gray-300 rounded-xl px-4 py-3">';
+        html += '<div class="text-xs text-gray-600 uppercase font-semibold">Estimated Hatch Date (Lay Date + 59 days)</div>';
+        html += '<div class="font-bold text-gray-800 text-lg">' + estHatch + '</div>';
+        html += '</div>';
+      }
+      
+      // Special rendering for hatchling form ONLY
+      if (isHatchlingForm) {
+        html += renderHatchlingForm(headers);
+        document.getElementById("modalBody").innerHTML = html;
+        return;
+      }
+      
+      html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+      
+      headers.forEach(function(h) {
+        if (skipFields.indexOf(h) >= 0) return;
+        if (h.includes("(RESERVED)")) return;
+        
+        // Collection form - hide sale fields unless status is on hold/sold
+        if (state.modalTab === "collection" && saleFields.indexOf(h) >= 0 && !showSaleFields) return;
+        
+        // Skip hatchling/sale fields on breeder ADD form (status = Breeder)
+        if (state.modalTab === "collection" && state.modalMode === "add") {
+          var formStatus = (state.formData.STATUS || "").toLowerCase();
+          if (formStatus === "breeder" || state.formType === "breeder") {
+            var hUpper = h.toUpperCase();
+            for (var i = 0; i < breederSkipFields.length; i++) {
+              if (hUpper === breederSkipFields[i] || hUpper.indexOf(breederSkipFields[i]) >= 0) return;
+            }
+          }
+        }
+        
+        // Skip hatch-related fields on clutch ADD form
+        if (state.modalTab === "clutch" && state.modalMode === "add") {
+          var hUpper = h.toUpperCase();
+          for (var i = 0; i < clutchHatchFields.length; i++) {
+            if (hUpper === clutchHatchFields[i] || hUpper.includes(clutchHatchFields[i])) return;
+          }
+        }
+        
+        // Activity form conditional fields
+        if (state.modalTab === "activity") {
+          // Skip sale fields unless activity is "Sold"
+          if (activitySaleFields.indexOf(h) >= 0 && !isSaleActivity) return;
+          // Skip pairing fields unless activity is "Paired" or "Lock"
+          if (activityPairingFields.indexOf(h) >= 0 && !isPairingActivity) return;
+          // Skip VALUE field if it's a sale (sale data goes in specific fields)
+          if (h === "VALUE" && isSaleActivity) return;
+        }
+        
+        var val = state.formData[h] || "";
+        var input = "";
+        var opts = getFieldOptions(h, state.modalTab);
+        
+        if (opts && opts.length > 0) {
+          input = '<select onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+          input += '<option value="">Select...</option>';
+          opts.forEach(function(o) {
+            var sel = (val && (val === o || val.toLowerCase() === o.toLowerCase())) ? " selected" : "";
+            input += '<option value="' + escapeHtml(o) + '"' + sel + '>' + escapeHtml(o) + '</option>';
+          });
+          input += '</select>';
+        } else if (Array.isArray(opts) && opts.length === 0) {
+          // Empty dropdown - show text input with placeholder
+          var placeholder = "";
+          if (h.toUpperCase() === "DAM") placeholder = "No female breeders found";
+          if (h.toUpperCase() === "SIRE") placeholder = "No male breeders found";
+          if (h.toUpperCase() === "PAIRED WITH") placeholder = "No animals found";
+          if (h.toUpperCase() === "UNIQUE ID") placeholder = "No animals found - load data first";
+          input = '<input type="text" value="' + escapeHtml(val) + '" onchange="updateFormField(\'' + h + '\', this.value)" placeholder="' + placeholder + '" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+        } else if (h.toUpperCase().includes("DATE")) {
+          var isRequired = (h.toUpperCase() === "DATE OF BIRTH" && state.formType === "breeder");
+          var requiredAttr = isRequired ? ' required' : '';
+          input = '<input type="date" value="' + val + '" onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm"' + requiredAttr + '>';
+        } else if (h.toUpperCase().includes("PRICE") || h.toUpperCase().includes("WEIGHT") || h.toUpperCase().includes("FEE") || h.startsWith("#")) {
+          input = '<input type="number" step="any" value="' + val + '" onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm">';
+        } else if (h.toUpperCase().includes("NOTES")) {
+          input = '<textarea onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm" rows="2">' + escapeHtml(val) + '</textarea>';
+        } else if (h.toUpperCase().includes("EMAIL")) {
+          input = '<input type="email" value="' + escapeHtml(val) + '" onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+        } else {
+          input = '<input type="text" value="' + escapeHtml(val) + '" onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+        }
+
+        // UI-friendly label overrides
+        var displayLabel = h;
+        if (h.toUpperCase() === "MANUAL OVERRIDE") {
+          displayLabel = "Custom Unique ID (optional)";
+        }
+        
+        // Add required indicator for certain fields
+        var requiredMark = '';
+        if (h.toUpperCase() === "DATE OF BIRTH" && state.formType === "breeder") {
+          requiredMark = ' <span class="text-red-500">*</span>';
+        }
+
+        html += '<div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">' + displayLabel + requiredMark + '</label>' + input + '</div>';
+      });
+
+      html += '</div>';
+      document.getElementById("modalBody").innerHTML = html;
+    }
+
+    function calculateEstHatchDate(layDateStr) {
+      if (!layDateStr) return "—";
+      var d = parseDate(layDateStr);
+      if (!d) return "—";
+      d.setDate(d.getDate() + 59);
+      return d.toISOString().split("T")[0];
+    }
+    
+    function renderHatchlingForm(headers) {
+      var html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+      
+      // 1. CLUTCH ID dropdown (first - required)
+      var clutchOpts = getClutchOptions() || [];
+      var clutchVal = state.formData["CLUTCH ID"] || "";
+      html += '<div class="md:col-span-2">';
+      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Clutch ID <span class="text-red-500">*</span></label>';
+      html += '<select onchange="updateHatchlingClutch(this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      html += '<option value="">Select Clutch...</option>';
+      clutchOpts.forEach(function(o) {
+        var sel = (clutchVal === o) ? " selected" : "";
+        html += '<option value="' + escapeHtml(o) + '"' + sel + '>' + escapeHtml(o) + '</option>';
+      });
+      html += '</select>';
+      html += '</div>';
+      
+      // 2. DAM and SIRE (read-only, auto-filled from clutch)
+      var damVal = state.formData["DAM"] || "";
+      var sireVal = state.formData["SIRE"] || "";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Dam (from clutch)</label>';
+      html += '<div class="w-full px-3 py-2 rounded-xl border border-slate-100 bg-slate-100 text-sm text-slate-600">' + (damVal || "—") + '</div>';
+      html += '</div>';
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Sire (from clutch)</label>';
+      html += '<div class="w-full px-3 py-2 rounded-xl border border-slate-100 bg-slate-100 text-sm text-slate-600">' + (sireVal || "—") + '</div>';
+      html += '</div>';
+      
+      // 3. DATE OF BIRTH (required) - displays as "Hatch Date" but saves to DATE OF BIRTH column
+      var dobVal = state.formData["DATE OF BIRTH"] || "";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Hatch Date <span class="text-red-500">*</span></label>';
+      html += '<input type="date" value="' + dobVal + '" onchange="updateFormField(\'DATE OF BIRTH\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm" required>';
+      html += '</div>';
+      
+      // 4. SEX
+      var sexVal = state.formData["SEX"] || "Unknown";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Sex</label>';
+      html += '<select onchange="updateFormField(\'SEX\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      ["Unknown", "Female", "Male"].forEach(function(o) {
+        var sel = (sexVal === o) ? " selected" : "";
+        html += '<option value="' + o + '"' + sel + '>' + o + '</option>';
+      });
+      html += '</select>';
+      html += '</div>';
+      
+      // 5. STATUS
+      var statusVal = state.formData["STATUS"] || "Unlisted";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Status</label>';
+      html += '<select onchange="updateFormField(\'STATUS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      ["Unlisted", "Listed", "Holdback"].forEach(function(o) {
+        var sel = (statusVal === o) ? " selected" : "";
+        html += '<option value="' + o + '"' + sel + '>' + o + '</option>';
+      });
+      html += '</select>';
+      html += '</div>';
+      
+      // 6. HATCH WEIGHT
+      if (headers.indexOf("HATCH WEIGHT (G)") >= 0) {
+        var weightVal = state.formData["HATCH WEIGHT (G)"] || "";
+        html += '<div>';
+        html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Hatch Weight (g)</label>';
+        html += '<input type="number" step="any" value="' + weightVal + '" onchange="updateFormField(\'HATCH WEIGHT (G)\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm">';
+        html += '</div>';
+      }
+      
+      // 7. SPECIES
+      var speciesVal = state.formData["SPECIES"] || "Ball Python";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Species</label>';
+      html += '<input type="text" value="' + escapeHtml(speciesVal) + '" onchange="updateFormField(\'SPECIES\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      html += '</div>';
+      
+      // 8. GENETIC SUMMARY
+      var geneticsVal = state.formData["GENETIC SUMMARY"] || "";
+      html += '<div class="md:col-span-2">';
+      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Genetic Summary</label>';
+      html += '<input type="text" value="' + escapeHtml(geneticsVal) + '" onchange="updateFormField(\'GENETIC SUMMARY\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm" placeholder="e.g. Pastel Het Clown">';
+      html += '</div>';
+      
+      // 9. BREEDER SOURCE
+      var sourceVal = state.formData["BREEDER SOURCE"] || "Produced In House";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Breeder Source</label>';
+      html += '<input type="text" value="' + escapeHtml(sourceVal) + '" onchange="updateFormField(\'BREEDER SOURCE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      html += '</div>';
+      
+      // Empty spacer for alignment
+      html += '<div></div>';
+      
+      // 10. Custom Unique ID (optional) - at end
+      var manualVal = state.formData["MANUAL OVERRIDE"] || "";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Custom Unique ID (optional)</label>';
+      html += '<input type="text" value="' + escapeHtml(manualVal) + '" onchange="updateFormField(\'MANUAL OVERRIDE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm" placeholder="Your own ID system">';
+      html += '</div>';
+      
+      // 11. NOTES - at end
+      var notesVal = state.formData["NOTES"] || "";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Notes</label>';
+      html += '<textarea onchange="updateFormField(\'NOTES\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm" rows="2">' + escapeHtml(notesVal) + '</textarea>';
+      html += '</div>';
+      
+      html += '</div>';
+      return html;
+    }
+    
+    function updateHatchlingClutch(clutchId) {
+      state.formData["CLUTCH ID"] = clutchId;
+      
+      // Look up the clutch to get DAM and SIRE
+      var clutchRows = state.data.clutch || [];
+      var found = null;
+      for (var i = 0; i < clutchRows.length; i++) {
+        if (clutchRows[i]["CLUTCH ID"] === clutchId) {
+          found = clutchRows[i];
+          break;
+        }
+      }
+      
+      if (found) {
+        state.formData["DAM"] = found["DAM"] || "";
+        state.formData["SIRE"] = found["SIRE"] || "";
+      } else {
+        state.formData["DAM"] = "";
+        state.formData["SIRE"] = "";
+      }
+      
+      // Re-render the form
+      renderModalForm("hatchling");
+    }
+
+    function getFieldOptions(field, sheetKey) {
+      var f = field.toUpperCase();
+      if (f === "SEX") return FIELD_OPTIONS.SEX;
+      if (f === "STATUS" && sheetKey === "clutch") return FIELD_OPTIONS.CLUTCH_STATUS;
+      if (f === "STATUS") return FIELD_OPTIONS.STATUS;
+      if (f === "ACTIVITY") return FIELD_OPTIONS.ACTIVITY;
+      if (f === "SALE SOURCE") return FIELD_OPTIONS.SALE_SOURCE;
+      if (f === "PAYMENT STATUS") return FIELD_OPTIONS.PAYMENT_STATUS;
+      
+      // DAM/SIRE dropdowns
+      if (f === "DAM") return getBreederOptions("Female");
+      if (f === "SIRE") return getBreederOptions("Male");
+      if (f === "CLUTCH ID" && sheetKey === "collection") return getClutchOptions();
+      
+      // Activity form - UNIQUE ID dropdown (all animals)
+      if (f === "UNIQUE ID" && sheetKey === "activity") return getAllAnimalOptions();
+      // Activity form - PAIRED WITH dropdown (for pairing/lock activities)
+      if (f === "PAIRED WITH") return getAllAnimalOptions();
+      
+      return null;
+    }
+
+    function getAllAnimalOptions() {
+      var rows = state.data.collection || [];
+      var opts = [];
+      rows.forEach(function(r) {
+        var id = r["UNIQUE ID"] || "";
+        var name = r["ANIMAL NAME"] || "";
+        if (id) {
+          var label = name ? name + " | " + id : id;
+          opts.push(label);
+        }
+      });
+      return opts;
+    }
+
+    function getBreederOptions(sex) {
+      var rows = state.data.collection || [];
+      var opts = [];
+      rows.forEach(function(r) {
+        var st = (r.STATUS || "").toLowerCase();
+        // Only include breeders and holdbacks as potential parents
+        if (st !== "breeder" && st !== "holdback") return;
+        var s = (r.SEX || "").toLowerCase();
+        if (sex === "Female" && !s.startsWith("f")) return;
+        if (sex === "Male" && !s.startsWith("m")) return;
+        var id = r["UNIQUE ID"] || "";
+        var name = r["ANIMAL NAME"] || "";
+        if (id || name) {
+          var label = name ? (id ? name + " | " + id : name) : id;
+          opts.push(label);
+        }
+      });
+      // Always return array so it shows as dropdown, even if empty
+      return opts;
+    }
+
+    function getClutchOptions() {
+      var rows = state.data.clutch || [];
+      var opts = [];
+      rows.forEach(function(r) {
+        var id = r["CLUTCH ID"];
+        var status = (r["STATUS"] || "").toLowerCase();
+        // Only show clutches that are NOT hatched
+        if (id && status !== "hatched") {
+          opts.push(id);
+        }
+      });
+      return opts.length ? opts : null;
+    }
+
+    function updateFormField(field, value) {
+      state.formData[field] = value;
+      
+      // Re-render if STATUS changed (to show/hide sale fields)
+      if (field === "STATUS") {
+        renderModalForm(state.activeTab);
+      }
+      
+      // Re-render if ACTIVITY changed (to show/hide conditional fields)
+      if (field === "ACTIVITY") {
+        renderModalForm(state.activeTab);
+      }
+      
+      // Re-render if LAY DATE changed (to update estimated hatch date)
+      if (field === "LAY DATE" && state.modalTab === "clutch") {
+        renderModalForm(state.activeTab);
+        // Also update CLUTCH ID preview if in add mode
+        if (state.modalMode === "add") {
+          document.getElementById("modalIdValue").textContent = generateClutchId(value);
+        }
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function generateHatchlingId() {
+      var year = new Date().getFullYear();
+      var rows = state.data.collection || [];
+      var max = 0;
+      var re = /^H-(\d{4})-(\d{4})$/i;
+      rows.forEach(function(r) {
+        var id = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "";
+        var m = re.exec(id);
+        if (m && m[1] === String(year)) {
+          var n = parseInt(m[2], 10);
+          if (n > max) max = n;
+        }
+      });
+      return "H-" + year + "-" + String(max + 1).padStart(4, "0");
+    }
+
+    function generateBreederId() {
+      var year = new Date().getFullYear();
+      var rows = state.data.collection || [];
+      var max = 0;
+      var re = /^B-(\d{4})-(\d{4})$/i;
+      rows.forEach(function(r) {
+        var id = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "";
+        var m = re.exec(id);
+        if (m && m[1] === String(year)) {
+          var n = parseInt(m[2], 10);
+          if (n > max) max = n;
+        }
+      });
+      return "B-" + year + "-" + String(max + 1).padStart(4, "0");
+    }
+
+    function generateActivityId() {
+      var year = new Date().getFullYear();
+      var rows = state.data.activity || [];
+      var max = 0;
+      var re = /^A-(\d{4})-(\d{4})$/i;
+      rows.forEach(function(r) {
+        var id = r["ACTIVITY ID"] || "";
+        var m = re.exec(id);
+        if (m && m[1] === String(year)) {
+          var n = parseInt(m[2], 10);
+          if (n > max) max = n;
+        }
+      });
+      return "A-" + year + "-" + String(max + 1).padStart(4, "0");
+    }
+
+    function generateClutchId(layDate) {
+      var d = parseDate(layDate);
+      var year = d ? d.getFullYear() : new Date().getFullYear();
+      var rows = state.data.clutch || [];
+      var count = 0;
+      rows.forEach(function(r) {
+        var ld = parseDate(r["LAY DATE"]);
+        if (ld && ld.getFullYear() === year) count++;
+      });
+      return "CL-" + year + "-" + String(count + 1).padStart(4, "0");
+    }
+
+    function saveRecord() {
+      var headers = state.headers[state.modalTab] || [];
+      if (!headers.length) { document.getElementById("modalError").textContent = "No headers"; return; }
+
+      // Auto-calculate EST. HATCH DATE for clutches
+      if (state.modalTab === "clutch" && state.formData["LAY DATE"]) {
+        var estHatchIdx = -1;
+        for (var i = 0; i < headers.length; i++) {
+          var hUpper = headers[i].toUpperCase();
+          if (hUpper === "EST. HATCH DATE" || hUpper === "EST HATCH DATE" || hUpper === "ESTIMATED HATCH DATE") {
+            estHatchIdx = i;
+            break;
+          }
+        }
+        if (estHatchIdx >= 0) {
+          state.formData[headers[estHatchIdx]] = calculateEstHatchDate(state.formData["LAY DATE"]);
+        }
+      }
+
+      var rowData = headers.map(function(h) { return state.formData[h] || ""; });
+      var sheetName = SHEET_TABS[state.modalTab];
+
+      document.getElementById("saveBtn").textContent = "Saving...";
+      document.getElementById("saveBtn").disabled = true;
+
+      var promise;
+      if (state.modalMode === "add") {
+        promise = window.gapi.client.sheets.spreadsheets.values.append({
+          spreadsheetId: state.sheetId,
+          range: sheetName + "!A:A",
+          valueInputOption: "USER_ENTERED",
+          resource: { values: [rowData] }
+        });
+      } else {
+        var rowNum = state.editRowIndex + 2;
+        var lastCol = colLetter(headers.length - 1);
+        promise = window.gapi.client.sheets.spreadsheets.values.update({
+          spreadsheetId: state.sheetId,
+          range: sheetName + "!A" + rowNum + ":" + lastCol + rowNum,
+          valueInputOption: "USER_ENTERED",
+          resource: { values: [rowData] }
+        });
+      }
+
+      promise.then(function() {
+        setStatus("Saved!");
+        closeModal();
+        loadData();
+      }).catch(function(e) {
+        document.getElementById("modalError").textContent = (e.result && e.result.error && e.result.error.message) || "Save failed";
+      }).finally(function() {
+        document.getElementById("saveBtn").textContent = "Save";
+        document.getElementById("saveBtn").disabled = false;
+      });
+    }
+
+    function colLetter(n) {
+      var s = "";
+      n++;
+      while (n > 0) {
+        var m = (n - 1) % 26;
+        s = String.fromCharCode(65 + m) + s;
+        n = Math.floor((n - 1) / 26);
+      }
+      return s;
+    }
+
+    // ============ HATCH MODAL ============
+    function openHatchModal(clutchRow) {
+      state.hatchClutchRow = clutchRow;
+      state.hatchDate = new Date().toISOString().split("T")[0];
+      state.hatchCount = 1;
+      state.hatchDrafts = [];
+
+      var clutchId = clutchRow["CLUTCH ID"] || "Unknown";
+      document.getElementById("hatchClutchId").textContent = "Clutch: " + clutchId;
+
+      var html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">';
+      html += '<div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Hatch Date</label>';
+      html += '<input type="date" id="hatchDateInput" value="' + state.hatchDate + '" onchange="state.hatchDate=this.value" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono"></div>';
+      html += '<div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1"># of Hatchlings</label>';
+      html += '<input type="number" id="hatchCountInput" value="1" min="1" max="20" onchange="state.hatchCount=parseInt(this.value)||1" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50"></div>';
+      html += '</div>';
+      html += '<div id="hatchDraftsArea"></div>';
+
+      document.getElementById("hatchModalBody").innerHTML = html;
+      document.getElementById("hatchModal").classList.remove("hidden");
+    }
+
+    function closeHatchModal() {
+      document.getElementById("hatchModal").classList.add("hidden");
+      document.getElementById("hatchModalError").textContent = "";
+      state.hatchClutchRow = null;
+      state.hatchDrafts = [];
+    }
+
+    function markHatchedOnly() {
+      if (!state.hatchClutchRow) return;
+      
+      var headers = state.headers.clutch || [];
+      var statusIdx = headers.indexOf("STATUS");
+      var hatchDateIdx = headers.indexOf("HATCH DATE");
+      if (statusIdx < 0) { document.getElementById("hatchModalError").textContent = "No STATUS column"; return; }
+
+      var rowNum = state.hatchClutchRow.__rowIndex + 2;
+      var updates = [];
+      
+      updates.push({
+        range: SHEET_TABS.clutch + "!" + colLetter(statusIdx) + rowNum,
+        values: [["Hatched"]]
+      });
+      
+      if (hatchDateIdx >= 0) {
+        updates.push({
+          range: SHEET_TABS.clutch + "!" + colLetter(hatchDateIdx) + rowNum,
+          values: [[state.hatchDate]]
+        });
+      }
+
+      document.getElementById("hatchOnlyBtn").textContent = "Saving...";
+      document.getElementById("hatchOnlyBtn").disabled = true;
+
+      window.gapi.client.sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: state.sheetId,
+        resource: { valueInputOption: "USER_ENTERED", data: updates }
+      }).then(function() {
+        setStatus("Clutch marked as hatched!");
+        closeHatchModal();
+        loadData();
+      }).catch(function(e) {
+        document.getElementById("hatchModalError").textContent = "Failed: " + ((e.result && e.result.error && e.result.error.message) || e.message);
+      }).finally(function() {
+        document.getElementById("hatchOnlyBtn").textContent = "Mark Hatched Only";
+        document.getElementById("hatchOnlyBtn").disabled = false;
+      });
+    }
+
+    function hatchAndCreateHatchlings() {
+      if (!state.hatchClutchRow) return;
+      var count = parseInt(document.getElementById("hatchCountInput").value) || 1;
+      var hatchDate = document.getElementById("hatchDateInput").value;
+      
+      if (!hatchDate) {
+        document.getElementById("hatchModalError").textContent = "Please enter a hatch date";
+        return;
+      }
+      
+      // Generate hatchling drafts
+      var year = new Date().getFullYear();
+      var baseNum = getMaxHatchlingNum(year);
+      var clutchId = state.hatchClutchRow["CLUTCH ID"] || "";
+      var sire = state.hatchClutchRow["SIRE"] || "";
+      var dam = state.hatchClutchRow["DAM"] || "";
+
+      state.hatchDrafts = [];
+      for (var i = 1; i <= count; i++) {
+        var id = "H-" + year + "-" + String(baseNum + i).padStart(4, "0");
+        state.hatchDrafts.push({
+          id: id,
+          clutchId: clutchId,
+          sire: sire,
+          dam: dam,
+          hatchDate: hatchDate,
+          sex: "Unknown",
+          animalName: "",
+          geneticSummary: "",
+          status: "Unlisted",
+          notes: ""
+        });
+      }
+      
+      // Render the hatchling entry forms
+      renderHatchlingForms();
+    }
+    
+    function renderHatchlingForms() {
+      var html = '<div class="mb-4 bg-gray-100 border border-gray-300 rounded-xl px-4 py-3">';
+      html += '<div class="text-sm text-gray-700">Enter details for each hatchling. Click "Save All Hatchlings" when done.</div>';
+      html += '</div>';
+      
+      html += '<div class="space-y-4 max-h-96 overflow-auto">';
+      
+      state.hatchDrafts.forEach(function(draft, idx) {
+        html += '<div class="bg-slate-50 rounded-xl p-4 border border-slate-200">';
+        html += '<div class="flex items-center justify-between mb-3">';
+        html += '<div class="font-bold text-slate-800 mono">' + draft.id + '</div>';
+        html += '<button onclick="removeHatchDraft(' + idx + ')" class="text-red-500 hover:text-red-700 text-sm">✕ Remove</button>';
+        html += '</div>';
+        
+        html += '<div class="grid grid-cols-2 md:grid-cols-3 gap-3">';
+        
+        // Sex dropdown
+        html += '<div>';
+        html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Sex</label>';
+        html += '<select onchange="updateHatchDraft(' + idx + ', \'sex\', this.value)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-sm">';
+        html += '<option value="Unknown"' + (draft.sex === "Unknown" ? " selected" : "") + '>Unknown</option>';
+        html += '<option value="Female"' + (draft.sex === "Female" ? " selected" : "") + '>Female</option>';
+        html += '<option value="Male"' + (draft.sex === "Male" ? " selected" : "") + '>Male</option>';
+        html += '</select>';
+        html += '</div>';
+        
+        // Animal Name
+        html += '<div>';
+        html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Name (optional)</label>';
+        html += '<input type="text" value="' + escapeHtml(draft.animalName) + '" onchange="updateHatchDraft(' + idx + ', \'animalName\', this.value)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-sm">';
+        html += '</div>';
+        
+        // Status
+        html += '<div>';
+        html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Status</label>';
+        html += '<select onchange="updateHatchDraft(' + idx + ', \'status\', this.value)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-sm">';
+        html += '<option value="Unlisted"' + (draft.status === "Unlisted" ? " selected" : "") + '>Unlisted</option>';
+        html += '<option value="Listed"' + (draft.status === "Listed" ? " selected" : "") + '>Listed</option>';
+        html += '<option value="Holdback"' + (draft.status === "Holdback" ? " selected" : "") + '>Holdback</option>';
+        html += '</select>';
+        html += '</div>';
+        
+        // Genetic Summary - full width
+        html += '<div class="col-span-2 md:col-span-3">';
+        html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Genetic Summary</label>';
+        html += '<input type="text" value="' + escapeHtml(draft.geneticSummary) + '" onchange="updateHatchDraft(' + idx + ', \'geneticSummary\', this.value)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-sm" placeholder="e.g. Pastel Het Clown">';
+        html += '</div>';
+        
+        // Notes - full width
+        html += '<div class="col-span-2 md:col-span-3">';
+        html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Notes (optional)</label>';
+        html += '<input type="text" value="' + escapeHtml(draft.notes) + '" onchange="updateHatchDraft(' + idx + ', \'notes\', this.value)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-sm">';
+        html += '</div>';
+        
+        html += '</div>'; // grid
+        html += '</div>'; // card
+      });
+      
+      html += '</div>'; // space-y container
+      
+      // Add another hatchling button
+      html += '<div class="mt-4">';
+      html += '<button onclick="addAnotherHatchDraft()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200">+ Add Another Hatchling</button>';
+      html += '</div>';
+      
+      document.getElementById("hatchModalBody").innerHTML = html;
+      
+      // Update button text
+      document.getElementById("hatchAndCreateBtn").textContent = "Save All Hatchlings (" + state.hatchDrafts.length + ")";
+      document.getElementById("hatchAndCreateBtn").onclick = saveAllHatchlings;
+    }
+    
+    function updateHatchDraft(idx, field, value) {
+      if (state.hatchDrafts[idx]) {
+        state.hatchDrafts[idx][field] = value;
+      }
+    }
+    
+    function removeHatchDraft(idx) {
+      state.hatchDrafts.splice(idx, 1);
+      if (state.hatchDrafts.length === 0) {
+        // Reset to initial view
+        openHatchModal(state.hatchClutchRow);
+      } else {
+        renderHatchlingForms();
+      }
+    }
+    
+    function addAnotherHatchDraft() {
+      var year = new Date().getFullYear();
+      var baseNum = getMaxHatchlingNum(year) + state.hatchDrafts.length;
+      var id = "H-" + year + "-" + String(baseNum + 1).padStart(4, "0");
+      var clutchId = state.hatchClutchRow["CLUTCH ID"] || "";
+      var sire = state.hatchClutchRow["SIRE"] || "";
+      var dam = state.hatchClutchRow["DAM"] || "";
+      var hatchDate = document.getElementById("hatchDateInput") ? document.getElementById("hatchDateInput").value : state.hatchDate;
+      
+      state.hatchDrafts.push({
+        id: id,
+        clutchId: clutchId,
+        sire: sire,
+        dam: dam,
+        hatchDate: hatchDate,
+        sex: "Unknown",
+        animalName: "",
+        geneticSummary: "",
+        status: "Unlisted",
+        notes: ""
+      });
+      
+      renderHatchlingForms();
+    }
+    
+    function saveAllHatchlings() {
+      if (!state.hatchClutchRow || !state.hatchDrafts.length) return;
+      
+      var headers = state.headers.collection || [];
+      var hatchlings = [];
+      
+      state.hatchDrafts.forEach(function(draft) {
+        var row = headers.map(function(h) {
+          var hUpper = h.toUpperCase();
+          if (hUpper === "UNIQUE ID" || hUpper === "MANUAL OVERRIDE") return draft.id;
+          if (hUpper === "CLUTCH ID") return draft.clutchId;
+          if (hUpper === "SIRE") return draft.sire;
+          if (hUpper === "DAM") return draft.dam;
+          if (hUpper === "HATCH DATE" || hUpper === "DATE OF BIRTH") return draft.hatchDate;
+          if (hUpper === "STATUS") return draft.status;
+          if (hUpper === "SEX") return draft.sex;
+          if (hUpper === "ANIMAL NAME") return draft.animalName;
+          if (hUpper === "GENETIC SUMMARY") return draft.geneticSummary;
+          if (hUpper === "NOTES") return draft.notes;
+          if (hUpper === "SPECIES") return "Ball Python";
+          if (hUpper === "BREEDER SOURCE") return "Produced In House";
+          return "";
+        });
+        hatchlings.push(row);
+      });
+
+      // Update clutch status
+      var clutchHeaders = state.headers.clutch || [];
+      var statusIdx = clutchHeaders.indexOf("STATUS");
+      var hatchDateIdx = clutchHeaders.indexOf("HATCH DATE");
+      var numHatchedIdx = -1;
+      for (var i = 0; i < clutchHeaders.length; i++) {
+        if (clutchHeaders[i].toUpperCase() === "# HATCHED") {
+          numHatchedIdx = i;
+          break;
+        }
+      }
+      var clutchRowNum = state.hatchClutchRow.__rowIndex + 2;
+      var hatchDate = state.hatchDrafts[0] ? state.hatchDrafts[0].hatchDate : "";
+      
+      var updates = [];
+      if (statusIdx >= 0) {
+        updates.push({ range: SHEET_TABS.clutch + "!" + colLetter(statusIdx) + clutchRowNum, values: [["Hatched"]] });
+      }
+      if (hatchDateIdx >= 0 && hatchDate) {
+        updates.push({ range: SHEET_TABS.clutch + "!" + colLetter(hatchDateIdx) + clutchRowNum, values: [[hatchDate]] });
+      }
+      if (numHatchedIdx >= 0) {
+        updates.push({ range: SHEET_TABS.clutch + "!" + colLetter(numHatchedIdx) + clutchRowNum, values: [[String(state.hatchDrafts.length)]] });
+      }
+
+      document.getElementById("hatchAndCreateBtn").textContent = "Saving...";
+      document.getElementById("hatchAndCreateBtn").disabled = true;
+
+      // Update clutch first, then append hatchlings
+      var clutchPromise = updates.length ? 
+        window.gapi.client.sheets.spreadsheets.values.batchUpdate({
+          spreadsheetId: state.sheetId,
+          resource: { valueInputOption: "USER_ENTERED", data: updates }
+        }) : Promise.resolve();
+
+      clutchPromise.then(function() {
+        return window.gapi.client.sheets.spreadsheets.values.append({
+          spreadsheetId: state.sheetId,
+          range: SHEET_TABS.collection + "!A:A",
+          valueInputOption: "USER_ENTERED",
+          resource: { values: hatchlings }
+        });
+      }).then(function() {
+        setStatus("Created " + state.hatchDrafts.length + " hatchlings!");
+        closeHatchModal();
+        loadData();
+      }).catch(function(e) {
+        document.getElementById("hatchModalError").textContent = "Failed: " + ((e.result && e.result.error && e.result.error.message) || e.message);
+      }).finally(function() {
+        document.getElementById("hatchAndCreateBtn").textContent = "Save All Hatchlings";
+        document.getElementById("hatchAndCreateBtn").disabled = false;
+      });
+    }
+
+    function getMaxHatchlingNum(year) {
+      var rows = state.data.collection || [];
+      var max = 0;
+      var re = /^H-(\d{4})-(\d{4})$/i;
+      rows.forEach(function(r) {
+        var id = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "";
+        var m = re.exec(id);
+        if (m && m[1] === String(year)) {
+          var n = parseInt(m[2], 10);
+          if (n > max) max = n;
+        }
+      });
+      return max;
+    }
+
+    // ============ SALE MODAL ============
+    function openSaleModal(animalRow) {
+      state.saleAnimalRow = animalRow;
+      var today = new Date().toISOString().split("T")[0];
+      state.saleForm = {
+        soldDate: today,
+        soldPrice: "",
+        shippingFee: "",
+        buyerName: "",
+        buyerEmail: "",
+        saleSource: "MorphMarket",
+        paymentStatus: "Paid",
+        shipDate: ""
+      };
+
+      var uid = animalRow["UNIQUE ID"] || "Unknown";
+      document.getElementById("saleAnimalId").textContent = uid;
+
+      var html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+      html += formField("Sold Date", "date", "soldDate", state.saleForm.soldDate);
+      html += formField("Sold Price", "number", "soldPrice", "");
+      html += formField("Shipping Fee", "number", "shippingFee", "");
+      html += formField("Buyer Name", "text", "buyerName", "");
+      html += formField("Buyer Email", "email", "buyerEmail", "");
+      html += formSelect("Sale Source", "saleSource", FIELD_OPTIONS.SALE_SOURCE, "MorphMarket");
+      html += formSelect("Payment Status", "paymentStatus", FIELD_OPTIONS.PAYMENT_STATUS, "Paid");
+      html += formField("Ship Date", "date", "shipDate", "");
+      html += '</div>';
+
+      document.getElementById("saleModalBody").innerHTML = html;
+      document.getElementById("saleModal").classList.remove("hidden");
+    }
+
+    function formField(label, type, key, val) {
+      return '<div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">' + label + '</label>' +
+             '<input type="' + type + '" value="' + (val || "") + '" onchange="state.saleForm.' + key + '=this.value" ' +
+             'class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm"></div>';
+    }
+
+    function formSelect(label, key, opts, selected) {
+      var html = '<div><label class="block text-xs font-semibold text-slate-600 uppercase mb-1">' + label + '</label>';
+      html += '<select onchange="state.saleForm.' + key + '=this.value" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      opts.forEach(function(o) {
+        var sel = (o === selected) ? " selected" : "";
+        html += '<option value="' + o + '"' + sel + '>' + o + '</option>';
+      });
+      html += '</select></div>';
+      return html;
+    }
+
+    function closeSaleModal() {
+      document.getElementById("saleModal").classList.add("hidden");
+      document.getElementById("saleModalError").textContent = "";
+      state.saleAnimalRow = null;
+    }
+
+    function saveSale() {
+      if (!state.saleAnimalRow) return;
+      
+      var f = state.saleForm;
+      if (!f.soldDate) { document.getElementById("saleModalError").textContent = "Sold date required"; return; }
+      if (!f.soldPrice) { document.getElementById("saleModalError").textContent = "Sold price required"; return; }
+      if (!f.buyerName) { document.getElementById("saleModalError").textContent = "Buyer name required"; return; }
+
+      var headers = state.headers.collection || [];
+      var rowNum = state.saleAnimalRow.__rowIndex + 2;
+      var updates = [];
+
+      function addUpdate(col, val) {
+        var idx = headers.indexOf(col);
+        if (idx >= 0 && val) {
+          updates.push({ range: SHEET_TABS.collection + "!" + colLetter(idx) + rowNum, values: [[val]] });
+        }
+      }
+
+      addUpdate("STATUS", "Sold");
+      addUpdate("SOLD PRICE", f.soldPrice);
+      addUpdate("DATE SOLD", f.soldDate);
+      addUpdate("BUYER NAME", f.buyerName);
+      addUpdate("BUYER EMAIL", f.buyerEmail);
+      addUpdate("SHIPPING FEE", f.shippingFee);
+      addUpdate("SHIP DATE", f.shipDate);
+      
+      // Calculate TOTAL PAID
+      var total = (parseFloat(f.soldPrice) || 0) + (parseFloat(f.shippingFee) || 0);
+      addUpdate("TOTAL PAID", String(total));
+
+      if (!updates.length) { document.getElementById("saleModalError").textContent = "No fields to update"; return; }
+
+      document.getElementById("saveSaleBtn").textContent = "Saving...";
+      document.getElementById("saveSaleBtn").disabled = true;
+
+      window.gapi.client.sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: state.sheetId,
+        resource: { valueInputOption: "USER_ENTERED", data: updates }
+      }).then(function() {
+        setStatus("Sale recorded!");
+        closeSaleModal();
+        loadData();
+      }).catch(function(e) {
+        document.getElementById("saleModalError").textContent = "Failed: " + ((e.result && e.result.error && e.result.error.message) || e.message);
+      }).finally(function() {
+        document.getElementById("saveSaleBtn").textContent = "Save Sale";
+        document.getElementById("saveSaleBtn").disabled = false;
+      });
+    }
+
+    // ============ HOLDBACK FUNCTION ============
+    function markAsHoldback(row) {
+      if (!state.isSignedIn || !state.sheetId) {
+        setStatus("Not connected", true);
+        return;
+      }
+      
+      var headers = state.headers.collection || [];
+      var statusIdx = headers.indexOf("STATUS");
+      if (statusIdx < 0) {
+        setStatus("STATUS column not found", true);
+        return;
+      }
+      
+      var rowNum = row.__rowIndex + 2;
+      var range = SHEET_TABS.collection + "!" + colLetter(statusIdx) + rowNum;
+      
+      setStatus("Updating to Holdback...");
+      
+      window.gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: state.sheetId,
+        range: range,
+        valueInputOption: "USER_ENTERED",
+        resource: { values: [["Holdback"]] }
+      }).then(function() {
+        setStatus("Marked as Holdback!");
+        loadData();
+      }).catch(function(e) {
+        setStatus("Failed: " + ((e.result && e.result.error && e.result.error.message) || e.message), true);
+      });
+    }
+
+    // ============ TOOLS ============
+    function exportCSV(sheetKey) {
+      var headers = state.headers[sheetKey] || [];
+      var rows = state.data[sheetKey] || [];
+      if (!headers.length) { alert("No data to export"); return; }
+
+      var lines = [headers.join(",")];
+      rows.forEach(function(r) {
+        var vals = headers.map(function(h) {
+          var v = String(r[h] || "").replace(/"/g, '""');
+          return '"' + v + '"';
+        });
+        lines.push(vals.join(","));
+      });
+
+      var blob = new Blob([lines.join("\n")], { type: "text/csv" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = sheetKey + "_export_" + new Date().toISOString().split("T")[0] + ".csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function showDataHealth() {
+      var rows = state.data.collection || [];
+      var missingSex = 0, listedNoSex = 0;
+      
+      rows.forEach(function(r) {
+        var sex = (r.SEX || "").trim();
+        var status = (r.STATUS || "").toLowerCase();
+        if (!sex) missingSex++;
+        if ((status === "listed" || status === "for sale") && !sex) listedNoSex++;
+      });
+
+      alert("Data Health Check\n\n" +
+            "Animals missing sex: " + missingSex + "\n" +
+            "Listed animals missing sex: " + listedNoSex);
+    }
+
+    // ============ START ============
+    init();
+  </script>
+</body>
+</html>
