@@ -1,4 +1,15 @@
 <!DOCTYPE html>
+<!--
+  THE RACK - Reptile Breeding Program Management
+  Version: 2.2.0
+  Last Updated: 2026-01-07
+  
+  Changelog:
+  - 2.2.0: Fixed counting to skip empty placeholder rows
+  - 2.1.0: Email + Access Code login (no Google OAuth), Sync button, Back button, optimistic UI
+  - 2.0.0: Apps Script API backend, removed direct Google Sheets API calls
+  - 1.0.0: Initial release with Google OAuth
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -413,9 +424,20 @@
               activity: data.activity ? data.activity.rows : []
             };
 
-            setStatus("Loaded " + state.data.collection.length + " animals, " + 
-                      state.data.clutch.length + " clutches, " + 
-                      state.data.activity.length + " activities");
+            // Count only non-empty rows for display
+            var animalCount = state.data.collection.filter(function(r) {
+              return (r.STATUS || "").trim() !== "" || (r["UNIQUE ID"] || "").trim() !== "";
+            }).length;
+            var clutchCount = state.data.clutch.filter(function(r) {
+              return (r.STATUS || "").trim() !== "" || (r["CLUTCH ID"] || "").trim() !== "";
+            }).length;
+            var activityCount = state.data.activity.filter(function(r) {
+              return (r.ACTIVITY || "").trim() !== "" || (r["UNIQUE ID"] || "").trim() !== "";
+            }).length;
+
+            setStatus("Loaded " + animalCount + " animals, " + 
+                      clutchCount + " clutches, " + 
+                      activityCount + " activities");
             renderCurrentView();
           } else {
             setStatus(response.error || "Failed to load data", true);
@@ -672,8 +694,13 @@
     }
 
     function calculateStats() {
-      var rows = state.data.collection;
-      var clutchRows = state.data.clutch;
+      // Filter out empty rows (rows without a STATUS or UNIQUE ID)
+      var rows = state.data.collection.filter(function(r) {
+        return (r.STATUS || "").trim() !== "" || (r["UNIQUE ID"] || "").trim() !== "";
+      });
+      var clutchRows = state.data.clutch.filter(function(r) {
+        return (r.STATUS || "").trim() !== "" || (r["CLUTCH ID"] || "").trim() !== "";
+      });
       var year = new Date().getFullYear();
       var today = new Date();
       today.setHours(0, 0, 0, 0);
