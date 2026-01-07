@@ -557,7 +557,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.21";
+    var VERSION = "2.10.22";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -879,8 +879,14 @@
               archive: data.archive ? data.archive.rows : []
             };
             
-            console.log("Loaded archive from API:", data.archive);
+            console.log("=== DATA LOAD DEBUG ===");
+            console.log("API Response data:", data);
+            console.log("data.clutch:", data.clutch);
+            console.log("state.data.clutch:", state.data.clutch);
+            console.log("state.data.clutch.length:", state.data.clutch.length);
+            console.log("state.data.collection.length:", state.data.collection.length);
             console.log("state.data.archive:", state.data.archive);
+            console.log("=== END DATA LOAD DEBUG ===");
 
             // Parse settings (key-value pairs)
             state.settings = {};
