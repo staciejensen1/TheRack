@@ -52,6 +52,9 @@
           <!-- Connected Status (shown when logged in) -->
           <div id="connectedGroup" class="flex items-center gap-2 hidden">
             <span id="userEmail" class="text-sm text-gray-600"></span>
+            <button id="syncBtn" onclick="loadData()" class="px-3 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 text-sm" title="Sync data">
+              🔄 Sync
+            </button>
             <button id="signOutBtn" class="px-3 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 text-sm">
               Sign out
             </button>
@@ -100,7 +103,12 @@
       <main class="flex-1 min-w-0">
         <div class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-200">
           <div class="flex items-center justify-between mb-6">
-            <h2 id="pageTitle" class="text-xl font-bold text-gray-900 capitalize">Dashboard</h2>
+            <div class="flex items-center gap-3">
+              <button id="backBtn" onclick="goBack()" class="px-3 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 text-sm hidden">
+                ← Back
+              </button>
+              <h2 id="pageTitle" class="text-xl font-bold text-gray-900 capitalize">Dashboard</h2>
+            </div>
             <button id="addBtn" onclick="openAddModal(state.activeTab)" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black hidden text-sm">
               + Add New
             </button>
@@ -386,7 +394,7 @@
       }
 
       state.isLoading = true;
-      setStatus("Loading data...");
+      setStatus("Loading data... this may take a few seconds. No worries, we're just getting everything ready for the day!");
 
       apiCall('getData', {})
         .then(function(response) {
@@ -428,6 +436,8 @@
     }
 
     // ============ NAVIGATION ============
+    var navHistory = [];
+
     function renderNavTabs() {
       var tabs = [
         { key: "dashboard", label: "Dashboard" },
@@ -444,9 +454,26 @@
         btn.textContent = tab.label;
         btn.className = "px-3 py-2 text-sm rounded-lg font-medium text-left " + 
           (state.activeTab === tab.key ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100");
-        btn.onclick = function() { state.activeTab = tab.key; renderNavTabs(); renderCurrentView(); };
+        btn.onclick = function() { navigateTo(tab.key); };
         nav.appendChild(btn);
       });
+    }
+
+    function navigateTo(tab) {
+      if (state.activeTab !== tab) {
+        navHistory.push(state.activeTab);
+        state.activeTab = tab;
+        renderNavTabs();
+        renderCurrentView();
+      }
+    }
+
+    function goBack() {
+      if (navHistory.length > 0) {
+        state.activeTab = navHistory.pop();
+        renderNavTabs();
+        renderCurrentView();
+      }
     }
 
     function renderCurrentView() {
@@ -463,6 +490,9 @@
       document.getElementById("dashboardView").classList.toggle("hidden", !isDash);
       document.getElementById("tableView").classList.toggle("hidden", isDash);
       document.getElementById("addBtn").classList.toggle("hidden", isDash);
+      
+      // Show/hide back button
+      document.getElementById("backBtn").classList.toggle("hidden", navHistory.length === 0);
       
       if (isDash) renderDashboard();
       else renderTable();
@@ -485,7 +515,7 @@
         
         // 🥚 Overdue Clutches (DARKEST - most urgent)
         if (stats.overdueClutches > 0) {
-          html += '<div onclick="state.activeTab=\'clutches\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-900 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="navigateTo('clutches');" class="cursor-pointer bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-900 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-300">Overdue Clutches</div>';
@@ -498,7 +528,7 @@
         
         // ⏰ Clutches Due Soon (DARK)
         if (stats.clutchesDueSoon > 0) {
-          html += '<div onclick="state.activeTab=\'clutches\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-500 to-gray-600 border-2 border-gray-700 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="navigateTo('clutches');" class="cursor-pointer bg-gradient-to-br from-gray-500 to-gray-600 border-2 border-gray-700 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-200">Due Within 7 Days</div>';
@@ -511,7 +541,7 @@
         
         // 📦 Unshipped Sales (MEDIUM-DARK)
         if (stats.unshipped > 0) {
-          html += '<div onclick="state.activeTab=\'sales\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-400 to-gray-500 border-2 border-gray-600 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="navigateTo('sales');" class="cursor-pointer bg-gradient-to-br from-gray-400 to-gray-500 border-2 border-gray-600 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-100">Unshipped Sales</div>';
@@ -524,7 +554,7 @@
         
         // 📅 Shipping Soon (MEDIUM)
         if (stats.shippingSoon > 0) {
-          html += '<div onclick="state.activeTab=\'sales\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="navigateTo('sales');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Shipping in 3 Days</div>';
@@ -537,7 +567,7 @@
         
         // 💵 Unpaid Deposits (MEDIUM)
         if (stats.unpaidDeposits > 0) {
-          html += '<div onclick="state.activeTab=\'sales\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="navigateTo('sales');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Unpaid Deposits</div>';
@@ -550,7 +580,7 @@
         
         // ❓ Needs Sexing (LIGHT)
         if (stats.needsSexing > 0) {
-          html += '<div onclick="state.activeTab=\'hatchlings\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-gray-400 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="navigateTo('hatchlings');" class="cursor-pointer bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-gray-400 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-600">Needs Sexing</div>';
@@ -563,7 +593,7 @@
         
         // 💰 Ready to List (LIGHTEST)
         if (stats.readyToList > 0) {
-          html += '<div onclick="state.activeTab=\'hatchlings\'; renderNavTabs(); renderCurrentView();" class="cursor-pointer bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="navigateTo('hatchlings');" class="cursor-pointer bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-600">Ready to List</div>';
