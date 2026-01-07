@@ -1451,16 +1451,19 @@
       // Header
       var headerRow = document.getElementById("tableHead").querySelector("tr");
       headerRow.innerHTML = "";
+      
+      // Actions header FIRST
+      var actionTh = document.createElement("th");
+      actionTh.className = "px-3 py-3 text-left font-semibold text-slate-600 bg-slate-50 whitespace-nowrap text-sm sticky left-0 z-10";
+      actionTh.textContent = "Actions";
+      headerRow.appendChild(actionTh);
+      
       columns.forEach(function(col) {
         var th = document.createElement("th");
         th.className = "px-3 py-3 text-left font-semibold text-slate-600 bg-slate-50 whitespace-nowrap text-sm";
         th.textContent = col;
         headerRow.appendChild(th);
       });
-      var actionTh = document.createElement("th");
-      actionTh.className = "px-3 py-3 text-left font-semibold text-slate-600 bg-slate-50 whitespace-nowrap text-sm";
-      actionTh.textContent = "Actions";
-      headerRow.appendChild(actionTh);
 
       // Body
       var tbody = document.getElementById("tableBody");
@@ -1493,22 +1496,9 @@
           }
         }
         
-        columns.forEach(function(col, colIdx) {
-          var td = document.createElement("td");
-          td.className = "px-3 py-3 text-slate-700 whitespace-nowrap text-sm";
-          
-          // Add warning icon to first column if overdue
-          if (colIdx === 0 && isOverdue) {
-            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
-          } else {
-            td.textContent = row[col] || "—";
-          }
-          tr.appendChild(td);
-        });
-
-        // Actions
+        // Actions FIRST (sticky left)
         var actionTd = document.createElement("td");
-        actionTd.className = "px-3 py-3 whitespace-nowrap";
+        actionTd.className = "px-3 py-3 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100";
         
         var editBtn = document.createElement("button");
         editBtn.className = "px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1";
@@ -1551,6 +1541,21 @@
         }
 
         tr.appendChild(actionTd);
+        
+        // Data columns
+        columns.forEach(function(col, colIdx) {
+          var td = document.createElement("td");
+          td.className = "px-3 py-3 text-slate-700 whitespace-nowrap text-sm";
+          
+          // Add warning icon to first column if overdue
+          if (colIdx === 0 && isOverdue) {
+            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
+          } else {
+            td.textContent = row[col] || "—";
+          }
+          tr.appendChild(td);
+        });
+
         tbody.appendChild(tr);
       });
     }
