@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.5.2
+  Version: 2.6.0
   Last Updated: 2026-01-07
   
   Changelog:
+  - 2.6.0: QR code generation and scanning for quick activity logging
   - 2.5.2: Fixed support ticket form link
   - 2.5.1: Added support ticket link
   - 2.5.0: Mobile-friendly redesign with hamburger menu, quick add bar always visible
@@ -25,12 +26,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     .mono { font-family: ui-monospace, monospace; }
     .modal-backdrop { backdrop-filter: blur(4px); }
     .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
     .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+    
+    /* QR Print Styles */
+    @media print {
+      body * { visibility: hidden; }
+      #qrPrintArea, #qrPrintArea * { visibility: visible; }
+      #qrPrintArea { position: absolute; left: 0; top: 0; }
+    }
+    .qr-label { page-break-inside: avoid; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen">
@@ -176,6 +186,7 @@
             <button onclick="exportCSV('collection'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
             <button onclick="exportCSV('clutch'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
             <button onclick="showDataHealth(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
+            <button onclick="openQRGenerator(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print QR Codes</button>
           </div>
         </div>
 
@@ -214,6 +225,7 @@
             <div class="flex flex-col gap-1">
               <button onclick="exportCSV('collection')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
               <button onclick="exportCSV('clutch')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
+              <button onclick="openQRGenerator()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print QR Codes</button>
               <button onclick="showDataHealth()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
             </div>
           </div>
@@ -266,6 +278,48 @@
           </div>
         </div>
       </main>
+    </div>
+  </div>
+
+  <!-- QR Code Generator Modal -->
+  <div id="qrModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-slate-900">Print QR Codes</h3>
+          <button onclick="closeQRModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="p-4 md:p-6">
+          <!-- Options -->
+          <div class="mb-6 flex flex-wrap gap-4 items-center">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Select Animals</label>
+              <select id="qrAnimalSelect" onchange="updateQRPreview()" class="px-3 py-2 border border-gray-300 rounded-xl text-sm">
+                <option value="all">All Animals</option>
+                <option value="breeders">Breeders Only</option>
+                <option value="hatchlings">Hatchlings Only</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Label Size</label>
+              <select id="qrSizeSelect" onchange="updateQRPreview()" class="px-3 py-2 border border-gray-300 rounded-xl text-sm">
+                <option value="small">Small (1" x 1")</option>
+                <option value="medium" selected>Medium (1.5" x 1.5")</option>
+                <option value="large">Large (2" x 2")</option>
+              </select>
+            </div>
+            <button onclick="printQRCodes()" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+              Print
+            </button>
+          </div>
+          
+          <!-- Preview -->
+          <div id="qrPreview" class="border border-gray-200 rounded-xl p-4 bg-gray-50 max-h-96 overflow-auto">
+            <p class="text-gray-500 text-sm">Loading preview...</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -367,7 +421,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.5.2";
+    var VERSION = "2.6.0";
     var API_URL = "https://script.google.com/macros/s/AKfycby2kLix-oIdZxtWqqMJxaNUZvbUKF1O33BphEVV5ZfADxO1cjJXrDMHhPeRZF1t32rH/exec";
     
     var SHEET_TABS = {
@@ -403,7 +457,9 @@
       hatchCount: 1,
       hatchDrafts: [],
       saleAnimalRow: null,
-      saleForm: {}
+      saleForm: {},
+      // QR scan pending action
+      qrPending: null
     };
 
     // ============ INITIALIZATION ============
@@ -411,8 +467,30 @@
       // Set version
       document.getElementById("versionTag").textContent = "v" + VERSION;
       
-      // Check for saved login
-      if (state.email && state.sheetId) {
+      // Check for QR code parameters in URL
+      var urlParams = new URLSearchParams(window.location.search);
+      var qrCode = urlParams.get('code');
+      var qrAnimal = urlParams.get('animal');
+      
+      if (qrCode && qrAnimal) {
+        // Clear URL params without reload
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Check if already logged into this account
+        if (state.sheetId === qrCode && state.email) {
+          state.isLoggedIn = true;
+          state.qrPending = { animal: qrAnimal };
+          updateUI();
+          setStatus("QR scanned! Loading data...");
+          loadData(); // Will trigger QR action after load
+        } else {
+          // Need to log in - save pending action
+          state.qrPending = { code: qrCode, animal: qrAnimal };
+          updateUI();
+          setStatus("QR scanned for " + qrAnimal + ". Please log in to record activity.");
+        }
+      } else if (state.email && state.sheetId) {
+        // Normal login check
         state.isLoggedIn = true;
         updateUI();
         setStatus("Welcome back! Loading your data...");
@@ -463,6 +541,11 @@
       document.getElementById("mobileLoginBtn").textContent = "Logging in...";
       document.getElementById("mobileLoginBtn").disabled = true;
 
+      // If QR pending, use that code
+      if (state.qrPending && state.qrPending.code) {
+        code = state.qrPending.code;
+      }
+
       var url = API_URL + "?action=login&email=" + encodeURIComponent(email) + "&code=" + encodeURIComponent(code);
       
       fetch(url)
@@ -475,6 +558,11 @@
 
             localStorage.setItem("therack_email", email);
             localStorage.setItem("therack_sheet_id", data.sheetId);
+
+            // Preserve QR animal for after load
+            if (state.qrPending && state.qrPending.animal) {
+              state.qrPending = { animal: state.qrPending.animal };
+            }
 
             setStatus("Logged in! Loading your data...");
             updateUI();
@@ -528,6 +616,11 @@
       document.getElementById("loginBtn").textContent = "Logging in...";
       document.getElementById("loginBtn").disabled = true;
 
+      // If QR pending, use that code
+      if (state.qrPending && state.qrPending.code) {
+        code = state.qrPending.code;
+      }
+
       // Validate email + code combo
       var url = API_URL + "?action=login&email=" + encodeURIComponent(email) + "&code=" + encodeURIComponent(code);
       
@@ -543,6 +636,11 @@
             // Save to localStorage for auto-login
             localStorage.setItem("therack_email", email);
             localStorage.setItem("therack_sheet_id", data.sheetId);
+
+            // Preserve QR animal for after load
+            if (state.qrPending && state.qrPending.animal) {
+              state.qrPending = { animal: state.qrPending.animal };
+            }
 
             setStatus("Logged in! Loading your data...");
             updateUI();
@@ -646,6 +744,12 @@
                       clutchCount + " clutches, " + 
                       activityCount + " activities");
             renderCurrentView();
+            
+            // Check for pending QR action
+            if (state.qrPending && state.qrPending.animal) {
+              handleQRScan(state.qrPending.animal);
+              state.qrPending = null;
+            }
           } else {
             setStatus(response.error || "Failed to load data", true);
           }
@@ -662,6 +766,163 @@
       var el = document.getElementById("statusText");
       el.textContent = msg;
       el.className = isError ? "text-red-600" : "text-slate-500";
+    }
+
+    // ============ QR CODE HANDLING ============
+    function handleQRScan(animalId) {
+      // Find the animal in collection
+      var animal = state.data.collection.find(function(r) {
+        return r["UNIQUE ID"] === animalId;
+      });
+      
+      if (!animal) {
+        setStatus("Animal " + animalId + " not found in your collection.", true);
+        return;
+      }
+      
+      // Open activity modal pre-filled for this animal
+      openActivityForAnimal(animal);
+    }
+
+    function openActivityForAnimal(animal) {
+      state.modalMode = "add";
+      state.modalTab = "activity";
+      state.editRowIndex = null;
+      state.formData = {
+        "DATE": new Date().toISOString().split('T')[0],
+        "UNIQUE ID": animal["UNIQUE ID"]
+      };
+      
+      renderActivityModalForQR(animal);
+      document.getElementById("modal").classList.remove("hidden");
+    }
+
+    function renderActivityModalForQR(animal) {
+      var animalName = animal["ANIMAL NAME"] || animal["UNIQUE ID"];
+      var animalId = animal["UNIQUE ID"];
+      
+      document.getElementById("modalTitle").textContent = "Log Activity";
+      
+      var html = '<div class="space-y-4">';
+      
+      // Animal info banner
+      html += '<div class="bg-gray-100 rounded-xl p-3 mb-4">';
+      html += '<div class="font-bold text-gray-900">' + animalName + '</div>';
+      html += '<div class="text-sm text-gray-500 mono">' + animalId + '</div>';
+      html += '</div>';
+      
+      // Date (default today)
+      html += '<div>';
+      html += '<label class="block text-sm font-medium text-gray-700 mb-1">Date</label>';
+      html += '<input type="date" id="field_DATE" value="' + state.formData["DATE"] + '" class="w-full px-3 py-2 border border-gray-300 rounded-xl">';
+      html += '</div>';
+      
+      // Activity type - big buttons for quick tap
+      html += '<div>';
+      html += '<label class="block text-sm font-medium text-gray-700 mb-2">Activity</label>';
+      html += '<div class="grid grid-cols-2 gap-2">';
+      
+      var quickActivities = ["Took Meal", "Refused Meal", "Shed", "Weight", "Note", "Health Hold"];
+      quickActivities.forEach(function(act) {
+        var selected = state.formData["ACTIVITY"] === act ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200";
+        html += '<button type="button" onclick="selectQRActivity(\'' + act + '\')" class="qr-activity-btn px-4 py-3 rounded-xl font-medium text-sm ' + selected + '">' + act + '</button>';
+      });
+      
+      html += '</div>';
+      html += '</div>';
+      
+      // Value field (for weight, notes, etc)
+      html += '<div id="qrValueField" class="' + (state.formData["ACTIVITY"] === "Weight" || state.formData["ACTIVITY"] === "Note" ? "" : "hidden") + '">';
+      html += '<label class="block text-sm font-medium text-gray-700 mb-1" id="qrValueLabel">Value</label>';
+      html += '<input type="text" id="field_VALUE" value="' + (state.formData["VALUE"] || "") + '" class="w-full px-3 py-2 border border-gray-300 rounded-xl" placeholder="Enter value...">';
+      html += '</div>';
+      
+      html += '</div>';
+      
+      document.getElementById("modalBody").innerHTML = html;
+      
+      // Update save button
+      document.getElementById("saveRecordBtn").onclick = saveQRActivity;
+    }
+
+    function selectQRActivity(activity) {
+      state.formData["ACTIVITY"] = activity;
+      
+      // Update button styles
+      document.querySelectorAll('.qr-activity-btn').forEach(function(btn) {
+        if (btn.textContent === activity) {
+          btn.className = 'qr-activity-btn px-4 py-3 rounded-xl font-medium text-sm bg-gray-900 text-white';
+        } else {
+          btn.className = 'qr-activity-btn px-4 py-3 rounded-xl font-medium text-sm bg-gray-100 text-gray-700 hover:bg-gray-200';
+        }
+      });
+      
+      // Show/hide value field
+      var valueField = document.getElementById('qrValueField');
+      var valueLabel = document.getElementById('qrValueLabel');
+      if (activity === "Weight") {
+        valueField.classList.remove('hidden');
+        valueLabel.textContent = "Weight (g)";
+      } else if (activity === "Note" || activity === "Health Hold") {
+        valueField.classList.remove('hidden');
+        valueLabel.textContent = "Notes";
+      } else {
+        valueField.classList.add('hidden');
+      }
+    }
+
+    function saveQRActivity() {
+      var date = document.getElementById("field_DATE").value;
+      var activity = state.formData["ACTIVITY"];
+      var value = document.getElementById("field_VALUE") ? document.getElementById("field_VALUE").value : "";
+      
+      if (!activity) {
+        setStatus("Please select an activity", true);
+        return;
+      }
+      
+      var record = {
+        "DATE": date,
+        "UNIQUE ID": state.formData["UNIQUE ID"],
+        "ACTIVITY": activity,
+        "VALUE": value
+      };
+      
+      // Save to sheet
+      setStatus("Saving...");
+      document.getElementById("saveRecordBtn").disabled = true;
+      
+      apiCall('saveRecord', { tab: 'Activity', data: record })
+        .then(function(response) {
+          if (response.success) {
+            // Add to local data
+            record.__rowIndex = state.data.activity.length;
+            state.data.activity.push(record);
+            
+            setStatus("Activity logged for " + state.formData["UNIQUE ID"]);
+            closeModal();
+            
+            // Ask if they want to log another
+            setTimeout(function() {
+              if (confirm("Activity saved! Log another activity for this animal?")) {
+                state.formData["ACTIVITY"] = "";
+                state.formData["VALUE"] = "";
+                var animal = state.data.collection.find(function(r) {
+                  return r["UNIQUE ID"] === state.formData["UNIQUE ID"];
+                });
+                if (animal) openActivityForAnimal(animal);
+              }
+            }, 300);
+          } else {
+            setStatus(response.error || "Failed to save", true);
+          }
+        })
+        .catch(function(error) {
+          setStatus("Error: " + error.message, true);
+        })
+        .finally(function() {
+          document.getElementById("saveRecordBtn").disabled = false;
+        });
     }
 
     // ============ NAVIGATION ============
@@ -2345,6 +2606,103 @@
       alert("Data Health Check\n\n" +
             "Animals missing sex: " + missingSex + "\n" +
             "Listed animals missing sex: " + listedNoSex);
+    }
+
+    // ============ QR CODE GENERATOR ============
+    function openQRGenerator() {
+      if (!state.isLoggedIn) {
+        setStatus("Please log in first", true);
+        return;
+      }
+      document.getElementById("qrModal").classList.remove("hidden");
+      updateQRPreview();
+    }
+
+    function closeQRModal() {
+      document.getElementById("qrModal").classList.add("hidden");
+    }
+
+    function updateQRPreview() {
+      var filter = document.getElementById("qrAnimalSelect").value;
+      var size = document.getElementById("qrSizeSelect").value;
+      var preview = document.getElementById("qrPreview");
+      
+      // Filter animals
+      var animals = state.data.collection.filter(function(r) {
+        var id = (r["UNIQUE ID"] || "").trim();
+        var status = (r.STATUS || "").toLowerCase();
+        if (!id) return false;
+        
+        if (filter === "breeders") {
+          return status === "breeder" || status === "on loan";
+        } else if (filter === "hatchlings") {
+          return status === "listed" || status === "unlisted" || status === "holdback";
+        }
+        return true; // all
+      });
+      
+      if (animals.length === 0) {
+        preview.innerHTML = '<p class="text-gray-500 text-sm">No animals found matching filter.</p>';
+        return;
+      }
+      
+      // Size settings
+      var sizes = {
+        small: { box: 80, qr: 60, font: 8 },
+        medium: { box: 120, qr: 90, font: 10 },
+        large: { box: 160, qr: 120, font: 12 }
+      };
+      var s = sizes[size];
+      
+      var html = '<div id="qrPrintArea" class="flex flex-wrap gap-2">';
+      
+      animals.forEach(function(animal, index) {
+        var animalId = animal["UNIQUE ID"];
+        var animalName = animal["ANIMAL NAME"] || "";
+        var qrUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
+        
+        html += '<div class="qr-label bg-white border border-gray-300 rounded p-2 text-center" style="width:' + s.box + 'px;">';
+        html += '<canvas id="qr-' + index + '" class="mx-auto"></canvas>';
+        html += '<div class="font-bold truncate" style="font-size:' + s.font + 'px;">' + animalName + '</div>';
+        html += '<div class="text-gray-500 mono truncate" style="font-size:' + (s.font - 2) + 'px;">' + animalId + '</div>';
+        html += '</div>';
+      });
+      
+      html += '</div>';
+      preview.innerHTML = html;
+      
+      // Generate QR codes
+      animals.forEach(function(animal, index) {
+        var animalId = animal["UNIQUE ID"];
+        var qrUrl = "https://app.therackapp.io?code=" + encodeURIComponent(state.sheetId) + "&animal=" + encodeURIComponent(animalId);
+        var canvas = document.getElementById("qr-" + index);
+        
+        QRCode.toCanvas(canvas, qrUrl, {
+          width: s.qr,
+          margin: 1,
+          color: { dark: "#000000", light: "#ffffff" }
+        });
+      });
+    }
+
+    function printQRCodes() {
+      var printContent = document.getElementById("qrPrintArea").innerHTML;
+      var printWindow = window.open('', '_blank');
+      printWindow.document.write('<html><head><title>QR Codes - The Rack</title>');
+      printWindow.document.write('<style>');
+      printWindow.document.write('body { font-family: Inter, system-ui, sans-serif; margin: 20px; }');
+      printWindow.document.write('.flex { display: flex; flex-wrap: wrap; gap: 8px; }');
+      printWindow.document.write('.qr-label { background: white; border: 1px solid #ccc; border-radius: 4px; padding: 8px; text-align: center; page-break-inside: avoid; }');
+      printWindow.document.write('.mx-auto { margin-left: auto; margin-right: auto; display: block; }');
+      printWindow.document.write('.font-bold { font-weight: bold; }');
+      printWindow.document.write('.text-gray-500 { color: #6b7280; }');
+      printWindow.document.write('.mono { font-family: monospace; }');
+      printWindow.document.write('.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }');
+      printWindow.document.write('</style></head><body>');
+      printWindow.document.write(printContent);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.print();
     }
 
     // ============ START ============
