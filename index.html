@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.31
+  Version: 2.10.33
   Last Updated: 2026-01-07
   
   Changelog:
@@ -563,7 +563,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.31";
+    var VERSION = "2.10.33";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -3853,14 +3853,42 @@
     }
 
     function parseImportCSV(text) {
-      var lines = text.split('\n');
-      if (lines.length < 2) {
+      // First, properly split into rows handling multi-line quoted fields
+      var rows = [];
+      var currentRow = "";
+      var inQuotes = false;
+      
+      for (var i = 0; i < text.length; i++) {
+        var char = text[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+          currentRow += char;
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+          if (currentRow.trim()) {
+            rows.push(currentRow);
+          }
+          currentRow = "";
+          // Skip \r\n as single newline
+          if (char === '\r' && text[i+1] === '\n') i++;
+        } else {
+          currentRow += char;
+        }
+      }
+      if (currentRow.trim()) {
+        rows.push(currentRow);
+      }
+      
+      if (rows.length < 2) {
         setStatus("CSV file appears to be empty", true);
         return;
       }
 
       // Parse header
-      var headers = parseCSVLine(lines[0]);
+      var headers = parseCSVLine(rows[0]);
+      console.log("CSV Import Debug:");
+      console.log("Total rows found:", rows.length);
+      console.log("Headers count:", headers.length);
+      console.log("Last_Update** index:", headers.indexOf('Last_Update**'));
       
       // Find column indices
       var cols = {
@@ -3885,12 +3913,19 @@
 
       importData = [];
 
-      // Parse each row
-      for (var i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
+      // Parse each row (starting at 1 to skip header)
+      for (var i = 1; i < rows.length; i++) {
+        if (!rows[i].trim()) continue;
         
-        var row = parseCSVLine(lines[i]);
+        var row = parseCSVLine(rows[i]);
         if (row.length < 5) continue;
+        
+        // Debug first row
+        if (i === 1) {
+          console.log("First data row column count:", row.length);
+          console.log("State value:", row[cols.state]);
+          console.log("Last_Update value:", row[cols.lastUpdate]);
+        }
 
         var mmState = (row[cols.state] || "").toLowerCase();
         var status = "Breeder";
@@ -3907,13 +3942,6 @@
           soldPrice = price;
           // Use Last_Update as sold date (format: "2026/01/04 18:10:54 -0500")
           var lastUpdate = row[cols.lastUpdate] || "";
-          console.log("SOLD ITEM DEBUG:", {
-            animalId: row[cols.animalId],
-            status: status,
-            lastUpdateColIndex: cols.lastUpdate,
-            lastUpdateValue: lastUpdate,
-            rowLength: row.length
-          });
           if (lastUpdate) {
             // Parse the date part (before the time)
             var datePart = lastUpdate.split(' ')[0];
@@ -3925,7 +3953,6 @@
               } else {
                 soldDate = datePart;
               }
-              console.log("Parsed soldDate:", soldDate);
             }
           }
         } else if (status === "Listed") {
