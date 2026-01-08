@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.25
+  Version: 2.10.30
   Last Updated: 2026-01-07
   
   Changelog:
@@ -195,6 +195,9 @@
 
         <!-- Support -->
         <div class="mt-6 pt-4 border-t border-gray-100">
+          <button onclick="openChangelogModal(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block w-full text-left">
+            What's New
+          </button>
           <a href="https://docs.google.com/forms/d/e/1FAIpQLSc1cdNzPiLLteHIIUMD83yUc4BLZ1JL8hmpuwsiYUGMcPHBaQ/viewform" target="_blank" onclick="toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block">
             Submit Support Ticket
           </a>
@@ -237,6 +240,9 @@
 
           <!-- Support -->
           <div class="mt-6 pt-4 border-t border-gray-100">
+            <button onclick="openChangelogModal()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block w-full text-left">
+              What's New
+            </button>
             <a href="https://docs.google.com/forms/d/e/1FAIpQLSc1cdNzPiLLteHIIUMD83yUc4BLZ1JL8hmpuwsiYUGMcPHBaQ/viewform" target="_blank" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block">
               Submit Support Ticket
             </a>
@@ -557,7 +563,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.25";
+    var VERSION = "2.10.30";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1671,7 +1677,7 @@
             var animalId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || "";
             if (animalId) {
               var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + animalId);
-              td.innerHTML = '<img src="' + qrUrl + '" alt="QR" class="w-10 h-10" />';
+              td.innerHTML = '<img src="' + qrUrl + '" alt="QR" style="width:40px; height:40px; min-width:40px; min-height:40px; max-width:40px; max-height:40px;" />';
             } else {
               td.textContent = "—";
             }
@@ -2098,10 +2104,13 @@
         activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
       };
       var h = state.headers[getSheetKey(state.activeTab)] || [];
+      var hUpper = h.map(function(x) { return (x || "").toUpperCase(); });
       var wanted = prefs[state.activeTab] || [];
       // QR and MATURITY are virtual columns, don't filter them out
       var virtualCols = ["QR", "MATURITY"];
-      var result = wanted.filter(function(w) { return virtualCols.indexOf(w) >= 0 || h.indexOf(w) >= 0; });
+      var result = wanted.filter(function(w) { 
+        return virtualCols.indexOf(w) >= 0 || hUpper.indexOf(w.toUpperCase()) >= 0; 
+      });
       return result.length ? result : h.slice(0, 6);
     }
 
@@ -2288,20 +2297,20 @@
       }
       
       // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
-      var skipFields = ["__rowIndex", "__raw", "QR CODE", "SHEET ID"];
+      var skipFields = ["__rowIndex", "__raw", "QR CODE", "SHEET ID", "SHEET_ID"];
       if (state.modalTab !== "activity") {
         skipFields.push("UNIQUE ID");
         skipFields.push("CLUTCH ID");
       }
       
       // Fields to skip for clutch ADD form (these are set via Hatch modal)
-      var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID", "QR CODE"];
+      var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID", "QR CODE", "SHEET ID", "SHEET_ID"];
       
       // Fields to skip for breeder ADD form (hatchling/sale specific fields)
-      var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "MANUAL OVERRIDE", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM", "QR CODE"];
+      var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "MANUAL OVERRIDE", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM", "QR CODE", "SHEET ID", "SHEET_ID"];
       
       // Fields to skip for hatchling ADD form
-      var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "QR CODE"];
+      var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "QR CODE", "SHEET ID", "SHEET_ID"];
       
       // Fields to show at the end for hatchling form
       var hatchlingEndFields = ["MANUAL OVERRIDE", "NOTES"];
@@ -2348,11 +2357,14 @@
       
       headers.forEach(function(h) {
         if (skipFields.indexOf(h) >= 0) return;
+        if (skipFields.indexOf(h.toUpperCase()) >= 0) return;
         if (h.includes("(RESERVED)")) return;
         // Skip fields that look like Sheet IDs (long alphanumeric strings, may contain / or other chars)
         if (/^[A-Z0-9_\-\/]{15,}$/i.test(h)) return;
         // Also skip any field that starts with a number and is very long
         if (/^\d/.test(h) && h.length > 10) return;
+        // Skip anything with SHEET in the name
+        if (h.toUpperCase().indexOf("SHEET") >= 0) return;
         
         // Collection form - hide sale fields unless status is on hold/sold
         if (state.modalTab === "collection" && saleFields.indexOf(h) >= 0 && !showSaleFields) return;
@@ -3321,6 +3333,98 @@
       openAddModal(formType);
     }
 
+    function openChangelogModal() {
+      var html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center p-4 overflow-auto" style="z-index: 9999;" onclick="if(event.target===this)closeChangelogModal()">';
+      html += '<div class="bg-white rounded-2xl w-full max-w-2xl my-8 shadow-2xl">';
+      html += '<div class="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">';
+      html += '<h2 class="text-xl font-bold text-gray-900">What\'s New - v' + VERSION + '</h2>';
+      html += '<button onclick="closeChangelogModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>';
+      html += '</div>';
+      html += '<div class="p-6 max-h-[70vh] overflow-y-auto">';
+      
+      // Changelog content
+      html += '<div class="space-y-6">';
+      
+      html += '<div><h3 class="font-bold text-gray-800 mb-2">Login & Security</h3>';
+      html += '<ul class="text-sm text-gray-600 space-y-1">';
+      html += '<li>- Email + Access Code Login - Simple, secure login</li>';
+      html += '<li>- Auto-login - Remembers your credentials</li>';
+      html += '<li>- Per-customer Google Sheets - Your data stays private</li>';
+      html += '</ul></div>';
+      
+      html += '<div><h3 class="font-bold text-gray-800 mb-2">Dashboard</h3>';
+      html += '<ul class="text-sm text-gray-600 space-y-1">';
+      html += '<li>- At-a-glance stats for breeders, clutches, hatchlings, sales</li>';
+      html += '<li>- Year-over-year sales comparison</li>';
+      html += '<li>- Smart alerts - Overdue clutches, unshipped sales, needs sexing, and more</li>';
+      html += '</ul></div>';
+      
+      html += '<div><h3 class="font-bold text-gray-800 mb-2">Collection Management</h3>';
+      html += '<ul class="text-sm text-gray-600 space-y-1">';
+      html += '<li>- Full animal profiles with genetics, status, DOB</li>';
+      html += '<li>- Clickable gene tags for filtering</li>';
+      html += '<li>- Maturity auto-calculation from DOB</li>';
+      html += '<li>- QR codes for each animal</li>';
+      html += '</ul></div>';
+      
+      html += '<div><h3 class="font-bold text-gray-800 mb-2">Clutch Management</h3>';
+      html += '<ul class="text-sm text-gray-600 space-y-1">';
+      html += '<li>- Track sire, dam, lay date, egg counts</li>';
+      html += '<li>- Auto-calculated estimated hatch date</li>';
+      html += '<li>- Overdue clutch alerts</li>';
+      html += '<li>- Batch hatchling creation from clutch</li>';
+      html += '</ul></div>';
+      
+      html += '<div><h3 class="font-bold text-gray-800 mb-2">Sales & Hatchlings</h3>';
+      html += '<ul class="text-sm text-gray-600 space-y-1">';
+      html += '<li>- Dedicated views for hatchlings and sales</li>';
+      html += '<li>- Quick sell and holdback actions</li>';
+      html += '<li>- Payment and shipping tracking</li>';
+      html += '<li>- Revenue calculation by year</li>';
+      html += '</ul></div>';
+      
+      html += '<div><h3 class="font-bold text-gray-800 mb-2">Import & Export</h3>';
+      html += '<ul class="text-sm text-gray-600 space-y-1">';
+      html += '<li>- MorphMarket CSV import with field mapping</li>';
+      html += '<li>- Smart duplicate detection (updates instead of duplicates)</li>';
+      html += '<li>- Export collection or clutches to CSV</li>';
+      html += '</ul></div>';
+      
+      html += '<div><h3 class="font-bold text-gray-800 mb-2">QR Code System</h3>';
+      html += '<ul class="text-sm text-gray-600 space-y-1">';
+      html += '<li>- Auto-generated QR codes for every animal</li>';
+      html += '<li>- Print QR labels (small, medium, large)</li>';
+      html += '<li>- Scan QR to quickly log activity</li>';
+      html += '</ul></div>';
+      
+      html += '<div><h3 class="font-bold text-gray-800 mb-2">Archive & Activity</h3>';
+      html += '<ul class="text-sm text-gray-600 space-y-1">';
+      html += '<li>- Soft delete - items go to Archive, can be restored</li>';
+      html += '<li>- Activity log for feeding, sheds, weights, pairings</li>';
+      html += '</ul></div>';
+      
+      html += '<div><h3 class="font-bold text-gray-800 mb-2">Mobile Friendly</h3>';
+      html += '<ul class="text-sm text-gray-600 space-y-1">';
+      html += '<li>- Responsive design for phone, tablet, desktop</li>';
+      html += '<li>- Slide-out mobile menu</li>';
+      html += '<li>- Touch-friendly buttons</li>';
+      html += '</ul></div>';
+      
+      html += '</div>'; // space-y-6
+      html += '</div>'; // p-6 overflow
+      html += '</div></div>';
+      
+      var modal = document.createElement('div');
+      modal.id = 'changelogModal';
+      modal.innerHTML = html;
+      document.body.appendChild(modal);
+    }
+
+    function closeChangelogModal() {
+      var modal = document.getElementById('changelogModal');
+      if (modal) modal.remove();
+    }
+
     function openSettingsModal() {
       console.log("openSettingsModal called");
       console.log("state.settings:", state.settings);
@@ -3775,7 +3879,8 @@
         sires: headers.indexOf('Sires**'),
         dams: headers.indexOf('Dams**'),
         privateNotes: headers.indexOf('Private_Notes'),
-        groupId: headers.indexOf('Group_Id')
+        groupId: headers.indexOf('Group_Id'),
+        lastUpdate: headers.indexOf('Last_Update**')
       };
 
       importData = [];
@@ -3796,9 +3901,25 @@
         var purchasePrice = "";
         var listPrice = "";
         var soldPrice = "";
+        var soldDate = "";
 
         if (status === "Sold") {
           soldPrice = price;
+          // Use Last_Update as sold date (format: "2026/01/04 18:10:54 -0500")
+          var lastUpdate = row[cols.lastUpdate] || "";
+          if (lastUpdate) {
+            // Parse the date part (before the time)
+            var datePart = lastUpdate.split(' ')[0];
+            if (datePart) {
+              // Convert from YYYY/MM/DD to MM/DD/YYYY
+              var parts = datePart.split('/');
+              if (parts.length === 3) {
+                soldDate = parts[1] + '/' + parts[2] + '/' + parts[0];
+              } else {
+                soldDate = datePart;
+              }
+            }
+          }
         } else if (status === "Listed") {
           listPrice = price;
         } else {
@@ -3847,6 +3968,7 @@
           "PURCHASE PRICE": purchasePrice,
           "LIST PRICE": listPrice,
           "SOLD PRICE": soldPrice,
+          "DATE SOLD": soldDate,
           "NOTES": notes,
           "BREEDER SOURCE": row[cols.origin] || "",
           "SIRE": sire,
