@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.34
+  Version: 2.10.36
   Last Updated: 2026-01-07
   
   Changelog:
@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     .mono { font-family: ui-monospace, monospace; }
@@ -563,7 +563,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.34";
+    var VERSION = "2.10.36";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -2131,7 +2131,25 @@
           return st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale";
         }
         if (state.activeTab === "sales") {
-          return st === "on hold" || st === "hold" || st === "sold";
+          // First filter by sales status
+          if (!(st === "on hold" || st === "hold" || st === "sold")) {
+            return false;
+          }
+          // Apply year filter if set
+          if (state.filters.salesYear) {
+            var soldDate = parseDate(r["DATE SOLD"]);
+            if (!soldDate || soldDate.getFullYear() !== parseInt(state.filters.salesYear)) {
+              return false;
+            }
+          }
+          // Apply status filter if set
+          if (state.filters.salesStatus) {
+            var statusMatch = state.filters.salesStatus.toLowerCase();
+            if (st !== statusMatch && !(statusMatch === "on hold" && st === "hold")) {
+              return false;
+            }
+          }
+          return true;
         }
         return true;
       });
