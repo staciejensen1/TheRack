@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.9
+  Version: 2.10.24
   Last Updated: 2026-01-07
   
   Changelog:
@@ -557,7 +557,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.23";
+    var VERSION = "2.10.24";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1595,101 +1595,117 @@
         return;
       }
 
-      // Store displayed rows globally so buttons can access them
-      window._displayedRows = rows;
-      
-      // Build table using innerHTML
-      var tbodyHtml = '';
-      
-      for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        var rowClass = "hover:bg-slate-50";
+      rows.forEach(function(row) {
+        var tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50";
         
-        // Check if this clutch is overdue (for Incubator view)
+        // Check if this clutch is overdue (for Clutches view)
         var isOverdue = false;
         if (state.activeTab === "clutches") {
           var estHatchDate = row["EST. HATCH DATE"] || row["EST HATCH DATE"] || row["ESTIMATED HATCH DATE"] || "";
-          var rowStatus = (row.STATUS || "").toLowerCase();
-          if (estHatchDate && rowStatus === "incubating") {
+          var status = (row.STATUS || "").toLowerCase();
+          if (estHatchDate && status === "incubating") {
             var estDate = parseDate(estHatchDate);
             var today = new Date();
             today.setHours(0, 0, 0, 0);
             if (estDate && estDate < today) {
               isOverdue = true;
-              rowClass = "hover:bg-gray-200 bg-gray-200";
+              tr.className = "hover:bg-gray-200 bg-gray-200";
             }
           }
         }
         
-        tbodyHtml += '<tr class="' + rowClass + '">';
+        // Actions FIRST (sticky left)
+        var actionTd = document.createElement("td");
+        actionTd.className = "px-3 py-3 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100";
         
-        // Actions column - use display index (i) not __rowIndex
-        tbodyHtml += '<td class="px-3 py-3 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100">';
-        
-        // Edit button - onclick directly calls function with display index
-        tbodyHtml += '<button onclick="handleEdit(' + i + ')" class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1">Edit</button>';
-        
-        // Hatch button (only for clutches)
+        var editBtn = document.createElement("button");
+        editBtn.className = "px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1";
+        editBtn.textContent = "Edit";
+        editBtn.onclick = function() { openEditModal(row); };
+        actionTd.appendChild(editBtn);
+
         if (showHatch) {
-          tbodyHtml += '<button onclick="handleHatch(' + i + ')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1">Hatch</button>';
+          var hatchBtn = document.createElement("button");
+          hatchBtn.className = "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1";
+          hatchBtn.textContent = "Hatch";
+          hatchBtn.onclick = function() { openHatchModal(row); };
+          actionTd.appendChild(hatchBtn);
         }
-        
-        // Sell and Holdback buttons (only for hatchlings)
+
         if (showSale) {
-          tbodyHtml += '<button onclick="handleSell(' + i + ')" class="px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1">Sell</button>';
-          tbodyHtml += '<button onclick="handleHoldback(' + i + ')" class="px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1">+ Holdback</button>';
+          var saleBtn = document.createElement("button");
+          saleBtn.className = "px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1";
+          saleBtn.textContent = "Sell";
+          saleBtn.onclick = function() { openSaleModal(row); };
+          actionTd.appendChild(saleBtn);
+          
+          var holdbackBtn = document.createElement("button");
+          holdbackBtn.className = "px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1";
+          holdbackBtn.textContent = "+ Holdback";
+          holdbackBtn.onclick = function() { markAsHoldback(row); };
+          actionTd.appendChild(holdbackBtn);
         }
-        
-        // Delete button (for all except activity)
-        if (state.activeTab !== "activity") {
-          var sourceTab = state.activeTab === "clutches" ? "Clutch" : "Collection";
-          tbodyHtml += '<button onclick="handleDelete(' + i + ', \'' + sourceTab + '\')" class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Delete</button>';
+
+        // Archive button for collection and clutches
+        if (state.activeTab === "collection" || state.activeTab === "clutches" || state.activeTab === "hatchlings" || state.activeTab === "sales") {
+          var archiveTab = state.activeTab === "clutches" ? "Clutch" : "Collection";
+          var archiveBtn = document.createElement("button");
+          archiveBtn.className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200";
+          archiveBtn.textContent = "Delete";
+          archiveBtn.onclick = (function(rowIndex, tab) {
+            return function() { archiveRecord(rowIndex, tab); };
+          })(row.__rowIndex, archiveTab);
+          actionTd.appendChild(archiveBtn);
         }
-        
-        tbodyHtml += '</td>';
+
+        tr.appendChild(actionTd);
         
         // Data columns
-        for (var j = 0; j < columns.length; j++) {
-          var col = columns[j];
-          tbodyHtml += '<td class="px-3 py-3 text-slate-700 whitespace-nowrap text-sm">';
+        columns.forEach(function(col, colIdx) {
+          var td = document.createElement("td");
+          td.className = "px-3 py-3 text-slate-700 whitespace-nowrap text-sm";
           
+          // Special handling for QR column
           if (col === "QR") {
             var animalId = row["UNIQUE ID"] || row["MANUAL OVERRIDE"] || "";
             if (animalId) {
               var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + animalId);
-              tbodyHtml += '<img src="' + qrUrl + '" alt="QR" style="width:40px; height:40px; min-width:40px; min-height:40px;" />';
+              td.innerHTML = '<img src="' + qrUrl + '" alt="QR" class="w-10 h-10" />';
             } else {
-              tbodyHtml += '—';
+              td.textContent = "—";
             }
-          } else if (col === "MATURITY") {
+          }
+          // Maturity column
+          else if (col === "MATURITY") {
             var maturity = calculateMaturity(row["DATE OF BIRTH"]);
-            tbodyHtml += '<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">' + maturity + '</span>';
-          } else if (col === "STATUS") {
+            td.innerHTML = '<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">' + maturity + '</span>';
+          }
+          // Status badge
+          else if (col === "STATUS") {
             var statusVal = row[col] || "—";
-            tbodyHtml += '<span class="px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs font-medium">' + escapeHtml(statusVal) + '</span>';
-          } else if (col === "GENETIC SUMMARY") {
+            td.innerHTML = '<span class="px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs font-medium">' + escapeHtml(statusVal) + '</span>';
+          }
+          // Gene tags
+          else if (col === "GENETIC SUMMARY") {
             var genes = row[col] || "";
             if (genes) {
-              tbodyHtml += renderGeneTags(genes);
+              td.innerHTML = renderGeneTags(genes);
             } else {
-              tbodyHtml += '—';
+              td.textContent = "—";
             }
-          } else if (j === 0 && isOverdue) {
-            tbodyHtml += '<span class="text-gray-900 mr-1" title="Overdue">⚠️</span>' + escapeHtml(row[col] || "—");
-          } else {
-            tbodyHtml += escapeHtml(row[col] || "—");
           }
-          
-          tbodyHtml += '</td>';
-        }
-        
-        tbodyHtml += '</tr>';
-      }
-      
-      console.log("tbodyHtml length:", tbodyHtml.length);
-      console.log("About to set tbody.innerHTML with", rows.length, "rows");
-      tbody.innerHTML = tbodyHtml;
-      console.log("tbody.innerHTML set successfully");
+          // Add warning icon to first data column if overdue
+          else if (colIdx === 0 && isOverdue) {
+            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
+          } else {
+            td.textContent = row[col] || "—";
+          }
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
     }
     
     // Simple button handlers that use window._displayedRows
@@ -2093,87 +2109,22 @@
       var sheetKey = getSheetKey(state.activeTab);
       var rows = state.data[sheetKey] || [];
       
-      console.log("=== getFilteredRows DEBUG ===");
-      console.log("activeTab:", state.activeTab);
-      console.log("sheetKey:", sheetKey);
-      console.log("Total rows in state.data[" + sheetKey + "]:", rows.length);
-      
-      // For clutches, show ALL rows (no filter)
-      if (state.activeTab === "clutches") {
-        console.log("Filtering clutches from", rows.length, "rows");
-        var result = rows.filter(function(r) {
-          // Only filter out completely empty rows
-          var passes = r["CLUTCH ID"] || r["SIRE"] || r["DAM"] || r["STATUS"];
-          if (passes) console.log("Clutch passes:", r["CLUTCH ID"], "STATUS:", r.STATUS);
-          return passes;
-        });
-        console.log("Clutches filter returned:", result.length, "rows");
-        return result;
-      }
-      
-      // For hatchlings, show Listed/Unlisted/Not listed/For Sale
-      if (state.activeTab === "hatchlings") {
-        console.log("Filtering hatchlings from", rows.length, "rows");
-        var result = rows.filter(function(r) {
-          var st = (r.STATUS || "").toLowerCase().trim();
-          var passes = st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale";
-          if (passes) console.log("Row passes filter:", r["UNIQUE ID"], "STATUS:", r.STATUS);
-          return passes;
-        });
-        console.log("Hatchlings filter returned:", result.length, "rows");
-        return result;
-      }
-      
-      // For collection, show Breeder/Holdback/On Loan
-      if (state.activeTab === "collection") {
-        return rows.filter(function(r) {
-          var st = (r.STATUS || "").toLowerCase().trim();
-          var passes = st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
-          
-          // Apply user filters
-          if (passes && state.filters.sex && (r.SEX || "").toLowerCase() !== state.filters.sex.toLowerCase()) {
-            passes = false;
-          }
-          if (passes && state.filters.status && st !== state.filters.status.toLowerCase()) {
-            passes = false;
-          }
-          if (passes && state.filters.species && (r.SPECIES || "") !== state.filters.species) {
-            passes = false;
-          }
-          if (passes && state.filters.gene) {
-            var genes = (r["GENETIC SUMMARY"] || "").toLowerCase();
-            if (genes.indexOf(state.filters.gene.toLowerCase()) === -1) {
-              passes = false;
-            }
-          }
-          return passes;
-        });
-      }
-      
-      // For sales, show On Hold/Sold
-      if (state.activeTab === "sales") {
-        return rows.filter(function(r) {
-          var st = (r.STATUS || "").toLowerCase().trim();
-          var passes = st === "on hold" || st === "hold" || st === "sold";
-          
-          if (passes && state.filters.salesYear) {
-            var soldDate = parseDate(r["DATE SOLD"]);
-            if (!soldDate || soldDate.getFullYear() !== parseInt(state.filters.salesYear)) {
-              passes = false;
-            }
-          }
-          if (passes && state.filters.salesStatus) {
-            if (st !== state.filters.salesStatus.toLowerCase()) {
-              passes = false;
-            }
-          }
-          return passes;
-        });
-      }
-      
-      // Default - return all non-empty rows
       return rows.filter(function(r) {
-        return r.STATUS || r["UNIQUE ID"] || r["CLUTCH ID"];
+        var st = (r.STATUS || "").toLowerCase().trim();
+        if (state.activeTab === "collection") {
+          return st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
+        }
+        if (state.activeTab === "clutches") {
+          // Show all clutches (including hatched)
+          return true;
+        }
+        if (state.activeTab === "hatchlings") {
+          return st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale";
+        }
+        if (state.activeTab === "sales") {
+          return st === "on hold" || st === "hold" || st === "sold";
+        }
+        return true;
       });
     }
 
