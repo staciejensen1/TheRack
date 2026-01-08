@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.33
+  Version: 2.10.34
   Last Updated: 2026-01-07
   
   Changelog:
@@ -563,7 +563,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.33";
+    var VERSION = "2.10.34";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -3853,42 +3853,75 @@
     }
 
     function parseImportCSV(text) {
-      // First, properly split into rows handling multi-line quoted fields
-      var rows = [];
-      var currentRow = "";
+      // Use a robust CSV parser that handles:
+      // 1. Multi-line fields in quotes
+      // 2. Commas inside quoted fields
+      // 3. Escaped quotes ("" inside fields)
+      
+      var allRows = [];
+      var currentField = "";
+      var currentRow = [];
       var inQuotes = false;
       
       for (var i = 0; i < text.length; i++) {
         var char = text[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-          currentRow += char;
-        } else if ((char === '\n' || char === '\r') && !inQuotes) {
-          if (currentRow.trim()) {
-            rows.push(currentRow);
+        var nextChar = text[i + 1] || "";
+        
+        if (inQuotes) {
+          if (char === '"' && nextChar === '"') {
+            // Escaped quote - add one quote and skip next
+            currentField += '"';
+            i++;
+          } else if (char === '"') {
+            // End of quoted field
+            inQuotes = false;
+          } else {
+            // Regular character inside quotes (including newlines)
+            currentField += char;
           }
-          currentRow = "";
-          // Skip \r\n as single newline
-          if (char === '\r' && text[i+1] === '\n') i++;
         } else {
-          currentRow += char;
+          if (char === '"') {
+            // Start of quoted field
+            inQuotes = true;
+          } else if (char === ',') {
+            // Field separator
+            currentRow.push(currentField.trim());
+            currentField = "";
+          } else if (char === '\r' || char === '\n') {
+            // Row separator
+            if (char === '\r' && nextChar === '\n') i++; // Skip \r\n pair
+            if (currentField || currentRow.length > 0) {
+              currentRow.push(currentField.trim());
+              if (currentRow.length > 1 || currentRow[0]) {
+                allRows.push(currentRow);
+              }
+              currentRow = [];
+              currentField = "";
+            }
+          } else {
+            currentField += char;
+          }
         }
       }
-      if (currentRow.trim()) {
-        rows.push(currentRow);
+      // Don't forget last field/row
+      if (currentField || currentRow.length > 0) {
+        currentRow.push(currentField.trim());
+        if (currentRow.length > 1 || currentRow[0]) {
+          allRows.push(currentRow);
+        }
       }
       
-      if (rows.length < 2) {
+      if (allRows.length < 2) {
         setStatus("CSV file appears to be empty", true);
         return;
       }
 
-      // Parse header
-      var headers = parseCSVLine(rows[0]);
+      // First row is headers
+      var headers = allRows[0];
       console.log("CSV Import Debug:");
-      console.log("Total rows found:", rows.length);
+      console.log("Total rows found:", allRows.length);
       console.log("Headers count:", headers.length);
-      console.log("Last_Update** index:", headers.indexOf('Last_Update**'));
+      console.log("Headers:", headers.slice(30, 35)); // Show columns around Last_Update
       
       // Find column indices
       var cols = {
@@ -3910,14 +3943,14 @@
         groupId: headers.indexOf('Group_Id'),
         lastUpdate: headers.indexOf('Last_Update**')
       };
+      
+      console.log("Last_Update** index:", cols.lastUpdate);
 
       importData = [];
 
       // Parse each row (starting at 1 to skip header)
-      for (var i = 1; i < rows.length; i++) {
-        if (!rows[i].trim()) continue;
-        
-        var row = parseCSVLine(rows[i]);
+      for (var i = 1; i < allRows.length; i++) {
+        var row = allRows[i];
         if (row.length < 5) continue;
         
         // Debug first row
