@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.39
+  Version: 2.10.41
   Last Updated: 2026-01-07
   
   Changelog:
@@ -563,7 +563,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.39";
+    var VERSION = "2.10.41";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1704,6 +1704,15 @@
           // Add warning icon to first data column if overdue
           else if (colIdx === 0 && isOverdue) {
             td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
+          } 
+          // Format date columns nicely
+          else if (col.toUpperCase().includes("DATE") && row[col]) {
+            var dateVal = parseDate(row[col]);
+            if (dateVal) {
+              td.textContent = (dateVal.getMonth() + 1) + "/" + dateVal.getDate() + "/" + dateVal.getFullYear();
+            } else {
+              td.textContent = row[col] || "—";
+            }
           } else {
             td.textContent = row[col] || "—";
           }
@@ -4282,9 +4291,9 @@
   <footer class="mt-8 py-6 border-t border-gray-200 bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
       <div class="mb-2">
-        <a href="https://therackapp.io/privacy-policy" target="_blank" class="hover:text-gray-700 hover:underline">Privacy Policy</a>
+        <a href="https://therackapp.io/policies/privacy-policy" target="_blank" class="hover:text-gray-700 hover:underline">Privacy Policy</a>
         <span class="mx-2">|</span>
-        <a href="https://therackapp.io/terms-and-conditions" target="_blank" class="hover:text-gray-700 hover:underline">Terms & Conditions</a>
+        <a href="https://therackapp.io/policies/terms-of-service" target="_blank" class="hover:text-gray-700 hover:underline">Terms of Service</a>
       </div>
       <div>
         © 2026 The Rack App | DBA Soul Serpents, LLC. All rights reserved.
