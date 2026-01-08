@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.24.1
+  Version: 2.10.25
   Last Updated: 2026-01-07
   
   Changelog:
@@ -557,7 +557,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.24";
+    var VERSION = "2.10.25";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -3937,14 +3937,6 @@
         case "Breeder": return "bg-purple-100 text-purple-800";
         default: return "bg-gray-100 text-gray-800";
       }
-    }
-
-    function escapeHtml(text) {
-      if (!text) return "";
-      return text.replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;");
     }
 
     function executeImport() {
