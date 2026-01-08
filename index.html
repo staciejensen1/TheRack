@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.30
+  Version: 2.10.31
   Last Updated: 2026-01-07
   
   Changelog:
@@ -563,7 +563,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.30";
+    var VERSION = "2.10.31";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -3907,6 +3907,13 @@
           soldPrice = price;
           // Use Last_Update as sold date (format: "2026/01/04 18:10:54 -0500")
           var lastUpdate = row[cols.lastUpdate] || "";
+          console.log("SOLD ITEM DEBUG:", {
+            animalId: row[cols.animalId],
+            status: status,
+            lastUpdateColIndex: cols.lastUpdate,
+            lastUpdateValue: lastUpdate,
+            rowLength: row.length
+          });
           if (lastUpdate) {
             // Parse the date part (before the time)
             var datePart = lastUpdate.split(' ')[0];
@@ -3918,6 +3925,7 @@
               } else {
                 soldDate = datePart;
               }
+              console.log("Parsed soldDate:", soldDate);
             }
           }
         } else if (status === "Listed") {
