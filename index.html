@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.10.36
+  Version: 2.10.39
   Last Updated: 2026-01-07
   
   Changelog:
@@ -563,7 +563,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.10.36";
+    var VERSION = "2.10.39";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -2121,14 +2121,60 @@
       return rows.filter(function(r) {
         var st = (r.STATUS || "").toLowerCase().trim();
         if (state.activeTab === "collection") {
-          return st === "breeder" || st === "collection" || st === "holdback" || st === "on loan";
+          // First check if it's a valid collection status
+          if (!(st === "breeder" || st === "collection" || st === "holdback" || st === "on loan")) {
+            return false;
+          }
+          // Apply sex filter
+          if (state.filters.sex && r.SEX !== state.filters.sex) {
+            return false;
+          }
+          // Apply status filter
+          if (state.filters.status && (r.STATUS || "").toLowerCase() !== state.filters.status.toLowerCase()) {
+            return false;
+          }
+          // Apply species filter
+          if (state.filters.species && r.SPECIES !== state.filters.species) {
+            return false;
+          }
+          // Apply gene filter
+          if (state.filters.gene) {
+            var genes = (r["GENETIC SUMMARY"] || "").toLowerCase();
+            if (genes.indexOf(state.filters.gene.toLowerCase()) < 0) {
+              return false;
+            }
+          }
+          return true;
         }
         if (state.activeTab === "clutches") {
           // Show all clutches (including hatched)
           return true;
         }
         if (state.activeTab === "hatchlings") {
-          return st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale";
+          // First check if it's a valid hatchling status
+          if (!(st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale")) {
+            return false;
+          }
+          // Apply sex filter
+          if (state.filters.sex && r.SEX !== state.filters.sex) {
+            return false;
+          }
+          // Apply status filter
+          if (state.filters.status && (r.STATUS || "").toLowerCase() !== state.filters.status.toLowerCase()) {
+            return false;
+          }
+          // Apply species filter
+          if (state.filters.species && r.SPECIES !== state.filters.species) {
+            return false;
+          }
+          // Apply gene filter
+          if (state.filters.gene) {
+            var genes = (r["GENETIC SUMMARY"] || "").toLowerCase();
+            if (genes.indexOf(state.filters.gene.toLowerCase()) < 0) {
+              return false;
+            }
+          }
+          return true;
         }
         if (state.activeTab === "sales") {
           // First filter by sales status
@@ -2311,7 +2357,7 @@
       
       // Fallback headers for clutch if none loaded
       if (state.modalTab === "clutch" && headers.length === 0) {
-        headers = ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# EGGS", "# FERTILE", "# SLUGS", "STATUS", "NOTES"];
+        headers = ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# EGGS", "# FERTILE", "# SLUGS", "STATUS", "MANUAL OVERRIDE", "NOTES"];
       }
       
       // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
@@ -2325,7 +2371,7 @@
       var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID", "QR CODE", "SHEET ID", "SHEET_ID"];
       
       // Fields to skip for breeder ADD form (hatchling/sale specific fields)
-      var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "MANUAL OVERRIDE", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM", "QR CODE", "SHEET ID", "SHEET_ID"];
+      var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM", "QR CODE", "SHEET ID", "SHEET_ID"];
       
       // Fields to skip for hatchling ADD form
       var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "QR CODE", "SHEET ID", "SHEET_ID"];
@@ -4231,5 +4277,19 @@
     // ============ START ============
     init();
   </script>
+
+  <!-- Footer -->
+  <footer class="mt-8 py-6 border-t border-gray-200 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
+      <div class="mb-2">
+        <a href="https://therackapp.io/privacy-policy" target="_blank" class="hover:text-gray-700 hover:underline">Privacy Policy</a>
+        <span class="mx-2">|</span>
+        <a href="https://therackapp.io/terms-and-conditions" target="_blank" class="hover:text-gray-700 hover:underline">Terms & Conditions</a>
+      </div>
+      <div>
+        © 2026 The Rack App | DBA Soul Serpents, LLC. All rights reserved.
+      </div>
+    </div>
+  </footer>
 </body>
 </html>
