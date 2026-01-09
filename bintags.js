@@ -1,9 +1,10 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.16
+ * Version: 2.12.17
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.17: PDF now uses colgroup for consistent column widths, removed redundant inline widths
  * - 2.12.16: Print Tags now uses TABLE layout with colgroup for consistent 30% column width
  * - 2.12.15: PDF rewrite - use TABLE layout instead of flexbox for reliable rendering
  * - 2.12.14: PDF fix - Row 2 now matches preview exactly (simple flexbox, no extra props)
@@ -627,11 +628,18 @@ function downloadBinTagsPDFFile() {
       
       var html = '<table style="width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed;">';
       
+      // Define column widths explicitly
+      html += '<colgroup>';
+      html += '<col style="width: 25%;">';
+      html += '<col style="width: 45%;">';
+      html += '<col style="width: 30%;">';
+      html += '</colgroup>';
+      
       // ROW 1: Logo (25%) | Sex+ID (45%) | QR (30%)
       html += '<tr style="height: ' + row1Height + 'px;">';
       
       // Logo cell
-      html += '<td style="width: 25%; background: #000; color: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px;">';
+      html += '<td style="background: #000; color: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px;">';
       if (logoBase64) {
         html += '<img src="' + logoBase64 + '" style="max-width: 90%; max-height: ' + (row1Height - 10) + 'px; object-fit: contain;">';
       } else if (logoUrl) {
@@ -642,13 +650,13 @@ function downloadBinTagsPDFFile() {
       html += '</td>';
       
       // Sex + ID cell (with top padding for card cutout)
-      html += '<td style="width: 45%; background: #fff; text-align: center; vertical-align: top; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; padding-top: 24px;">';
+      html += '<td style="background: #fff; text-align: center; vertical-align: top; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; padding-top: 24px;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 20px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
       html += '</td>';
       
       // QR cell
-      html += '<td style="width: 30%; background: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; padding: 4px;">';
+      html += '<td style="background: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; padding: 4px;">';
       html += '<img src="' + qrUrl + '" style="width: 85%; height: auto; max-height: ' + (row1Height - 10) + 'px;">';
       html += '</td>';
       
@@ -657,13 +665,13 @@ function downloadBinTagsPDFFile() {
       // ROW 2: Name (70%) | INFO (30%)
       html += '<tr style="height: ' + row2Height + 'px;">';
       
-      // Name cell - spans first 2 columns conceptually but we use colspan
-      html += '<td colspan="2" style="width: 70%; background: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; border-right: 1px solid #000;">';
+      // Name cell - spans first 2 columns
+      html += '<td colspan="2" style="background: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; border-right: 1px solid #000;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
       html += '</td>';
       
       // INFO cell
-      html += '<td style="width: 30%; background: #000; text-align: center; vertical-align: middle; border-bottom: 1px solid #000;">';
+      html += '<td style="background: #000; text-align: center; vertical-align: middle; border-bottom: 1px solid #000;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
       html += '</td>';
       
@@ -673,12 +681,12 @@ function downloadBinTagsPDFFile() {
       html += '<tr style="height: ' + row3Height + 'px;">';
       
       // Genetics cell
-      html += '<td colspan="2" style="width: 70%; background: #fff; text-align: center; vertical-align: middle; border-right: 1px solid #000; padding: 4px;">';
+      html += '<td colspan="2" style="background: #fff; text-align: center; vertical-align: middle; border-right: 1px solid #000; padding: 4px;">';
       html += '<div style="font-size: 10px; font-weight: 500; line-height: 1.2; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
       html += '</td>';
       
       // Year Born + Breeder cell (nested table for split)
-      html += '<td style="width: 30%; background: #fff; padding: 0; vertical-align: top;">';
+      html += '<td style="background: #fff; padding: 0; vertical-align: top;">';
       html += '<table style="width: 100%; height: 100%; border-collapse: collapse;">';
       
       // Year Born row
