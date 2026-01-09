@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.25
+  Version: 2.11.26
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.26: Added Empty Archive button to permanently delete all archived records
   - 2.11.25: Paired With field now uses searchable chip selector matching Select Animal style
   - 2.11.24: Simplified Archive view to show only Unique ID and Restore button
   - 2.11.23: Pairings view now shows SIRE and DAM columns with Name | ID format
@@ -731,7 +732,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.25";
+    var VERSION = "2.11.26";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -4934,10 +4935,57 @@
           
           html += '</tbody></table></div></div>';
         }
+        
+        // Empty Archive button
+        html += '<div class="mt-6 pt-6 border-t border-gray-200">';
+        html += '<button onclick="emptyArchive()" class="px-4 py-2 bg-red-100 text-red-700 rounded-xl text-sm font-medium hover:bg-red-200">';
+        html += 'Empty Archive (' + archiveData.length + ' records)';
+        html += '</button>';
+        html += '<p class="text-xs text-gray-400 mt-2">This will permanently delete all archived records.</p>';
+        html += '</div>';
       }
       
       document.getElementById("dashboardView").innerHTML = html;
       document.getElementById("dashboardView").classList.remove("hidden");
+    }
+
+    function emptyArchive() {
+      var archiveData = state.data.archive || [];
+      if (archiveData.length === 0) {
+        setStatus("Archive is already empty");
+        return;
+      }
+      
+      if (!confirm("Permanently delete all " + archiveData.length + " archived records?\n\nThis cannot be undone.")) {
+        return;
+      }
+      
+      setStatus("Emptying archive...");
+      
+      // Delete rows from bottom to top to avoid index shifting issues
+      var rowsToDelete = archiveData.map(function(r) { return r.__rowIndex; }).sort(function(a, b) { return b - a; });
+      
+      var deleteNext = function(index) {
+        if (index >= rowsToDelete.length) {
+          setStatus("Archive emptied");
+          loadData();
+          return;
+        }
+        
+        apiCall('deleteRecord', { tab: 'Archive', rowIndex: rowsToDelete[index] })
+          .then(function(response) {
+            if (response.success) {
+              deleteNext(index + 1);
+            } else {
+              setStatus("Error: " + (response.error || "Failed to delete"), true);
+            }
+          })
+          .catch(function(error) {
+            setStatus("Error: " + error.message, true);
+          });
+      };
+      
+      deleteNext(0);
     }
 
     function archiveRecord(rowIndex, sourceTab) {
