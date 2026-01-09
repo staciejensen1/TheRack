@@ -1,9 +1,10 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.7
+ * Version: 2.12.8
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.8: Fixed PDF rendering - use screen-size HTML with html2canvas 3x scale
  * - 2.12.7: Added top gap to Sex+ID column for card cutout, logo upload stores as base64
  * - 2.12.6: Fixed logo not appearing in PDF - preload and convert to base64 before rendering
  * - 2.12.5: PDF now renders HTML with html2canvas for proper Norwester font
@@ -532,18 +533,16 @@ function downloadBinTagsPDFFile() {
       btn.textContent = "Download PDF";
       btn.disabled = false;
     }
-    return;
   }
   
   var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
   var logoUrl = state.settings["LOGO DATA"] || state.settings["LOGO URL"] || "";
   
-  // Card size: 3.38" x 2.13" at 300 DPI for high quality
-  var dpi = 300;
-  var cardWidthPx = Math.round(3.38 * dpi);   // 1014px
-  var cardHeightPx = Math.round(2.13 * dpi);  // 639px
-  var cardWidthPt = 3.38 * 72;   // 243.36pt
-  var cardHeightPt = 2.13 * 72;  // 153.36pt
+  // Card size at screen resolution (96 DPI) - html2canvas will scale up
+  var cardWidthPx = 325;   // ~3.38" at 96 DPI
+  var cardHeightPx = 205;  // ~2.13" at 96 DPI
+  var cardWidthPt = 3.38 * 72;   // 243.36pt for PDF
+  var cardHeightPt = 2.13 * 72;  // 153.36pt for PDF
   
   // Pre-load logo image and convert to base64 for PDF rendering
   var logoBase64 = null;
@@ -594,126 +593,121 @@ function downloadBinTagsPDFFile() {
         if (d) yearBorn = String(d.getFullYear()).slice(-2);
       }
       
-      var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
+      var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
       
-      // Create the bin tag HTML at high resolution
+      // Create the bin tag HTML at screen resolution
       var tagDiv = document.createElement('div');
-      tagDiv.style.cssText = 'width: ' + cardWidthPx + 'px; height: ' + cardHeightPx + 'px; background: #fff; font-family: Inter, sans-serif; box-sizing: border-box; border: 3px solid #000; overflow: hidden;';
-      
-      // Scale factor for high DPI
-      var scale = dpi / 96; // 96 is standard screen DPI
+      tagDiv.style.cssText = 'width: ' + cardWidthPx + 'px; height: ' + cardHeightPx + 'px; background: #fff; font-family: Norwester, Inter, sans-serif; box-sizing: border-box; border: 1px solid #000; overflow: hidden;';
       
       var html = '';
       
       // ROW 1: Logo (25%) | Sex+ID (45%) | QR (30%) - 47% height
-      html += '<div style="display: flex; height: 47%; border-bottom: 3px solid #000;">';
+      html += '<div style="display: flex; height: 47%; border-bottom: 1px solid #000;">';
       
       // Logo area (black bg)
-      html += '<div style="width: 25%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px;">';
+      html += '<div style="width: 25%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; box-sizing: border-box;">';
       if (logoBase64) {
-        html += '<img src="' + logoBase64 + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
+        html += '<img src="' + logoBase64 + '" style="max-width: 90%; max-height: 90%; object-fit: contain;">';
       } else if (logoUrl) {
-        html += '<img src="' + escapeHtml(logoUrl) + '" crossorigin="anonymous" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
+        html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;">';
       } else {
-        html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: ' + (28 * scale) + 'px; font-weight: 400; text-align: center; letter-spacing: 1px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
+        html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; text-align: center; letter-spacing: 0.5px; line-height: 1.2; word-break: break-word;">' + escapeHtml(businessName).toUpperCase() + '</div>';
       }
       html += '</div>';
+      
+      // Sex + ID area (with top gap for card cutout)
+      html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 4px; padding-top: 14px; border-left: 1px solid #000; border-right: 1px solid #000; box-sizing: border-box;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 22px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
+      html += '</div>';
+      
+      // QR area
+      html += '<div style="width: 30%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; box-sizing: border-box;">';
+      html += '<img src="' + qrUrl + '" style="width: 85%; height: 85%; object-fit: contain;">';
+      html += '</div>';
+      
+      html += '</div>';
+      
+      // ROW 2: Name (70%) | INFO (30%) - 15% height
+      html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
+      html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000; box-sizing: border-box; overflow: hidden;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%;">' + escapeHtml(name || "UNNAMED") + '</div>';
+      html += '</div>';
+      html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center; box-sizing: border-box;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
+      html += '</div>';
+      html += '</div>';
+      
+      // ROW 3: Genetics (70%) | Year+Breeder (30%) - 38% height
+      html += '<div style="display: flex; height: 38%;">';
+      
+      // Genetics
+      html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 1px solid #000; box-sizing: border-box; overflow: hidden;">';
+      html += '<div style="font-size: 10px; font-weight: 500; line-height: 1.2; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
+      html += '</div>';
+      
+      // Info boxes (white bg with divider)
+      html += '<div style="width: 30%; background: #fff; display: flex; flex-direction: column; box-sizing: border-box;">';
+      
+      // Year Born box
+      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-bottom: 1px solid #000; box-sizing: border-box;">';
+      html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">YEAR BORN:</div>';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 16px; font-weight: 400; color: #000;">' + (yearBorn || "--") + '</div>';
+      html += '</div>';
+      
+      // Breeder box
+      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2px; box-sizing: border-box; overflow: hidden;">';
+      html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">BREEDER:</div>';
+      html += '<div style="font-size: 7px; font-weight: 600; color: #000; line-height: 1.1; word-break: break-word; max-width: 95%;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
+      html += '</div>';
+      
+      html += '</div>';
+      html += '</div>';
+      
+      tagDiv.innerHTML = html;
+      container.appendChild(tagDiv);
+      
+      // Update status
+      setStatus("Rendering " + (currentIndex + 1) + " of " + totalAnimals + "...");
+      
+      // Wait for images to load, then render to canvas with 3x scale for quality
+      setTimeout(function() {
+        html2canvas(tagDiv, {
+          scale: 3,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff'
+        }).then(function(canvas) {
+          // Add new page if not first
+          if (currentIndex > 0) {
+            doc.addPage([cardHeightPt, cardWidthPt], 'landscape');
+          }
+          
+          // Add canvas as image to PDF
+          var imgData = canvas.toDataURL('image/png');
+          doc.addImage(imgData, 'PNG', 0, 0, cardWidthPt, cardHeightPt);
+          
+          // Remove this tag from container
+          container.removeChild(tagDiv);
+          
+          // Process next animal
+          currentIndex++;
+          processNextAnimal();
+        }).catch(function(err) {
+          console.error("Error rendering bin tag:", err);
+          container.removeChild(tagDiv);
+          currentIndex++;
+          processNextAnimal();
+        });
+      }, 300);
+    }
     
-    // Sex + ID area (with top gap for card cutout)
-    html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 10px; padding-top: 45px; border-left: 3px solid #000; border-right: 3px solid #000;">';
-    html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: ' + (62 * scale) + 'px; font-weight: 400; color: #000; letter-spacing: 4px;">' + escapeHtml(sexDisplay) + '</div>';
-    html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: ' + (30 * scale) + 'px; font-weight: 400; color: #000; margin-top: 6px; letter-spacing: 2px;">' + escapeHtml(id) + '</div>';
-    html += '</div>';
-    
-    // QR area
-    html += '<div style="width: 30%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 10px;">';
-    html += '<img src="' + qrUrl + '" style="width: 90%; height: 90%; object-fit: contain;" alt="QR">';
-    html += '</div>';
-    
-    html += '</div>';
-    
-    // ROW 2: Name (70%) | INFO (30%) - 15% height
-    html += '<div style="display: flex; height: 15%; border-bottom: 3px solid #000;">';
-    html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 3px solid #000;">';
-    html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: ' + (55 * scale) + 'px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(name || "UNNAMED") + '</div>';
-    html += '</div>';
-    html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center;">';
-    html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: ' + (30 * scale) + 'px; font-weight: 400; color: #fff; letter-spacing: 4px;">INFO</div>';
-    html += '</div>';
-    html += '</div>';
-    
-    // ROW 3: Genetics (70%) | Year+Breeder (30%) - 38% height
-    html += '<div style="display: flex; height: 38%;">';
-    
-    // Genetics
-    html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 12px; text-align: center; border-right: 3px solid #000;">';
-    html += '<div style="font-size: ' + (28 * scale) + 'px; font-weight: 500; line-height: 1.25; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
-    html += '</div>';
-    
-    // Info boxes (white bg with thin divider)
-    html += '<div style="width: 30%; background: #fff; display: flex; flex-direction: column;">';
-    
-    // Year Born box
-    html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-bottom: 3px solid #000;">';
-    html += '<div style="font-size: ' + (18 * scale) + 'px; font-weight: 700; color: #000; letter-spacing: 1px;">YEAR BORN:</div>';
-    html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: ' + (44 * scale) + 'px; font-weight: 400; color: #000;">' + (yearBorn || "--") + '</div>';
-    html += '</div>';
-    
-    // Breeder box
-    html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
-    html += '<div style="font-size: ' + (18 * scale) + 'px; font-weight: 700; color: #000; letter-spacing: 1px;">BREEDER:</div>';
-    html += '<div style="font-size: ' + (21 * scale) + 'px; font-weight: 600; color: #000; line-height: 1.1; overflow: hidden;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
-    html += '</div>';
-    
-    html += '</div>';
-    html += '</div>';
-    
-    tagDiv.innerHTML = html;
-    container.appendChild(tagDiv);
-    
-    // Update status
-    setStatus("Rendering " + (currentIndex + 1) + " of " + totalAnimals + "...");
-    
-    // Wait for QR image to load, then render to canvas
-    setTimeout(function() {
-      html2canvas(tagDiv, {
-        scale: 1,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: cardWidthPx,
-        height: cardHeightPx
-      }).then(function(canvas) {
-        // Add new page if not first
-        if (currentIndex > 0) {
-          doc.addPage([cardHeightPt, cardWidthPt], 'landscape');
-        }
-        
-        // Add canvas as image to PDF
-        var imgData = canvas.toDataURL('image/png');
-        doc.addImage(imgData, 'PNG', 0, 0, cardWidthPt, cardHeightPt);
-        
-        // Remove this tag from container
-        container.removeChild(tagDiv);
-        
-        // Process next animal
-        currentIndex++;
-        processNextAnimal();
-      }).catch(function(err) {
-        console.error("Error rendering bin tag:", err);
-        container.removeChild(tagDiv);
-        currentIndex++;
-        processNextAnimal();
-      });
-    }, 500); // Wait for QR image to load
-  }
-  
-  // Start processing
+    // Start processing
     processNextAnimal();
   }
   
   // Preload logo if URL exists, then start PDF generation
-  if (logoUrl) {
+  if (logoUrl && !logoUrl.startsWith('data:')) {
     setStatus("Loading logo...");
     var logoImg = new Image();
     logoImg.crossOrigin = "Anonymous";
@@ -738,6 +732,10 @@ function downloadBinTagsPDFFile() {
     };
     logoImg.src = logoUrl;
   } else {
+    // Logo is already base64 or not set
+    if (logoUrl && logoUrl.startsWith('data:')) {
+      logoBase64 = logoUrl;
+    }
     startPDFGeneration();
   }
 }
