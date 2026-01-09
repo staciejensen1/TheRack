@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.1
-  Last Updated: 2026-01-08
+  Version: 2.10.41
+  Last Updated: 2026-01-07
   
   Changelog:
-  - 2.11.1: Invoice feature complete - modal, multi-animal, PDF download, print, tax, deposits, terms
-  - 2.11.0: Invoice feature - generate PDF invoices from Sales view, multi-animal support, tax, deposits, print/download
   - 2.10.9: Fixed Edit for imported rows - falls back to finding row by UNIQUE ID if __rowIndex missing
   - 2.10.7: Fixed filter bar and stats cards showing on Dashboard
   - 2.10.6: NEW approach for Edit/Delete - uses global row array with inline onclick handlers
@@ -30,7 +28,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     .mono { font-family: ui-monospace, monospace; }
@@ -43,37 +40,8 @@
       body * { visibility: hidden; }
       #qrPrintArea, #qrPrintArea * { visibility: visible; }
       #qrPrintArea { position: absolute; left: 0; top: 0; }
-      #invoicePrintArea, #invoicePrintArea * { visibility: visible; }
-      #invoicePrintArea { position: absolute; left: 0; top: 0; width: 100%; }
     }
     .qr-label { page-break-inside: avoid; }
-    
-    /* Invoice Styles */
-    .invoice-preview {
-      background: white;
-      padding: 40px;
-      max-width: 800px;
-      margin: 0 auto;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .invoice-preview table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .invoice-preview th, .invoice-preview td {
-      padding: 8px 12px;
-      text-align: left;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .invoice-preview th {
-      background: #f9fafb;
-      font-weight: 600;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #6b7280;
-    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen">
@@ -132,7 +100,7 @@
           <div id="connectedGroup" class="flex items-center gap-2 hidden">
             <span id="userEmail" class="text-sm text-gray-600"></span>
             <button id="syncBtn" onclick="loadData()" class="px-3 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 text-sm" title="Sync data">
-              ðŸ”„ Sync
+              🔄 Sync
             </button>
             <button id="signOutBtn" class="px-3 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 text-sm">
               Sign out
@@ -143,7 +111,7 @@
         <!-- Mobile: Sync button only when logged in -->
         <div id="mobileSyncBtn" class="md:hidden hidden">
           <button onclick="loadData()" class="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200" title="Sync">
-            ðŸ”„
+            🔄
           </button>
         </div>
       </div>
@@ -298,7 +266,7 @@
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
               <button id="backBtn" onclick="goBack()" class="px-3 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 text-sm hidden">
-                â† Back
+                ← Back
               </button>
               <h2 id="pageTitle" class="text-xl font-bold text-gray-900 capitalize">Dashboard</h2>
             </div>
@@ -593,72 +561,9 @@
     </div>
   </div>
 
-  <!-- Invoice Modal -->
-  <div id="invoiceModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
-    <div class="min-h-screen flex items-start justify-center p-4">
-      <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
-        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
-          <div>
-            <h3 class="text-xl font-bold text-slate-900">Create Invoice</h3>
-            <p id="invoiceNumber" class="text-sm text-slate-500 mono"></p>
-          </div>
-          <button onclick="closeInvoiceModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
-        </div>
-        
-        <div id="invoiceModalBody" class="p-4 md:p-6 max-h-[70vh] overflow-auto"></div>
-
-        <div class="p-4 md:p-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-          <span id="invoiceModalError" class="text-red-600 text-sm"></span>
-          <div class="flex flex-wrap gap-3">
-            <button onclick="closeInvoiceModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
-              Cancel
-            </button>
-            <button onclick="previewInvoice()" class="px-5 py-2.5 bg-gray-600 text-white font-bold rounded-xl hover:bg-gray-700">
-              Preview
-            </button>
-            <button onclick="downloadInvoicePDF()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
-              Download PDF
-            </button>
-            <button onclick="printInvoice()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
-              Print
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Invoice Preview Modal -->
-  <div id="invoicePreviewModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
-    <div class="min-h-screen flex items-start justify-center p-4">
-      <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
-        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
-          <h3 class="text-xl font-bold text-slate-900">Invoice Preview</h3>
-          <button onclick="closeInvoicePreview()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
-        </div>
-        
-        <div id="invoicePreviewBody" class="p-4 md:p-6 max-h-[70vh] overflow-auto bg-gray-100">
-          <div id="invoicePrintArea"></div>
-        </div>
-
-        <div class="p-4 md:p-6 border-t border-slate-200 flex justify-end gap-3">
-          <button onclick="closeInvoicePreview()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
-            Back to Edit
-          </button>
-          <button onclick="downloadInvoicePDF()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
-            Download PDF
-          </button>
-          <button onclick="printInvoiceFromPreview()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
-            Print
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.1";
+    var VERSION = "2.10.41";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -708,18 +613,6 @@
         gene: "",
         salesYear: "",
         salesStatus: ""
-      },
-      // Invoice state
-      invoice: {
-        number: "",
-        date: "",
-        animals: [],
-        buyerName: "",
-        buyerEmail: "",
-        buyerAddress: "",
-        shipping: 0,
-        taxRate: 0,
-        notes: ""
       }
     };
 
@@ -1323,10 +1216,10 @@
       
       if (hasAlerts) {
         html += '<div class="mb-8">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-900 font-semibold mb-3">âš ï¸ Alerts</div>';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-900 font-semibold mb-3">⚠️ Alerts</div>';
         html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">';
         
-        // ðŸ¥š Overdue Clutches (DARKEST - most urgent)
+        // 🥚 Overdue Clutches (DARKEST - most urgent)
         if (stats.overdueClutches > 0) {
           html += '<div onclick="navigateTo(\'clutches\');" class="cursor-pointer bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-900 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1334,12 +1227,12 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-300">Overdue Clutches</div>';
           html += '<div class="text-2xl font-black text-white">' + stats.overdueClutches + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl">ðŸ¥š</div>';
+          html += '<div class="text-3xl">🥚</div>';
           html += '</div>';
           html += '</div>';
         }
         
-        // â° Clutches Due Soon (DARK)
+        // ⏰ Clutches Due Soon (DARK)
         if (stats.clutchesDueSoon > 0) {
           html += '<div onclick="navigateTo(\'clutches\');" class="cursor-pointer bg-gradient-to-br from-gray-500 to-gray-600 border-2 border-gray-700 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1347,12 +1240,12 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-200">Due Within 7 Days</div>';
           html += '<div class="text-2xl font-black text-white">' + stats.clutchesDueSoon + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl">â°</div>';
+          html += '<div class="text-3xl">⏰</div>';
           html += '</div>';
           html += '</div>';
         }
         
-        // ðŸ“¦ Unshipped Sales (MEDIUM-DARK)
+        // 📦 Unshipped Sales (MEDIUM-DARK)
         if (stats.unshipped > 0) {
           html += '<div onclick="navigateTo(\'sales\');" class="cursor-pointer bg-gradient-to-br from-gray-400 to-gray-500 border-2 border-gray-600 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1360,12 +1253,12 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-100">Unshipped Sales</div>';
           html += '<div class="text-2xl font-black text-white">' + stats.unshipped + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl">ðŸ“¦</div>';
+          html += '<div class="text-3xl">📦</div>';
           html += '</div>';
           html += '</div>';
         }
         
-        // ðŸ“… Shipping Soon (MEDIUM)
+        // 📅 Shipping Soon (MEDIUM)
         if (stats.shippingSoon > 0) {
           html += '<div onclick="navigateTo(\'sales\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1373,12 +1266,12 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Shipping in 3 Days</div>';
           html += '<div class="text-2xl font-black text-gray-900">' + stats.shippingSoon + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl">ðŸ“…</div>';
+          html += '<div class="text-3xl">📅</div>';
           html += '</div>';
           html += '</div>';
         }
         
-        // ðŸ’µ Unpaid Deposits (MEDIUM)
+        // 💵 Unpaid Deposits (MEDIUM)
         if (stats.unpaidDeposits > 0) {
           html += '<div onclick="navigateTo(\'sales\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1386,12 +1279,12 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Unpaid Deposits</div>';
           html += '<div class="text-2xl font-black text-gray-900">' + stats.unpaidDeposits + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl">ðŸ’µ</div>';
+          html += '<div class="text-3xl">💵</div>';
           html += '</div>';
           html += '</div>';
         }
         
-        // â“ Needs Sexing (LIGHT)
+        // ❓ Needs Sexing (LIGHT)
         if (stats.needsSexing > 0) {
           html += '<div onclick="navigateTo(\'hatchlings\');" class="cursor-pointer bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-gray-400 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1399,12 +1292,12 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-600">Needs Sexing</div>';
           html += '<div class="text-2xl font-black text-gray-900">' + stats.needsSexing + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl">â“</div>';
+          html += '<div class="text-3xl">❓</div>';
           html += '</div>';
           html += '</div>';
         }
         
-        // ðŸ’° Ready to List (LIGHTEST)
+        // 💰 Ready to List (LIGHTEST)
         if (stats.readyToList > 0) {
           html += '<div onclick="navigateTo(\'hatchlings\');" class="cursor-pointer bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1412,7 +1305,7 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-600">Ready to List</div>';
           html += '<div class="text-2xl font-black text-gray-900">' + stats.readyToList + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl">ðŸ’°</div>';
+          html += '<div class="text-3xl">💰</div>';
           html += '</div>';
           html += '</div>';
         }
@@ -1517,7 +1410,7 @@
       
       var s = {
         totalBreeders: 0, maleBreeders: 0, femaleBreeders: 0, holdbacks: 0,
-        incubating: 0, hatchedThisYear: 0, avgDaysToHatch: "â€”", avgFertileEggs: "â€”",
+        incubating: 0, hatchedThisYear: 0, avgDaysToHatch: "—", avgFertileEggs: "—",
         listed: 0, unlisted: 0, hatchMales: 0, hatchFemales: 0, hatchUnknown: 0,
         soldThisYear: 0, revenue: 0, revenueDisplay: "$0", onHold: 0, unshipped: 0,
         // Last year stats
@@ -1772,17 +1665,6 @@
           actionTd.appendChild(archiveBtn);
         }
 
-        // Invoice button for Sales view
-        if (state.activeTab === "sales") {
-          var invoiceBtn = document.createElement("button");
-          invoiceBtn.className = "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1";
-          invoiceBtn.textContent = "Invoice";
-          invoiceBtn.onclick = (function(r) {
-            return function() { openInvoiceModal(r); };
-          })(row);
-          actionTd.insertBefore(invoiceBtn, actionTd.firstChild);
-        }
-
         tr.appendChild(actionTd);
         
         // Data columns
@@ -1797,7 +1679,7 @@
               var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + animalId);
               td.innerHTML = '<img src="' + qrUrl + '" alt="QR" style="width:40px; height:40px; min-width:40px; min-height:40px; max-width:40px; max-height:40px;" />';
             } else {
-              td.textContent = "â€”";
+              td.textContent = "—";
             }
           }
           // Maturity column
@@ -1807,7 +1689,7 @@
           }
           // Status badge
           else if (col === "STATUS") {
-            var statusVal = row[col] || "â€”";
+            var statusVal = row[col] || "—";
             td.innerHTML = '<span class="px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs font-medium">' + escapeHtml(statusVal) + '</span>';
           }
           // Gene tags
@@ -1816,12 +1698,12 @@
             if (genes) {
               td.innerHTML = renderGeneTags(genes);
             } else {
-              td.textContent = "â€”";
+              td.textContent = "—";
             }
           }
           // Add warning icon to first data column if overdue
           else if (colIdx === 0 && isOverdue) {
-            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">âš ï¸</span>' + escapeHtml(row[col] || "â€”");
+            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">⚠️</span>' + escapeHtml(row[col] || "—");
           } 
           // Format date columns nicely
           else if (col.toUpperCase().includes("DATE") && row[col]) {
@@ -1829,10 +1711,10 @@
             if (dateVal) {
               td.textContent = (dateVal.getMonth() + 1) + "/" + dateVal.getDate() + "/" + dateVal.getFullYear();
             } else {
-              td.textContent = row[col] || "â€”";
+              td.textContent = row[col] || "—";
             }
           } else {
-            td.textContent = row[col] || "â€”";
+            td.textContent = row[col] || "—";
           }
           tr.appendChild(td);
         });
@@ -1971,7 +1853,7 @@
     }
     
     function renderGeneTags(genes) {
-      if (!genes) return "â€”";
+      if (!genes) return "—";
       
       // Split by common delimiters and clean up
       var geneList = genes.split(/[\s,]+/).filter(function(g) { 
@@ -2643,9 +2525,9 @@
     }
 
     function calculateEstHatchDate(layDateStr) {
-      if (!layDateStr) return "â€”";
+      if (!layDateStr) return "—";
       var d = parseDate(layDateStr);
-      if (!d) return "â€”";
+      if (!d) return "—";
       d.setDate(d.getDate() + 59);
       return d.toISOString().split("T")[0];
     }
@@ -2672,11 +2554,11 @@
       var sireVal = state.formData["SIRE"] || "";
       html += '<div>';
       html += '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Dam (from clutch)</label>';
-      html += '<div class="w-full px-3 py-2 rounded-xl border border-slate-100 bg-slate-100 text-sm text-slate-600">' + (damVal || "â€”") + '</div>';
+      html += '<div class="w-full px-3 py-2 rounded-xl border border-slate-100 bg-slate-100 text-sm text-slate-600">' + (damVal || "—") + '</div>';
       html += '</div>';
       html += '<div>';
       html += '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Sire (from clutch)</label>';
-      html += '<div class="w-full px-3 py-2 rounded-xl border border-slate-100 bg-slate-100 text-sm text-slate-600">' + (sireVal || "â€”") + '</div>';
+      html += '<div class="w-full px-3 py-2 rounded-xl border border-slate-100 bg-slate-100 text-sm text-slate-600">' + (sireVal || "—") + '</div>';
       html += '</div>';
       
       // 3. DATE OF BIRTH (required) - displays as "Hatch Date" but saves to DATE OF BIRTH column
@@ -2993,7 +2875,7 @@
             state.data[savedTab].push(newRow);
           }
           
-          setStatus("Saved! âœ“");
+          setStatus("Saved! ✓");
           closeModal();
           renderCurrentView(); // Render immediately with local data
           
@@ -3159,7 +3041,7 @@
         html += '<div class="bg-slate-50 rounded-xl p-4 border border-slate-200">';
         html += '<div class="flex items-center justify-between mb-3">';
         html += '<div class="font-bold text-slate-800 mono">' + draft.id + '</div>';
-        html += '<button onclick="removeHatchDraft(' + idx + ')" class="text-red-500 hover:text-red-700 text-sm">âœ• Remove</button>';
+        html += '<button onclick="removeHatchDraft(' + idx + ')" class="text-red-500 hover:text-red-700 text-sm">✕ Remove</button>';
         html += '</div>';
         
         html += '<div class="grid grid-cols-2 md:grid-cols-3 gap-3">';
@@ -3470,6 +3352,7 @@
         setStatus("Failed: " + e.message, true);
       });
     }
+
     // ============ TOOLS ============
     function exportCSV(sheetKey) {
       var headers = state.headers[sheetKey] || [];
@@ -3571,7 +3454,6 @@
       html += '<li>- Quick sell and holdback actions</li>';
       html += '<li>- Payment and shipping tracking</li>';
       html += '<li>- Revenue calculation by year</li>';
-      html += '<li>- PDF Invoice generation with multi-animal support</li>';
       html += '</ul></div>';
       
       html += '<div><h3 class="font-bold text-gray-800 mb-2">Import & Export</h3>';
@@ -3643,9 +3525,7 @@
         { key: "WEBSITE", label: "Website", placeholder: "https://..." },
         { key: "INSTAGRAM", label: "Instagram", placeholder: "@yourhandle" },
         { key: "DEFAULT SPECIES", label: "Default Species", placeholder: "Ball Pythons" },
-        { key: "INCUBATION DAYS", label: "Default Incubation Days", placeholder: "55" },
-        { key: "DEFAULT TAX RATE", label: "Default Tax Rate (%)", placeholder: "0" },
-        { key: "INVOICE TERMS", label: "Invoice Terms / Health Guarantee", placeholder: "Live arrival guarantee. Health guarantee valid 7 days from delivery." }
+        { key: "INCUBATION DAYS", label: "Default Incubation Days", placeholder: "55" }
       ];
       
       html += '<div class="space-y-4">';
@@ -3679,8 +3559,7 @@
     function saveSettings() {
       var settingsFields = [
         "BUSINESS NAME", "OWNER NAME", "LOGO URL", "EMAIL", "PHONE", 
-        "CITY, STATE, ZIP", "WEBSITE", "INSTAGRAM", "DEFAULT SPECIES", "INCUBATION DAYS",
-        "DEFAULT TAX RATE", "INVOICE TERMS"
+        "CITY, STATE, ZIP", "WEBSITE", "INSTAGRAM", "DEFAULT SPECIES", "INCUBATION DAYS"
       ];
       
       var updates = [];
@@ -3733,7 +3612,7 @@
       
       if (archiveData.length === 0) {
         html = '<div class="text-center py-12 text-gray-500">';
-        html += '<div class="text-4xl mb-4">ðŸ“¦</div>';
+        html += '<div class="text-4xl mb-4">📦</div>';
         html += '<p>No archived records yet.</p>';
         html += '<p class="text-sm mt-2">When you delete animals or clutches, they will appear here.</p>';
         html += '</div>';
@@ -4404,720 +4283,6 @@
       importNext();
     }
 
-    // ============ INVOICE FUNCTIONS ============
-    function openInvoiceModal(row) {
-      if (!state.isLoggedIn) {
-        setStatus("Please log in first", true);
-        return;
-      }
-      
-      // Generate invoice number
-      var counter = parseInt(state.settings["INVOICE COUNTER"]) || 0;
-      counter++;
-      var year = new Date().getFullYear();
-      var invoiceNum = "INV-" + year + "-" + String(counter).padStart(4, "0");
-      
-      // Initialize invoice state
-      state.invoice = {
-        number: invoiceNum,
-        counter: counter,
-        date: new Date().toISOString().split("T")[0],
-        dueDate: "",
-        animals: [row],
-        buyerName: row["BUYER NAME"] || "",
-        buyerEmail: row["BUYER EMAIL"] || "",
-        buyerAddress: row["BUYER ADDRESS"] || "",
-        shipping: parseFloat(row["SHIPPING FEE"]) || 0,
-        taxRate: parseFloat(state.settings["DEFAULT TAX RATE"]) || 0,
-        deposit: parseFloat(row["TOTAL PAID"]) || 0,
-        notes: ""
-      };
-      
-      // Calculate due date (7 days from now)
-      var dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 7);
-      state.invoice.dueDate = dueDate.toISOString().split("T")[0];
-      
-      document.getElementById("invoiceNumber").textContent = invoiceNum;
-      renderInvoiceModal();
-      document.getElementById("invoiceModal").classList.remove("hidden");
-    }
-    
-    function closeInvoiceModal() {
-      document.getElementById("invoiceModal").classList.add("hidden");
-      document.getElementById("invoiceModalError").textContent = "";
-    }
-    
-    function renderInvoiceModal() {
-      var inv = state.invoice;
-      var html = '';
-      
-      // Invoice Info Row
-      html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">';
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Invoice Date</label>';
-      html += '<input type="date" id="invoiceDate" value="' + inv.date + '" onchange="state.invoice.date=this.value" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm">';
-      html += '</div>';
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Due Date</label>';
-      html += '<input type="date" id="invoiceDueDate" value="' + inv.dueDate + '" onchange="state.invoice.dueDate=this.value" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm">';
-      html += '</div>';
-      html += '<div></div>';
-      html += '</div>';
-      
-      // Buyer Info
-      html += '<div class="bg-gray-50 rounded-xl p-4 mb-6">';
-      html += '<div class="text-xs font-semibold text-gray-600 uppercase mb-3">Bill To</div>';
-      html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
-      html += '<div>';
-      html += '<label class="block text-xs text-gray-500 mb-1">Name</label>';
-      html += '<input type="text" id="invoiceBuyerName" value="' + escapeHtml(inv.buyerName) + '" onchange="state.invoice.buyerName=this.value" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Buyer name">';
-      html += '</div>';
-      html += '<div>';
-      html += '<label class="block text-xs text-gray-500 mb-1">Email</label>';
-      html += '<input type="email" id="invoiceBuyerEmail" value="' + escapeHtml(inv.buyerEmail) + '" onchange="state.invoice.buyerEmail=this.value" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="buyer@email.com">';
-      html += '</div>';
-      html += '<div class="md:col-span-2">';
-      html += '<label class="block text-xs text-gray-500 mb-1">Address</label>';
-      html += '<input type="text" id="invoiceBuyerAddress" value="' + escapeHtml(inv.buyerAddress) + '" onchange="state.invoice.buyerAddress=this.value" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Street, City, State ZIP">';
-      html += '</div>';
-      html += '</div>';
-      html += '</div>';
-      
-      // Animals List
-      html += '<div class="mb-6">';
-      html += '<div class="flex items-center justify-between mb-3">';
-      html += '<div class="text-xs font-semibold text-gray-600 uppercase">Line Items</div>';
-      html += '<button onclick="showAddAnimalDropdown()" class="text-sm text-gray-600 hover:text-gray-900">+ Add Another Animal</button>';
-      html += '</div>';
-      
-      html += '<div class="border border-gray-200 rounded-xl overflow-hidden">';
-      html += '<table class="w-full text-sm">';
-      html += '<thead class="bg-gray-100">';
-      html += '<tr>';
-      html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Animal</th>';
-      html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Description</th>';
-      html += '<th class="px-3 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Price</th>';
-      html += '<th class="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase w-16">Remove</th>';
-      html += '</tr>';
-      html += '</thead>';
-      html += '<tbody>';
-      
-      inv.animals.forEach(function(animal, idx) {
-        var animalId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
-        var animalName = animal["ANIMAL NAME"] || "";
-        var species = animal["SPECIES"] || "";
-        var sex = animal["SEX"] || "";
-        var genetics = animal["GENETIC SUMMARY"] || "";
-        var price = parseFloat(animal["SOLD PRICE"]) || 0;
-        
-        html += '<tr class="border-t border-gray-100">';
-        html += '<td class="px-3 py-3">';
-        html += '<div class="font-medium text-gray-900">' + escapeHtml(animalId) + '</div>';
-        html += '<div class="text-gray-500 text-xs">' + escapeHtml(animalName) + '</div>';
-        html += '</td>';
-        html += '<td class="px-3 py-3">';
-        html += '<div class="text-gray-700">' + escapeHtml(species) + ' - ' + escapeHtml(sex) + '</div>';
-        html += '<div class="text-gray-500 text-xs">' + escapeHtml(genetics) + '</div>';
-        html += '</td>';
-        html += '<td class="px-3 py-3 text-right font-medium">$' + price.toFixed(2) + '</td>';
-        html += '<td class="px-3 py-3 text-center">';
-        if (inv.animals.length > 1) {
-          html += '<button onclick="removeInvoiceAnimal(' + idx + ')" class="text-red-500 hover:text-red-700">X</button>';
-        } else {
-          html += '<span class="text-gray-300">-</span>';
-        }
-        html += '</td>';
-        html += '</tr>';
-      });
-      
-      html += '</tbody>';
-      html += '</table>';
-      html += '</div>';
-      
-      // Add Animal Dropdown (hidden by default)
-      html += '<div id="addAnimalDropdown" class="hidden mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200">';
-      html += '<label class="block text-xs text-gray-500 mb-1">Select animal to add:</label>';
-      html += '<select id="addAnimalSelect" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm">';
-      html += '<option value="">Choose an animal...</option>';
-      
-      // Filter to same buyer (by name or email) and exclude already added
-      var addedIds = inv.animals.map(function(a) { return a["UNIQUE ID"] || a["MANUAL OVERRIDE"]; });
-      var sameBuyerAnimals = state.data.collection.filter(function(r) {
-        var st = (r.STATUS || "").toLowerCase();
-        if (st !== "sold" && st !== "on hold") return false;
-        var rid = r["UNIQUE ID"] || r["MANUAL OVERRIDE"];
-        if (addedIds.indexOf(rid) >= 0) return false;
-        // Match by buyer name or email
-        var buyerMatch = (r["BUYER NAME"] && r["BUYER NAME"] === inv.buyerName) ||
-                         (r["BUYER EMAIL"] && r["BUYER EMAIL"] === inv.buyerEmail);
-        return buyerMatch;
-      });
-      
-      if (sameBuyerAnimals.length === 0) {
-        html += '<option value="" disabled>No other animals for this buyer</option>';
-      } else {
-        sameBuyerAnimals.forEach(function(r) {
-          var rid = r["UNIQUE ID"] || r["MANUAL OVERRIDE"];
-          var rname = r["ANIMAL NAME"] || "";
-          var rprice = parseFloat(r["SOLD PRICE"]) || 0;
-          html += '<option value="' + escapeHtml(rid) + '">' + escapeHtml(rid) + ' - ' + escapeHtml(rname) + ' ($' + rprice.toFixed(2) + ')</option>';
-        });
-      }
-      
-      html += '</select>';
-      html += '<div class="mt-2 flex gap-2">';
-      html += '<button onclick="addSelectedAnimal()" class="px-3 py-1 bg-gray-900 text-white text-sm rounded-lg">Add</button>';
-      html += '<button onclick="hideAddAnimalDropdown()" class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-lg">Cancel</button>';
-      html += '</div>';
-      html += '</div>';
-      
-      html += '</div>';
-      
-      // Totals Section
-      var subtotal = 0;
-      inv.animals.forEach(function(a) {
-        subtotal += parseFloat(a["SOLD PRICE"]) || 0;
-      });
-      var shipping = parseFloat(inv.shipping) || 0;
-      var taxRate = parseFloat(inv.taxRate) || 0;
-      var taxAmount = (subtotal + shipping) * (taxRate / 100);
-      var total = subtotal + shipping + taxAmount;
-      var deposit = parseFloat(inv.deposit) || 0;
-      var balanceDue = total - deposit;
-      
-      html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">';
-      
-      // Left column - editable fields
-      html += '<div class="space-y-3">';
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Shipping</label>';
-      html += '<input type="number" step="0.01" id="invoiceShipping" value="' + shipping + '" onchange="updateInvoiceShipping(this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="0.00">';
-      html += '</div>';
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tax Rate (%)</label>';
-      html += '<input type="number" step="0.01" id="invoiceTaxRate" value="' + taxRate + '" onchange="updateInvoiceTaxRate(this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="0">';
-      html += '</div>';
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Deposit/Amount Paid</label>';
-      html += '<input type="number" step="0.01" id="invoiceDeposit" value="' + deposit + '" onchange="updateInvoiceDeposit(this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="0.00">';
-      html += '</div>';
-      html += '</div>';
-      
-      // Right column - calculated totals
-      html += '<div class="bg-gray-50 rounded-xl p-4">';
-      html += '<div class="flex justify-between py-2 border-b border-gray-200">';
-      html += '<span class="text-gray-600">Subtotal</span>';
-      html += '<span class="font-medium">$' + subtotal.toFixed(2) + '</span>';
-      html += '</div>';
-      html += '<div class="flex justify-between py-2 border-b border-gray-200">';
-      html += '<span class="text-gray-600">Shipping</span>';
-      html += '<span class="font-medium">$' + shipping.toFixed(2) + '</span>';
-      html += '</div>';
-      html += '<div class="flex justify-between py-2 border-b border-gray-200">';
-      html += '<span class="text-gray-600">Tax (' + taxRate + '%)</span>';
-      html += '<span class="font-medium">$' + taxAmount.toFixed(2) + '</span>';
-      html += '</div>';
-      html += '<div class="flex justify-between py-2 border-b border-gray-200">';
-      html += '<span class="text-gray-600 font-semibold">Total</span>';
-      html += '<span class="font-bold">$' + total.toFixed(2) + '</span>';
-      html += '</div>';
-      if (deposit > 0) {
-        html += '<div class="flex justify-between py-2 border-b border-gray-200">';
-        html += '<span class="text-gray-600">Deposit Received</span>';
-        html += '<span class="font-medium text-green-600">-$' + deposit.toFixed(2) + '</span>';
-        html += '</div>';
-      }
-      html += '<div class="flex justify-between py-3 bg-gray-200 -mx-4 -mb-4 px-4 rounded-b-xl">';
-      html += '<span class="text-gray-900 font-bold">Amount Due</span>';
-      html += '<span class="font-bold text-lg">$' + balanceDue.toFixed(2) + '</span>';
-      html += '</div>';
-      html += '</div>';
-      
-      html += '</div>';
-      
-      // Notes
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Notes (optional)</label>';
-      html += '<textarea id="invoiceNotes" onchange="state.invoice.notes=this.value" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" rows="2" placeholder="Additional notes for this invoice...">' + escapeHtml(inv.notes) + '</textarea>';
-      html += '</div>';
-      
-      document.getElementById("invoiceModalBody").innerHTML = html;
-    }
-    
-    function showAddAnimalDropdown() {
-      document.getElementById("addAnimalDropdown").classList.remove("hidden");
-    }
-    
-    function hideAddAnimalDropdown() {
-      document.getElementById("addAnimalDropdown").classList.add("hidden");
-    }
-    
-    function addSelectedAnimal() {
-      var select = document.getElementById("addAnimalSelect");
-      var selectedId = select.value;
-      if (!selectedId) return;
-      
-      var animal = state.data.collection.find(function(r) {
-        var rid = r["UNIQUE ID"] || r["MANUAL OVERRIDE"];
-        return rid === selectedId;
-      });
-      
-      if (animal) {
-        state.invoice.animals.push(animal);
-        // Update shipping to sum
-        state.invoice.shipping += parseFloat(animal["SHIPPING FEE"]) || 0;
-        renderInvoiceModal();
-      }
-    }
-    
-    function removeInvoiceAnimal(idx) {
-      if (state.invoice.animals.length > 1) {
-        var removed = state.invoice.animals.splice(idx, 1)[0];
-        // Subtract shipping
-        state.invoice.shipping -= parseFloat(removed["SHIPPING FEE"]) || 0;
-        if (state.invoice.shipping < 0) state.invoice.shipping = 0;
-        renderInvoiceModal();
-      }
-    }
-    
-    function updateInvoiceShipping(val) {
-      state.invoice.shipping = parseFloat(val) || 0;
-      renderInvoiceModal();
-    }
-    
-    function updateInvoiceTaxRate(val) {
-      state.invoice.taxRate = parseFloat(val) || 0;
-      renderInvoiceModal();
-    }
-    
-    function updateInvoiceDeposit(val) {
-      state.invoice.deposit = parseFloat(val) || 0;
-      renderInvoiceModal();
-    }
-    
-    function generateInvoiceHTML() {
-      var inv = state.invoice;
-      var settings = state.settings;
-      
-      // Calculate totals
-      var subtotal = 0;
-      inv.animals.forEach(function(a) {
-        subtotal += parseFloat(a["SOLD PRICE"]) || 0;
-      });
-      var shipping = parseFloat(inv.shipping) || 0;
-      var taxRate = parseFloat(inv.taxRate) || 0;
-      var taxAmount = (subtotal + shipping) * (taxRate / 100);
-      var total = subtotal + shipping + taxAmount;
-      var deposit = parseFloat(inv.deposit) || 0;
-      var balanceDue = total - deposit;
-      
-      var html = '';
-      html += '<div class="invoice-preview" style="background: white; padding: 40px; max-width: 800px; margin: 0 auto; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.5;">';
-      
-      // Header with gray bar
-      html += '<div style="background: #f3f4f6; padding: 20px; margin: -40px -40px 30px -40px;">';
-      html += '<div style="display: flex; justify-content: space-between; align-items: flex-start;">';
-      html += '<div style="font-size: 32px; font-weight: 800; color: #111; letter-spacing: -1px;">INVOICE</div>';
-      html += '<div style="text-align: right;">';
-      html += '<table style="font-size: 12px; border-collapse: collapse;">';
-      html += '<tr><td style="padding: 2px 10px; color: #666; font-weight: 600;">INVOICE #</td><td style="padding: 2px 10px; color: #666; font-weight: 600;">INVOICE DATE</td><td style="padding: 2px 10px; color: #666; font-weight: 600;">DUE DATE</td></tr>';
-      html += '<tr><td style="padding: 2px 10px; color: #111;">' + inv.number + '</td><td style="padding: 2px 10px; color: #111;">' + formatDateDisplay(inv.date) + '</td><td style="padding: 2px 10px; color: #111;">' + formatDateDisplay(inv.dueDate) + '</td></tr>';
-      html += '</table>';
-      html += '</div>';
-      html += '</div>';
-      html += '</div>';
-      
-      // Seller and Buyer Info
-      html += '<div style="display: flex; justify-content: space-between; margin-bottom: 30px;">';
-      
-      // Seller (left)
-      html += '<div style="max-width: 45%;">';
-      if (settings["LOGO URL"]) {
-        html += '<img src="' + escapeHtml(settings["LOGO URL"]) + '" style="max-height: 50px; margin-bottom: 10px;" alt="Logo">';
-      }
-      html += '<div style="font-weight: 700; color: #111;">' + escapeHtml(settings["BUSINESS NAME"] || "Your Business Name") + '</div>';
-      var address = [];
-      if (settings["CITY"]) address.push(settings["CITY"]);
-      if (settings["STATE"]) address.push(settings["STATE"]);
-      if (settings["ZIP"]) address.push(settings["ZIP"]);
-      if (address.length > 0) {
-        html += '<div style="color: #666;">' + escapeHtml(address.join(", ")) + '</div>';
-      }
-      if (settings["EMAIL"]) html += '<div style="color: #666;">' + escapeHtml(settings["EMAIL"]) + '</div>';
-      if (settings["PHONE"]) html += '<div style="color: #666;">' + escapeHtml(settings["PHONE"]) + '</div>';
-      html += '</div>';
-      
-      // Buyer (right)
-      html += '<div style="text-align: right; max-width: 45%;">';
-      html += '<div style="font-size: 11px; color: #999; font-weight: 600; margin-bottom: 5px;">BILL TO:</div>';
-      html += '<div style="font-weight: 700; color: #111;">' + escapeHtml(inv.buyerName || "Customer Name") + '</div>';
-      if (inv.buyerAddress) html += '<div style="color: #666;">' + escapeHtml(inv.buyerAddress) + '</div>';
-      if (inv.buyerEmail) html += '<div style="color: #666;">' + escapeHtml(inv.buyerEmail) + '</div>';
-      html += '</div>';
-      
-      html += '</div>';
-      
-      // Line Items Table
-      html += '<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">';
-      html += '<thead>';
-      html += '<tr style="background: #f9fafb;">';
-      html += '<th style="padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Animal ID / Description</th>';
-      html += '<th style="padding: 10px 12px; text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Qty</th>';
-      html += '<th style="padding: 10px 12px; text-align: right; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Price</th>';
-      html += '<th style="padding: 10px 12px; text-align: right; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Total</th>';
-      html += '</tr>';
-      html += '</thead>';
-      html += '<tbody>';
-      
-      inv.animals.forEach(function(animal) {
-        var animalId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
-        var animalName = animal["ANIMAL NAME"] || "";
-        var species = animal["SPECIES"] || "";
-        var sex = animal["SEX"] || "";
-        var genetics = animal["GENETIC SUMMARY"] || "";
-        var price = parseFloat(animal["SOLD PRICE"]) || 0;
-        
-        html += '<tr>';
-        html += '<td style="padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top;">';
-        html += '<div style="font-weight: 600; color: #111;">' + escapeHtml(animalId) + '</div>';
-        if (animalName) html += '<div style="color: #666;">' + escapeHtml(animalName) + '</div>';
-        html += '<div style="color: #888; font-size: 12px;">' + escapeHtml(species) + ' - ' + escapeHtml(sex) + '</div>';
-        if (genetics) html += '<div style="color: #888; font-size: 12px;">' + escapeHtml(genetics) + '</div>';
-        html += '</td>';
-        html += '<td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; vertical-align: top;">1</td>';
-        html += '<td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; vertical-align: top;">$' + price.toFixed(2) + '</td>';
-        html += '<td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; vertical-align: top; font-weight: 500;">$' + price.toFixed(2) + '</td>';
-        html += '</tr>';
-      });
-      
-      html += '</tbody>';
-      html += '</table>';
-      
-      // Totals Section
-      html += '<div style="display: flex; justify-content: flex-end;">';
-      html += '<div style="width: 280px;">';
-      
-      html += '<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">';
-      html += '<span style="color: #666;">SUBTOTAL</span>';
-      html += '<span style="color: #111;">$' + subtotal.toFixed(2) + '</span>';
-      html += '</div>';
-      
-      if (shipping > 0) {
-        html += '<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">';
-        html += '<span style="color: #666;">SHIPPING</span>';
-        html += '<span style="color: #111;">$' + shipping.toFixed(2) + '</span>';
-        html += '</div>';
-      }
-      
-      if (taxRate > 0) {
-        html += '<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">';
-        html += '<span style="color: #666;">TAX ' + taxRate + '%</span>';
-        html += '<span style="color: #111;">$' + taxAmount.toFixed(2) + '</span>';
-        html += '</div>';
-      }
-      
-      if (deposit > 0) {
-        html += '<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">';
-        html += '<span style="color: #666;">DEPOSIT</span>';
-        html += '<span style="color: #111;">-$' + deposit.toFixed(2) + '</span>';
-        html += '</div>';
-      }
-      
-      html += '<div style="display: flex; justify-content: space-between; padding: 12px; background: #e5e7eb; margin-top: 10px;">';
-      html += '<span style="font-weight: 700; color: #111;">AMOUNT DUE</span>';
-      html += '<span style="font-weight: 700; font-size: 18px; color: #111;">$' + balanceDue.toFixed(2) + '</span>';
-      html += '</div>';
-      
-      html += '</div>';
-      html += '</div>';
-      
-      // Payment Info
-      if (settings["EMAIL"]) {
-        html += '<div style="margin-top: 30px; padding: 15px; background: #f9fafb; border-radius: 8px;">';
-        html += '<div style="font-size: 11px; font-weight: 600; color: #666; margin-bottom: 5px;">PAYMENT METHOD</div>';
-        html += '<div style="color: #111;">PayPal: ' + escapeHtml(settings["EMAIL"]) + '</div>';
-        html += '</div>';
-      }
-      
-      // Terms / Footer
-      var terms = settings["INVOICE TERMS"] || "";
-      if (terms || inv.notes) {
-        html += '<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #666;">';
-        if (terms) html += '<div>' + escapeHtml(terms) + '</div>';
-        if (inv.notes) html += '<div style="margin-top: 10px;"><strong>Notes:</strong> ' + escapeHtml(inv.notes) + '</div>';
-        html += '</div>';
-      }
-      
-      html += '</div>';
-      
-      return html;
-    }
-    
-    function formatDateDisplay(dateStr) {
-      if (!dateStr) return "";
-      var d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return (d.getMonth() + 1) + "/" + d.getDate() + "/" + d.getFullYear();
-    }
-    
-    function previewInvoice() {
-      var html = generateInvoiceHTML();
-      document.getElementById("invoicePrintArea").innerHTML = html;
-      document.getElementById("invoicePreviewModal").classList.remove("hidden");
-    }
-    
-    function closeInvoicePreview() {
-      document.getElementById("invoicePreviewModal").classList.add("hidden");
-    }
-    
-    function printInvoice() {
-      previewInvoice();
-      setTimeout(function() {
-        window.print();
-      }, 300);
-    }
-    
-    function printInvoiceFromPreview() {
-      window.print();
-    }
-    
-    function downloadInvoicePDF() {
-      var jsPDF = window.jspdf.jsPDF;
-      var doc = new jsPDF('p', 'pt', 'letter');
-      
-      var inv = state.invoice;
-      var settings = state.settings;
-      
-      // Calculate totals
-      var subtotal = 0;
-      inv.animals.forEach(function(a) {
-        subtotal += parseFloat(a["SOLD PRICE"]) || 0;
-      });
-      var shipping = parseFloat(inv.shipping) || 0;
-      var taxRate = parseFloat(inv.taxRate) || 0;
-      var taxAmount = (subtotal + shipping) * (taxRate / 100);
-      var total = subtotal + shipping + taxAmount;
-      var deposit = parseFloat(inv.deposit) || 0;
-      var balanceDue = total - deposit;
-      
-      var pageWidth = 612;
-      var margin = 50;
-      var y = 50;
-      
-      // Header background
-      doc.setFillColor(243, 244, 246);
-      doc.rect(0, 0, pageWidth, 80, 'F');
-      
-      // INVOICE title
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(28);
-      doc.setTextColor(17, 17, 17);
-      doc.text('INVOICE', margin, 50);
-      
-      // Invoice details (right side)
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(102, 102, 102);
-      doc.text('INVOICE #', 400, 30);
-      doc.text('INVOICE DATE', 470, 30);
-      doc.text('DUE DATE', 540, 30);
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(17, 17, 17);
-      doc.text(inv.number, 400, 45);
-      doc.text(formatDateDisplay(inv.date), 470, 45);
-      doc.text(formatDateDisplay(inv.dueDate), 540, 45);
-      
-      y = 110;
-      
-      // Seller info
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text(settings["BUSINESS NAME"] || "Your Business Name", margin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(102, 102, 102);
-      y += 15;
-      var address = [];
-      if (settings["CITY"]) address.push(settings["CITY"]);
-      if (settings["STATE"]) address.push(settings["STATE"]);
-      if (settings["ZIP"]) address.push(settings["ZIP"]);
-      if (address.length > 0) {
-        doc.text(address.join(", "), margin, y);
-        y += 12;
-      }
-      if (settings["EMAIL"]) {
-        doc.text(settings["EMAIL"], margin, y);
-        y += 12;
-      }
-      if (settings["PHONE"]) {
-        doc.text(settings["PHONE"], margin, y);
-      }
-      
-      // Buyer info (right side)
-      var buyerY = 110;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(153, 153, 153);
-      doc.text('BILL TO:', pageWidth - margin - 150, buyerY - 10);
-      
-      doc.setTextColor(17, 17, 17);
-      doc.setFontSize(11);
-      doc.text(inv.buyerName || "Customer Name", pageWidth - margin - 150, buyerY + 5);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(102, 102, 102);
-      if (inv.buyerAddress) {
-        doc.text(inv.buyerAddress, pageWidth - margin - 150, buyerY + 20);
-      }
-      if (inv.buyerEmail) {
-        doc.text(inv.buyerEmail, pageWidth - margin - 150, buyerY + 35);
-      }
-      
-      // Line items table
-      y = 180;
-      
-      // Table header
-      doc.setFillColor(249, 250, 251);
-      doc.rect(margin, y, pageWidth - (margin * 2), 25, 'F');
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(107, 114, 128);
-      doc.text('ANIMAL ID / DESCRIPTION', margin + 10, y + 16);
-      doc.text('QTY', 380, y + 16);
-      doc.text('PRICE', 430, y + 16);
-      doc.text('TOTAL', 510, y + 16);
-      
-      y += 30;
-      
-      // Table rows
-      inv.animals.forEach(function(animal) {
-        var animalId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
-        var animalName = animal["ANIMAL NAME"] || "";
-        var species = animal["SPECIES"] || "";
-        var sex = animal["SEX"] || "";
-        var genetics = animal["GENETIC SUMMARY"] || "";
-        var price = parseFloat(animal["SOLD PRICE"]) || 0;
-        
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(17, 17, 17);
-        doc.text(animalId, margin + 10, y + 12);
-        
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(102, 102, 102);
-        if (animalName) {
-          doc.text(animalName, margin + 10, y + 24);
-        }
-        doc.setFontSize(9);
-        doc.text(species + ' - ' + sex, margin + 10, y + 36);
-        if (genetics) {
-          var maxWidth = 250;
-          var geneticsLines = doc.splitTextToSize(genetics, maxWidth);
-          doc.text(geneticsLines, margin + 10, y + 48);
-        }
-        
-        doc.setTextColor(17, 17, 17);
-        doc.setFontSize(10);
-        doc.text('1', 388, y + 12);
-        doc.text('$' + price.toFixed(2), 430, y + 12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('$' + price.toFixed(2), 510, y + 12);
-        
-        // Row line
-        doc.setDrawColor(229, 231, 235);
-        doc.line(margin, y + 55, pageWidth - margin, y + 55);
-        
-        y += 60;
-      });
-      
-      // Totals
-      y += 20;
-      var totalsX = 400;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(102, 102, 102);
-      doc.text('SUBTOTAL', totalsX, y);
-      doc.setTextColor(17, 17, 17);
-      doc.text('$' + subtotal.toFixed(2), 530, y);
-      
-      if (shipping > 0) {
-        y += 18;
-        doc.setTextColor(102, 102, 102);
-        doc.text('SHIPPING', totalsX, y);
-        doc.setTextColor(17, 17, 17);
-        doc.text('$' + shipping.toFixed(2), 530, y);
-      }
-      
-      if (taxRate > 0) {
-        y += 18;
-        doc.setTextColor(102, 102, 102);
-        doc.text('TAX ' + taxRate + '%', totalsX, y);
-        doc.setTextColor(17, 17, 17);
-        doc.text('$' + taxAmount.toFixed(2), 530, y);
-      }
-      
-      if (deposit > 0) {
-        y += 18;
-        doc.setTextColor(102, 102, 102);
-        doc.text('DEPOSIT', totalsX, y);
-        doc.setTextColor(17, 17, 17);
-        doc.text('-$' + deposit.toFixed(2), 530, y);
-      }
-      
-      // Amount due box
-      y += 25;
-      doc.setFillColor(229, 231, 235);
-      doc.rect(totalsX - 10, y - 12, 150, 30, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(17, 17, 17);
-      doc.text('AMOUNT DUE', totalsX, y + 5);
-      doc.setFontSize(14);
-      doc.text('$' + balanceDue.toFixed(2), 510, y + 5);
-      
-      // Payment method
-      if (settings["EMAIL"]) {
-        y += 50;
-        doc.setFillColor(249, 250, 251);
-        doc.rect(margin, y, 200, 40, 'F');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(102, 102, 102);
-        doc.text('PAYMENT METHOD', margin + 10, y + 15);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(17, 17, 17);
-        doc.text('PayPal: ' + settings["EMAIL"], margin + 10, y + 30);
-      }
-      
-      // Terms footer
-      var terms = settings["INVOICE TERMS"] || "";
-      if (terms || inv.notes) {
-        y += 60;
-        doc.setDrawColor(229, 231, 235);
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 15;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(102, 102, 102);
-        if (terms) {
-          var termsLines = doc.splitTextToSize(terms, pageWidth - (margin * 2));
-          doc.text(termsLines, margin, y);
-          y += termsLines.length * 12;
-        }
-        if (inv.notes) {
-          doc.text('Notes: ' + inv.notes, margin, y + 5);
-        }
-      }
-      
-      // Save
-      doc.save('Invoice_' + inv.number + '.pdf');
-    }
-
     // ============ START ============
     init();
   </script>
@@ -5131,7 +4296,7 @@
         <a href="https://therackapp.io/policies/terms-of-service" target="_blank" class="hover:text-gray-700 hover:underline">Terms of Service</a>
       </div>
       <div>
-        Â© 2026 The Rack App | DBA Soul Serpents, LLC. All rights reserved.
+        © 2026 The Rack App | DBA Soul Serpents, LLC. All rights reserved.
       </div>
     </div>
   </footer>
