@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.13
+  Version: 2.11.14
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.14: Removed all corrupted Unicode characters from file
+             - Fixed overdue clutch warning icon (now shows red !)
+             - Cleaned up stray characters in comments
   - 2.11.13: Added Activity stats cards
              - Activity table: Feedings, Refusals, Sheds, Ovulations (this month)
              - Dashboard: Took Meal, Refused Meal, Paired, Locked, Ovulation, Laid (season totals)
@@ -696,7 +699,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.13";
+    var VERSION = "2.11.14";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1459,7 +1462,7 @@
           html += '</div>';
         }
         
-        // � Needs Sexing (LIGHT)
+        // Needs Sexing (LIGHT)
         if (stats.needsSexing > 0) {
           html += '<div onclick="navigateTo(\'hatchlings\');" class="cursor-pointer bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-gray-400 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1515,9 +1518,9 @@
       html += statCard("Males", stats.hatchMales, "blue", "Unknown: " + stats.hatchUnknown, "state.activeTab=&#39;hatchlings&#39;; renderNavTabs(); renderCurrentView();");
       html += '</div></div>';
 
-      // Activity Section (Breeding Season Stats)
+      // Activity Section (This Month Stats)
       var activityStats = calculateActivityStats();
-      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Activity (Season)</div>';
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Activity (This Month)</div>';
       html += '<div class="grid grid-cols-2 md:grid-cols-6 gap-4">';
       html += statCard("Took Meal", activityStats.tookMeal, "green", null, "state.activeTab=&#39;activity&#39;; renderNavTabs(); renderCurrentView();");
       html += statCard("Refused Meal", activityStats.refusedMeal, "orange", null, "state.activeTab=&#39;activity&#39;; renderNavTabs(); renderCurrentView();");
@@ -2059,7 +2062,7 @@
           }
           // Add warning icon to first data column if overdue
           else if (colIdx === 0 && isOverdue) {
-            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">ï¸</span>' + escapeHtml(row[col] || "--");
+            td.innerHTML = '<span class="text-red-600 font-bold mr-1" title="Overdue - past estimated hatch date">!</span>' + escapeHtml(row[col] || "--");
           } 
           // Format date columns nicely
           else if (col.toUpperCase().includes("DATE") && row[col]) {
