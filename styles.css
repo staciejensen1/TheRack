@@ -1,0 +1,48 @@
+/*
+ * THE RACK - Styles
+ * Version: 2.12.0
+ * Last Updated: 2026-01-09
+ */
+
+* { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+.mono { font-family: ui-monospace, monospace; }
+.modal-backdrop { backdrop-filter: blur(4px); }
+.stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+
+/* QR Print Styles */
+@media print {
+  body * { visibility: hidden; }
+  #qrPrintArea, #qrPrintArea * { visibility: visible; }
+  #qrPrintArea { position: absolute; left: 0; top: 0; }
+  #invoicePrintArea, #invoicePrintArea * { visibility: visible; }
+  #invoicePrintArea { position: absolute; left: 0; top: 0; width: 100%; }
+}
+.qr-label { page-break-inside: avoid; }
+
+/* Invoice Styles */
+.invoice-preview {
+  background: white;
+  padding: 40px;
+  max-width: 800px;
+  margin: 0 auto;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.invoice-preview table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.invoice-preview th, .invoice-preview td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+.invoice-preview th {
+  background: #f9fafb;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+}
