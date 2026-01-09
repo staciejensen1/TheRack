@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.18
+  Version: 2.11.19
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.19: Redesigned Add Activity modal
+             - Cleaner step-by-step layout
+             - Type-to-search animal selector with visual selection
+             - Activity types organized by category (Feeding, General, Breeding)
+             - Visual button selection for activity type
+             - Conditional value fields based on activity type
   - 2.11.18: Sales table improvements
-             - Added TOTAL PAID column to Sales table
-             - Balance Due alert now filters Sales to show only items with balance due
-             - Shows "Balance Due Only" filter badge when active with X to clear
-  - 2.11.17: Enhanced Activity form and Pairings table
              - Activity table: Feedings, Refusals, Sheds, Ovulations (this month)
              - Dashboard: Took Meal, Refused Meal, Paired, Locked, Ovulation, Laid (season totals)
   - 2.11.12: Quick Activity save button now shows "Saving..." while saving
@@ -704,7 +706,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.18";
+    var VERSION = "2.11.19";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -2987,6 +2989,12 @@
         headers = ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# EGGS", "# FERTILE", "# SLUGS", "STATUS", "MANUAL OVERRIDE", "NOTES"];
       }
       
+      // Special rendering for Activity ADD form
+      if (state.modalTab === "activity" && state.modalMode === "add") {
+        renderActivityAddForm();
+        return;
+      }
+      
       // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
       var skipFields = ["__rowIndex", "__raw", "QR CODE", "SHEET ID", "SHEET_ID"];
       if (state.modalTab !== "activity") {
@@ -3297,6 +3305,228 @@
       
       // Re-render the form
       renderModalForm("hatchling");
+    }
+
+    // Custom Activity Add Form - cleaner design
+    function renderActivityAddForm() {
+      var html = '';
+      var today = state.formData["DATE"] || new Date().toISOString().split("T")[0];
+      var selectedActivity = state.formData["ACTIVITY"] || "";
+      var selectedAnimal = state.formData["UNIQUE ID"] || "";
+      
+      // Get all animals for selection
+      var animals = state.data.collection.filter(function(r) {
+        var st = (r.STATUS || "").toLowerCase();
+        return st === "breeder" || st === "holdback" || st === "on loan" || st === "listed" || st === "unlisted";
+      });
+      
+      // Step 1: Select Animal (large, prominent)
+      html += '<div class="mb-5">';
+      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Select Animal</label>';
+      html += '<div class="relative">';
+      html += '<input type="text" id="activityAnimalSearch" placeholder="Type to search..." ';
+      html += 'oninput="filterActivityAnimals(this.value)" ';
+      html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
+      html += '<div id="activityAnimalList" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white ' + (selectedAnimal ? 'hidden' : '') + '">';
+      animals.forEach(function(a) {
+        var name = a["ANIMAL NAME"] || "";
+        var id = a["UNIQUE ID"] || "";
+        var label = name ? name + " | " + id : id;
+        html += '<div onclick="selectActivityAnimal(\'' + escapeHtml(id).replace(/'/g, "\\'") + '\', \'' + escapeHtml(label).replace(/'/g, "\\'") + '\')" ';
+        html += 'class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-50 last:border-0">';
+        html += '<span class="font-medium">' + escapeHtml(name || id) + '</span>';
+        if (name && id) html += ' <span class="text-gray-400 text-xs">' + escapeHtml(id) + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '</div>';
+      
+      // Show selected animal
+      if (selectedAnimal) {
+        var selectedName = getAnimalNameById(selectedAnimal);
+        var displayLabel = selectedName ? selectedName + " | " + selectedAnimal : selectedAnimal;
+        html += '<div id="selectedAnimalDisplay" class="mt-2 px-4 py-3 bg-gray-900 text-white rounded-xl flex items-center justify-between">';
+        html += '<span class="font-medium">' + escapeHtml(displayLabel) + '</span>';
+        html += '<button type="button" onclick="clearActivityAnimal()" class="text-gray-400 hover:text-white text-lg">&times;</button>';
+        html += '</div>';
+      }
+      html += '</div>';
+      
+      // Step 2: Date (simple)
+      html += '<div class="mb-5">';
+      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Date</label>';
+      html += '<input type="date" id="activityDate" value="' + today + '" ';
+      html += 'onchange="state.formData[\'DATE\']=this.value" ';
+      html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
+      html += '</div>';
+      
+      // Step 3: Activity Type - Visual buttons in categories
+      html += '<div class="mb-5">';
+      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Activity Type</label>';
+      
+      // Feeding row
+      html += '<div class="mb-2">';
+      html += '<div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Feeding</div>';
+      html += '<div class="flex gap-2">';
+      html += activityButton("Took Meal", selectedActivity);
+      html += activityButton("Refused Meal", selectedActivity);
+      html += '</div>';
+      html += '</div>';
+      
+      // General row
+      html += '<div class="mb-2">';
+      html += '<div class="text-xs text-gray-400 uppercase tracking-wide mb-1">General</div>';
+      html += '<div class="flex gap-2">';
+      html += activityButton("Shed", selectedActivity);
+      html += activityButton("Weight", selectedActivity);
+      html += activityButton("Note", selectedActivity);
+      html += activityButton("Health Hold", selectedActivity);
+      html += '</div>';
+      html += '</div>';
+      
+      // Breeding row
+      html += '<div class="mb-2">';
+      html += '<div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Breeding</div>';
+      html += '<div class="flex gap-2">';
+      html += activityButton("Paired", selectedActivity);
+      html += activityButton("Lock", selectedActivity);
+      html += activityButton("Ovulation", selectedActivity);
+      html += activityButton("Pre Lay Shed", selectedActivity);
+      html += '</div>';
+      html += '</div>';
+      
+      html += '</div>';
+      
+      // Step 4: Value field (conditional based on activity)
+      var showValue = selectedActivity === "Weight" || selectedActivity === "Note" || selectedActivity === "Health Hold" || selectedActivity === "Ovulation";
+      var showPairedWith = selectedActivity === "Paired" || selectedActivity === "Lock";
+      
+      if (showValue) {
+        var valueLabel = "Value";
+        var valuePlaceholder = "";
+        if (selectedActivity === "Weight") { valueLabel = "Weight (grams)"; valuePlaceholder = "e.g. 1500"; }
+        if (selectedActivity === "Note" || selectedActivity === "Health Hold") { valueLabel = "Notes"; valuePlaceholder = "Enter notes..."; }
+        if (selectedActivity === "Ovulation") { valueLabel = "Follicle Size (mm)"; valuePlaceholder = "e.g. 35"; }
+        
+        html += '<div class="mb-5">';
+        html += '<label class="block text-sm font-semibold text-gray-700 mb-2">' + valueLabel + '</label>';
+        html += '<input type="text" id="activityValue" value="' + escapeHtml(state.formData["VALUE"] || "") + '" ';
+        html += 'placeholder="' + valuePlaceholder + '" ';
+        html += 'onchange="state.formData[\'VALUE\']=this.value" ';
+        html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
+        html += '</div>';
+      }
+      
+      if (showPairedWith) {
+        html += '<div class="mb-5">';
+        html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Paired With</label>';
+        html += '<select id="activityPairedWith" onchange="state.formData[\'VALUE\']=this.value" ';
+        html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
+        html += '<option value="">Select animal...</option>';
+        animals.forEach(function(a) {
+          var name = a["ANIMAL NAME"] || "";
+          var id = a["UNIQUE ID"] || "";
+          var label = name ? name + " | " + id : id;
+          var sel = (state.formData["VALUE"] === label) ? " selected" : "";
+          html += '<option value="' + escapeHtml(label) + '"' + sel + '>' + escapeHtml(label) + '</option>';
+        });
+        html += '</select>';
+        html += '</div>';
+      }
+      
+      document.getElementById("modalBody").innerHTML = html;
+      
+      // Set up save button
+      document.getElementById("saveBtn").onclick = saveActivityFromForm;
+    }
+    
+    function activityButton(label, selected) {
+      var isSelected = (selected === label);
+      var baseClass = "px-3 py-2 rounded-lg text-sm font-medium transition-colors ";
+      var colorClass = isSelected ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200";
+      return '<button type="button" onclick="selectActivityType(\'' + label + '\')" class="' + baseClass + colorClass + '">' + label + '</button>';
+    }
+    
+    function filterActivityAnimals(search) {
+      var list = document.getElementById("activityAnimalList");
+      var items = list.getElementsByTagName("div");
+      var searchLower = search.toLowerCase();
+      var anyVisible = false;
+      
+      for (var i = 0; i < items.length; i++) {
+        var text = items[i].textContent.toLowerCase();
+        if (text.indexOf(searchLower) >= 0) {
+          items[i].style.display = "";
+          anyVisible = true;
+        } else {
+          items[i].style.display = "none";
+        }
+      }
+      
+      list.classList.toggle("hidden", !anyVisible && !search);
+    }
+    
+    function selectActivityAnimal(id, label) {
+      state.formData["UNIQUE ID"] = id;
+      renderActivityAddForm();
+    }
+    
+    function clearActivityAnimal() {
+      state.formData["UNIQUE ID"] = "";
+      renderActivityAddForm();
+    }
+    
+    function selectActivityType(activity) {
+      state.formData["ACTIVITY"] = activity;
+      state.formData["VALUE"] = ""; // Clear value when changing activity type
+      renderActivityAddForm();
+    }
+    
+    function saveActivityFromForm() {
+      var animalId = state.formData["UNIQUE ID"] || "";
+      var date = state.formData["DATE"] || "";
+      var activity = state.formData["ACTIVITY"] || "";
+      var value = state.formData["VALUE"] || "";
+      
+      if (!animalId) {
+        document.getElementById("modalError").textContent = "Please select an animal";
+        return;
+      }
+      if (!activity) {
+        document.getElementById("modalError").textContent = "Please select an activity type";
+        return;
+      }
+      
+      var record = {
+        "DATE": date,
+        "UNIQUE ID": animalId,
+        "ACTIVITY": activity,
+        "VALUE": value
+      };
+      
+      setStatus("Saving...");
+      document.getElementById("saveBtn").textContent = "Saving...";
+      document.getElementById("saveBtn").disabled = true;
+      
+      apiCall('saveRecord', { tab: 'Activity', data: record })
+        .then(function(response) {
+          if (response.success) {
+            record.__rowIndex = state.data.activity.length;
+            state.data.activity.push(record);
+            setStatus("Activity logged!");
+            closeModal();
+            renderCurrentView();
+          } else {
+            document.getElementById("modalError").textContent = response.error || "Failed to save";
+          }
+        })
+        .catch(function(error) {
+          document.getElementById("modalError").textContent = "Error: " + error.message;
+        })
+        .finally(function() {
+          document.getElementById("saveBtn").textContent = "Save";
+          document.getElementById("saveBtn").disabled = false;
+        });
     }
 
     function getFieldOptions(field, sheetKey) {
