@@ -478,18 +478,26 @@
 
   <!-- JavaScript Files (order matters!) -->
   <script src="config.js"></script>
+  <script>console.log("config.js loaded, VERSION:", typeof VERSION !== 'undefined' ? VERSION : 'NOT DEFINED');</script>
   <script src="api.js"></script>
+  <script>console.log("api.js loaded, apiCall:", typeof apiCall);</script>
   <script src="app.js"></script>
+  <script>console.log("app.js loaded, init:", typeof init);</script>
   <script src="dashboard.js"></script>
+  <script>console.log("dashboard.js loaded, renderDashboard:", typeof renderDashboard);</script>
   <script src="tables.js"></script>
+  <script>console.log("tables.js loaded, renderTable:", typeof renderTable);</script>
   <script src="modals.js"></script>
+  <script>console.log("modals.js loaded, openAddModal:", typeof openAddModal, "openEditModal:", typeof openEditModal);</script>
   <script src="hatch-sale.js"></script>
+  <script>console.log("hatch-sale.js loaded, openHatchModal:", typeof openHatchModal);</script>
   <script src="tools.js"></script>
   <script src="archive.js"></script>
   <script src="bintags.js"></script>
   <script src="import.js"></script>
   <script src="invoice.js"></script>
   <script src="qr-activity.js"></script>
+  <script>console.log("All scripts loaded. Testing openAddModal directly..."); if(typeof openAddModal === 'function') console.log("openAddModal IS a function"); else console.error("openAddModal is NOT defined!");</script>
   
   <!-- Initialize -->
   <script>
