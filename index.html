@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.12
+  Version: 2.11.13
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.13: Added Activity stats cards
+             - Activity table: Feedings, Refusals, Sheds, Ovulations (this month)
+             - Dashboard: Took Meal, Refused Meal, Paired, Locked, Ovulation, Laid (season totals)
   - 2.11.12: Quick Activity save button now shows "Saving..." while saving
   - 2.11.11: Added Delete button to Activity table (direct delete, no archive)
   - 2.11.10: Fixed Activity not capturing UNIQUE ID
@@ -693,7 +696,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.12";
+    var VERSION = "2.11.13";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1512,6 +1515,18 @@
       html += statCard("Males", stats.hatchMales, "blue", "Unknown: " + stats.hatchUnknown, "state.activeTab=&#39;hatchlings&#39;; renderNavTabs(); renderCurrentView();");
       html += '</div></div>';
 
+      // Activity Section (Breeding Season Stats)
+      var activityStats = calculateActivityStats();
+      html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Activity (Season)</div>';
+      html += '<div class="grid grid-cols-2 md:grid-cols-6 gap-4">';
+      html += statCard("Took Meal", activityStats.tookMeal, "green", null, "state.activeTab=&#39;activity&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Refused Meal", activityStats.refusedMeal, "orange", null, "state.activeTab=&#39;activity&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Paired", activityStats.paired, "blue", null, "state.activeTab=&#39;activity&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Locked", activityStats.locked, "violet", null, "state.activeTab=&#39;activity&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Ovulation", activityStats.ovulation, "pink", null, "state.activeTab=&#39;activity&#39;; renderNavTabs(); renderCurrentView();");
+      html += statCard("Laid", activityStats.laid, "emerald", null, "state.activeTab=&#39;activity&#39;; renderNavTabs(); renderCurrentView();");
+      html += '</div></div>';
+
       // Sales Section
       html += '<div class="mb-8"><div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Sales (This Year)</div>';
       html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
@@ -1760,6 +1775,56 @@
       });
       
       return { sold: sold, revenue: Math.round(revenue) };
+    }
+
+    function calculateActivityStats() {
+      var rows = state.data.activity || [];
+      var now = new Date();
+      var currentMonth = now.getMonth();
+      var currentYear = now.getFullYear();
+      
+      var stats = {
+        feedingsMonth: 0,
+        refusalsMonth: 0,
+        shedsMonth: 0,
+        ovulationsMonth: 0,
+        // For dashboard
+        tookMeal: 0,
+        refusedMeal: 0,
+        paired: 0,
+        locked: 0,
+        ovulation: 0,
+        laid: 0
+      };
+      
+      rows.forEach(function(r) {
+        var activity = (r.ACTIVITY || "").toLowerCase().trim();
+        var activityDate = parseDate(r.DATE);
+        
+        // Check if this month
+        var isThisMonth = false;
+        if (activityDate) {
+          isThisMonth = (activityDate.getMonth() === currentMonth && activityDate.getFullYear() === currentYear);
+        }
+        
+        // Count for Activity table stats (this month only)
+        if (isThisMonth) {
+          if (activity === "took meal") stats.feedingsMonth++;
+          if (activity === "refused meal") stats.refusalsMonth++;
+          if (activity === "shed") stats.shedsMonth++;
+          if (activity === "ovulation") stats.ovulationsMonth++;
+        }
+        
+        // Count for Dashboard (all time / current season)
+        if (activity === "took meal") stats.tookMeal++;
+        if (activity === "refused meal") stats.refusedMeal++;
+        if (activity === "paired") stats.paired++;
+        if (activity === "lock") stats.locked++;
+        if (activity === "ovulation") stats.ovulation++;
+        if (activity === "laid") stats.laid++;
+      });
+      
+      return stats;
     }
 
     // Extract year from various date formats without full parsing
@@ -2392,6 +2457,30 @@
         html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
         html += '<div class="text-xs uppercase tracking-wider text-gray-500">Unshipped</div>';
         html += '<div class="text-2xl font-black text-gray-900">' + stats.unshipped + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.innerHTML = html;
+        statsView.classList.remove("hidden");
+        
+      } else if (state.activeTab === "activity") {
+        var activityStats = calculateActivityStats();
+        
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Feedings (Month)</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + activityStats.feedingsMonth + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Refusals (Month)</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + activityStats.refusalsMonth + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Sheds (Month)</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + activityStats.shedsMonth + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Ovulations (Month)</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + activityStats.ovulationsMonth + '</div>';
         html += '</div>';
         html += '</div>';
         statsView.innerHTML = html;
