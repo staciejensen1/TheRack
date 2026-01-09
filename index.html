@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.47
+  Version: 2.11.46
   Last Updated: 2026-01-09
   
   Changelog:
-  - 2.11.47: Bin Tag fixes:
-             - Logo box now square (18% width to match 47% height ratio)
-             - Sex/ID section widened to 57% to compensate
-             - Reduced black padding on Row 3 info boxes (1px instead of 2-3px)
   - 2.11.46: REVERTED to simple saveRecord from working version
              - Removed all cleanData filtering that was breaking saves
              - Sends state.formData directly like working version did
@@ -5553,11 +5549,11 @@
       // Using Norwester font for headlines, Inter for body
       var html = '<div class="bin-tag-preview" style="width:' + dims.w + 'px; height:' + dims.h + 'px; font-family: Inter, system-ui, sans-serif; border: 1px solid #000; box-sizing: border-box; overflow: hidden; background: #fff;">';
       
-      // ROW 1: Logo (18%) | Sex+ID (57%) | QR (25%) - 47% height
+      // ROW 1: Logo (22%) | Sex+ID (53%) | QR (25%) - 47% height
       html += '<div style="display: flex; height: 47%; border-bottom: 1px solid #000;">';
       
-      // Left: Logo section (black background, 18% width - square)
-      html += '<div style="width: 18%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px;">';
+      // Left: Logo section (black background, 22% width)
+      html += '<div style="width: 22%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px;">';
       if (logoUrl) {
         html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
       } else {
@@ -5565,8 +5561,8 @@
       }
       html += '</div>';
       
-      // Center: Sex + ID (white background, 57% width)
-      html += '<div style="width: 57%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 1px solid #000; border-right: 1px solid #000;">';
+      // Center: Sex + ID (white background, 53% width)
+      html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 1px solid #000; border-right: 1px solid #000;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 24px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 12px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
       html += '</div>';
@@ -5597,7 +5593,7 @@
       html += '</div>';
       
       // Right: Info boxes (black background with white boxes, 25%)
-      html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 1px; gap: 1px;">';
+      html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 3px; gap: 2px;">';
       
       // Year Born box (white)
       html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
@@ -5700,11 +5696,11 @@
         
         html += '<div class="bin-tag">';
         
-        // ROW 1: Logo (18%) | Sex+ID (57%) | QR (25%) - 47% height
+        // ROW 1: Logo (22%) | Sex+ID (53%) | QR (25%) - 47% height
         html += '<div style="display: flex; height: 47%; border-bottom: 1px solid #000;">';
         
-        // Left: Logo (black bg, 18% - square)
-        html += '<div style="width: 18%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px;">';
+        // Left: Logo (black bg, 22%)
+        html += '<div style="width: 22%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px;">';
         if (logoUrl) {
           html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
         } else {
@@ -5712,8 +5708,8 @@
         }
         html += '</div>';
         
-        // Center: Sex + ID (white bg, 57%)
-        html += '<div style="width: 57%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 1px solid #000; border-right: 1px solid #000;">';
+        // Center: Sex + ID (white bg, 53%)
+        html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 1px solid #000; border-right: 1px solid #000;">';
         html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 20px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
         html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
         html += '</div>';
@@ -5744,7 +5740,7 @@
         html += '</div>';
         
         // Right: Info boxes (25%)
-        html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 1px; gap: 1px;">';
+        html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 2px; gap: 2px;">';
         
         // Year Born box
         html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
