@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.20
+  Version: 2.11.21
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.21: Invoice PDF fixes
+             - Removed auto-generated Payment Method section (was incorrectly showing)
+             - Fixed Amount Due gray bar to extend full width in PDF
   - 2.11.20: Dashboard alert cards now filter to show only matching items
              - Overdue Clutches: Shows only incubating clutches past est. hatch date
              - Due Within 7 Days: Shows only clutches due in next 7 days
@@ -719,7 +722,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.20";
+    var VERSION = "2.11.21";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -5895,14 +5898,6 @@
       html += '</div>';
       html += '</div>';
       
-      // Payment Info
-      if (settings["EMAIL"]) {
-        html += '<div style="margin-top: 30px; padding: 15px; background: #f9fafb; border-radius: 8px;">';
-        html += '<div style="font-size: 11px; font-weight: 600; color: #666; margin-bottom: 5px;">PAYMENT METHOD</div>';
-        html += '<div style="color: #111;">PayPal: ' + escapeHtml(settings["EMAIL"]) + '</div>';
-        html += '</div>';
-      }
-      
       // Terms / Footer
       var terms = settings["INVOICE TERMS"] || "";
       if (terms || inv.notes) {
@@ -6134,28 +6129,13 @@
       // Amount due box
       y += 25;
       doc.setFillColor(229, 231, 235);
-      doc.rect(totalsX - 10, y - 12, 150, 30, 'F');
+      doc.rect(totalsX - 10, y - 12, pageWidth - margin - totalsX + 10, 30, 'F');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(17, 17, 17);
       doc.text('AMOUNT DUE', totalsX, y + 5);
       doc.setFontSize(14);
-      doc.text('$' + balanceDue.toFixed(2), 510, y + 5);
-      
-      // Payment method
-      if (settings["EMAIL"]) {
-        y += 50;
-        doc.setFillColor(249, 250, 251);
-        doc.rect(margin, y, 200, 40, 'F');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(102, 102, 102);
-        doc.text('PAYMENT METHOD', margin + 10, y + 15);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(17, 17, 17);
-        doc.text('PayPal: ' + settings["EMAIL"], margin + 10, y + 30);
-      }
+      doc.text('$' + balanceDue.toFixed(2), pageWidth - margin - 10, y + 5, { align: 'right' });
       
       // Terms footer
       var terms = settings["INVOICE TERMS"] || "";
