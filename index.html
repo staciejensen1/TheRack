@@ -1,10 +1,18 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.6
+  Version: 2.11.8
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.8: Fixed Save button not working on Edit/Add forms
+            - Save button onclick was being overwritten by quick Activity modal
+            - Now resets onclick to saveRecord() when opening Add/Edit modals
+  - 2.11.7: Clutch-specific quick activities
+            - Added: Hatched and Clutch Went Bad activities for clutch table
+            - Activity button shows different options based on table (clutch vs animal)
+            - Clutch activities: Hatched, Clutch Went Bad, Note
+            - Animal activities: Took Meal, Refused Meal, Shed, Weight, Note, Health Hold
   - 2.11.6: CRITICAL BUG FIXES
             - Fixed: Activity button now works (saveBtn reference corrected)
             - Fixed: Formula columns protected in frontend (UNIQUE ID, QR CODE, CLUTCH ID, etc)
@@ -679,7 +687,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.6";
+    var VERSION = "2.11.8";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -694,7 +702,7 @@
       SEX: ["Female", "Male", "Unknown"],
       STATUS: ["Breeder", "Holdback", "Listed", "Unlisted", "On Hold", "Sold", "Deceased", "Retired", "On Loan"],
       CLUTCH_STATUS: ["Incubating", "Hatched", "Failed"],
-      ACTIVITY: ["Took Meal", "Refused Meal", "Weight", "Shed", "Note", "Health Hold", "Paired", "Lock", "Follicle Size", "Ovulation", "Pre Lay Shed", "Laid", "Sold"],
+      ACTIVITY: ["Took Meal", "Refused Meal", "Weight", "Shed", "Note", "Health Hold", "Paired", "Lock", "Follicle Size", "Ovulation", "Pre Lay Shed", "Laid", "Sold", "Hatched", "Clutch Went Bad"],
       SALE_SOURCE: ["MorphMarket", "Instagram", "Facebook", "Repeat Buyer", "Local Show", "Website", "Other"],
       PAYMENT_STATUS: ["Deposit", "Paid", "Refunded"]
     };
@@ -1134,7 +1142,7 @@
           "ANIMAL NAME": "Clutch: " + (row["CLUTCH ID"] || "Unknown"),
           "UNIQUE ID": row["CLUTCH ID"] || ""
         };
-        renderActivityModalForQR(clutchInfo);
+        renderActivityModalForQR(clutchInfo, true); // true = isClutch
         document.getElementById("modal").classList.remove("hidden");
       } else {
         // For collection/hatchlings, use the existing function
@@ -1142,15 +1150,15 @@
       }
     }
 
-    function renderActivityModalForQR(animal) {
+    function renderActivityModalForQR(animal, isClutch) {
       var animalName = animal["ANIMAL NAME"] || animal["UNIQUE ID"];
       var animalId = animal["UNIQUE ID"];
       
-      document.getElementById("modalTitle").textContent = "Log Activity";
+      document.getElementById("modalTitle").textContent = isClutch ? "Log Clutch Activity" : "Log Activity";
       
       var html = '<div class="space-y-4">';
       
-      // Animal info banner
+      // Animal/Clutch info banner
       html += '<div class="bg-gray-100 rounded-xl p-3 mb-4">';
       html += '<div class="font-bold text-gray-900">' + animalName + '</div>';
       html += '<div class="text-sm text-gray-500 mono">' + animalId + '</div>';
@@ -1167,7 +1175,14 @@
       html += '<label class="block text-sm font-medium text-gray-700 mb-2">Activity</label>';
       html += '<div class="grid grid-cols-2 gap-2">';
       
-      var quickActivities = ["Took Meal", "Refused Meal", "Shed", "Weight", "Note", "Health Hold"];
+      // Different activities for clutches vs animals
+      var quickActivities;
+      if (isClutch) {
+        quickActivities = ["Hatched", "Clutch Went Bad", "Note"];
+      } else {
+        quickActivities = ["Took Meal", "Refused Meal", "Shed", "Weight", "Note", "Health Hold"];
+      }
+      
       quickActivities.forEach(function(act) {
         var selected = state.formData["ACTIVITY"] === act ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200";
         html += '<button type="button" onclick="selectQRActivity(\'' + act + '\')" class="qr-activity-btn px-4 py-3 rounded-xl font-medium text-sm ' + selected + '">' + act + '</button>';
@@ -1177,7 +1192,8 @@
       html += '</div>';
       
       // Value field (for weight, notes, etc)
-      html += '<div id="qrValueField" class="' + (state.formData["ACTIVITY"] === "Weight" || state.formData["ACTIVITY"] === "Note" ? "" : "hidden") + '">';
+      var showValueField = state.formData["ACTIVITY"] === "Weight" || state.formData["ACTIVITY"] === "Note" || state.formData["ACTIVITY"] === "Hatched" || state.formData["ACTIVITY"] === "Clutch Went Bad";
+      html += '<div id="qrValueField" class="' + (showValueField ? "" : "hidden") + '">';
       html += '<label class="block text-sm font-medium text-gray-700 mb-1" id="qrValueLabel">Value</label>';
       html += '<input type="text" id="field_VALUE" value="' + (state.formData["VALUE"] || "") + '" class="w-full px-3 py-2 border border-gray-300 rounded-xl" placeholder="Enter value...">';
       html += '</div>';
@@ -1211,6 +1227,12 @@
       } else if (activity === "Note" || activity === "Health Hold") {
         valueField.classList.remove('hidden');
         valueLabel.textContent = "Notes";
+      } else if (activity === "Hatched") {
+        valueField.classList.remove('hidden');
+        valueLabel.textContent = "# Hatched";
+      } else if (activity === "Clutch Went Bad") {
+        valueField.classList.remove('hidden');
+        valueLabel.textContent = "Reason (optional)";
       } else {
         valueField.classList.add('hidden');
       }
@@ -2566,6 +2588,8 @@
 
       renderModalForm(tab);
       document.getElementById("modal").classList.remove("hidden");
+      // Reset save button to normal saveRecord function (may have been changed by quick activity modal)
+      document.getElementById("saveBtn").onclick = saveRecord;
     }
 
     function openEditModal(row) {
@@ -2646,6 +2670,8 @@
 
       renderModalForm(sheetKey);
       document.getElementById("modal").classList.remove("hidden");
+      // Reset save button to normal saveRecord function (may have been changed by quick activity modal)
+      document.getElementById("saveBtn").onclick = saveRecord;
     }
 
     function closeModal() {
