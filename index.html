@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.5
+  Version: 2.11.6
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.6: CRITICAL BUG FIXES
+            - Fixed: Activity button now works (saveBtn reference corrected)
+            - Fixed: Formula columns protected in frontend (UNIQUE ID, QR CODE, CLUTCH ID, etc)
+            - Note: BACKEND Code.gs MUST be updated to v2.11.0 for full protection
+            - The backend now skips formula columns during save/update operations
   - 2.11.5: New features and character encoding fixes
             - Added: + Activity button on Collection, Clutch, Hatchling tables
             - Added: Animal search/select dropdown in Add Activity form  
@@ -674,7 +679,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.5";
+    var VERSION = "2.11.6";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1182,7 +1187,7 @@
       document.getElementById("modalBody").innerHTML = html;
       
       // Update save button
-      document.getElementById("saveRecordBtn").onclick = saveQRActivity;
+      document.getElementById("saveBtn").onclick = saveQRActivity;
     }
 
     function selectQRActivity(activity) {
@@ -1230,7 +1235,7 @@
       
       // Save to sheet
       setStatus("Saving...");
-      document.getElementById("saveRecordBtn").disabled = true;
+      document.getElementById("saveBtn").disabled = true;
       
       apiCall('saveRecord', { tab: 'Activity', data: record })
         .then(function(response) {
@@ -1261,7 +1266,7 @@
           setStatus("Error: " + error.message, true);
         })
         .finally(function() {
-          document.getElementById("saveRecordBtn").disabled = false;
+          document.getElementById("saveBtn").disabled = false;
         });
     }
 
@@ -2578,7 +2583,22 @@
       
       state.modalMode = "edit";
       state.modalTab = sheetKey;
-      state.formData = Object.assign({}, row);
+      
+      // Copy row data, normalizing any Date objects to YYYY-MM-DD strings
+      state.formData = {};
+      for (var key in row) {
+        var val = row[key];
+        // If it's a Date object, convert to YYYY-MM-DD
+        if (val instanceof Date && !isNaN(val.getTime())) {
+          state.formData[key] = val.toISOString().split('T')[0];
+        } else if (typeof val === "string" && val.includes('T') && key.toUpperCase().includes("DATE")) {
+          // If it's an ISO timestamp string for a date field, strip the time
+          state.formData[key] = val.split('T')[0];
+        } else {
+          state.formData[key] = val;
+        }
+      }
+      
       state.formType = null; // Clear formType for edit mode
       
       // Get row index - if missing, find by UNIQUE ID or MANUAL OVERRIDE
@@ -2787,7 +2807,9 @@
         } else if (h.toUpperCase().includes("DATE")) {
           var isRequired = (h.toUpperCase() === "DATE OF BIRTH" && state.formType === "breeder");
           var requiredAttr = isRequired ? ' required' : '';
-          input = '<input type="date" value="' + val + '" onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm"' + requiredAttr + '>';
+          // Format date value for input field (needs YYYY-MM-DD format)
+          var dateVal = formatDateForInput(val);
+          input = '<input type="date" value="' + dateVal + '" onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm"' + requiredAttr + '>';
         } else if (h.toUpperCase().includes("PRICE") || h.toUpperCase().includes("WEIGHT") || h.toUpperCase().includes("FEE") || h.startsWith("#")) {
           input = '<input type="number" step="any" value="' + val + '" onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm">';
         } else if (h.toUpperCase().includes("NOTES")) {
@@ -3075,6 +3097,51 @@
 
     function escapeHtml(s) {
       return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Format a date value for HTML date input (needs YYYY-MM-DD)
+    // Handles: Date objects, ISO strings, "MM/DD/YYYY", "YYYY-MM-DD", timestamps
+    function formatDateForInput(val) {
+      if (!val) return "";
+      
+      // If it's already in YYYY-MM-DD format, return as-is
+      if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+        return val;
+      }
+      
+      // If it's a Date object
+      if (val instanceof Date && !isNaN(val.getTime())) {
+        return val.toISOString().split('T')[0];
+      }
+      
+      // If it's a string with timestamp (like "2022-01-01T08:00:00")
+      if (typeof val === "string" && val.includes('T')) {
+        return val.split('T')[0];
+      }
+      
+      // If it's MM/DD/YYYY format
+      if (typeof val === "string") {
+        var parts = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (parts) {
+          var mm = parts[1].padStart(2, '0');
+          var dd = parts[2].padStart(2, '0');
+          var yyyy = parts[3];
+          return yyyy + '-' + mm + '-' + dd;
+        }
+      }
+      
+      // Try to parse as date
+      try {
+        var d = new Date(val);
+        if (!isNaN(d.getTime())) {
+          return d.toISOString().split('T')[0];
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+      
+      // Return original value if we can't parse it
+      return String(val);
     }
     
     // Format date as YYYY-MM-DD only (no timestamp)
@@ -5434,4 +5501,4 @@
     </div>
   </footer>
 </body>
-</html>
+</html
