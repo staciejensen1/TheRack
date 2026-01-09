@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.37
+  Version: 2.11.39
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.39: Fixed truncated HTML closing tag that broke page load
+  - 2.11.38: Fixed syntax error (extra closing brace) in saveRecord that broke clutch saves
   - 2.11.37: Removed debug logging that was breaking site startup
   - 2.11.36: Bin Tag proportions updated per user specs:
              Row 1: Logo 22% | Sex+ID 53% | QR 25%
@@ -828,7 +830,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.37";
+    var VERSION = "2.11.39";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -4398,7 +4400,6 @@
         
         cleanData[key] = val;
       }
-      }
       
       var savedFormData = Object.assign({}, cleanData);
 
@@ -7077,4 +7078,4 @@
     </div>
   </footer>
 </body>
-</html
+</html>
