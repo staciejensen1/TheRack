@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.41
+  Version: 2.11.42
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.42: Bin Tag improvements:
+             - Fixed thick border on Row 3 - now consistent 1px borders throughout
+             - Added Norwester font via CDN (condensed geometric sans serif)
+             - Cleaner layout matching Canva template
   - 2.11.41: CRITICAL FIX - Clutch edit form now uses same clean form as Add:
              - Removed unwanted fields (DAYS TILL HATCH, # HATCHED, HATCH DATE, etc.)
              - Renamed renderClutchAddForm to renderClutchForm (used for both add/edit)
@@ -126,6 +130,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -838,7 +843,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.41";
+    var VERSION = "2.11.42";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -5769,24 +5774,25 @@
       
       // Build the tag HTML matching Canva design exactly
       // Card dimensions: 3.38" x 2.13" = 324.48px x 204.48px at 96dpi
-      var html = '<div class="bin-tag-preview" style="width:' + dims.w + 'px; height:' + dims.h + 'px; font-family: Inter, system-ui, sans-serif; border: 3px solid #000; box-sizing: border-box; overflow: hidden; background: #fff;">';
+      // Using Norwester font for headlines, Inter for body
+      var html = '<div class="bin-tag-preview" style="width:' + dims.w + 'px; height:' + dims.h + 'px; font-family: Inter, system-ui, sans-serif; border: 1px solid #000; box-sizing: border-box; overflow: hidden; background: #fff;">';
       
       // ROW 1: Logo (22%) | Sex+ID (53%) | QR (25%) - 47% height
-      html += '<div style="display: flex; height: 47%; border-bottom: 3px solid #000;">';
+      html += '<div style="display: flex; height: 47%; border-bottom: 1px solid #000;">';
       
       // Left: Logo section (black background, 22% width)
       html += '<div style="width: 22%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px;">';
       if (logoUrl) {
         html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
       } else {
-        html += '<div style="font-size: 9px; font-weight: 800; text-align: center; letter-spacing: 0.3px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
+        html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; text-align: center; letter-spacing: 0.5px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
       }
       html += '</div>';
       
       // Center: Sex + ID (white background, 53% width)
-      html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 3px solid #000; border-right: 3px solid #000;">';
-      html += '<div style="font-size: 22px; font-weight: 900; color: #000; letter-spacing: 1px;">' + escapeHtml(sexDisplay) + '</div>';
-      html += '<div style="font-size: 11px; font-weight: 700; color: #000; margin-top: 2px;">' + escapeHtml(id) + '</div>';
+      html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 1px solid #000; border-right: 1px solid #000;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 24px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 12px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
       html += '</div>';
       
       // Right: QR code (white background, 25% width)
@@ -5797,12 +5803,12 @@
       html += '</div>';
       
       // ROW 2: Animal Name (75%) | INFO header (25%) - 15% height
-      html += '<div style="display: flex; height: 15%; border-bottom: 3px solid #000;">';
-      html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 3px solid #000;">';
-      html += '<div style="font-size: 22px; font-weight: 900; color: #000; letter-spacing: -0.5px;">' + escapeHtml(name || "UNNAMED") + '</div>';
+      html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
+      html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 22px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED") + '</div>';
       html += '</div>';
       html += '<div style="width: 25%; background: #000; display: flex; justify-content: center; align-items: center;">';
-      html += '<div style="font-size: 12px; font-weight: 900; color: #fff; letter-spacing: 1px;">INFO</div>';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 12px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
       html += '</div>';
       html += '</div>';
       
@@ -5810,23 +5816,23 @@
       html += '<div style="display: flex; height: 38%;">';
       
       // Left: Genetics (white background, 75%)
-      html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 3px solid #000;">';
+      html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 1px solid #000;">';
       html += '<div style="font-size: 11px; font-weight: 500; line-height: 1.25; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
       html += '</div>';
       
       // Right: Info boxes (black background with white boxes, 25%)
-      html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 4px; gap: 3px;">';
+      html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 3px; gap: 2px;">';
       
       // Year Born box (white)
-      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
-      html += '<div style="font-size: 8px; font-weight: 800; color: #000;">YEAR BORN:</div>';
-      html += '<div style="font-size: 16px; font-weight: 700; color: #000;">' + (yearBorn || "--") + '</div>';
+      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
+      html += '<div style="font-size: 7px; font-weight: 700; color: #000; letter-spacing: 0.5px;">YEAR BORN:</div>';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 16px; font-weight: 400; color: #000;">' + (yearBorn || "--") + '</div>';
       html += '</div>';
       
       // Breeder box (white)
-      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
-      html += '<div style="font-size: 8px; font-weight: 800; color: #000;">BREEDER:</div>';
-      html += '<div style="font-size: 9px; font-weight: 600; color: #000; line-height: 1.1; overflow: hidden;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
+      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
+      html += '<div style="font-size: 7px; font-weight: 700; color: #000; letter-spacing: 0.5px;">BREEDER:</div>';
+      html += '<div style="font-size: 8px; font-weight: 600; color: #000; line-height: 1.1; overflow: hidden;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
       html += '</div>';
       
       html += '</div>';
@@ -5890,10 +5896,11 @@
       
       var html = '<!DOCTYPE html><html><head><title>Bin Tags - The Rack</title>';
       html += '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">';
+      html += '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">';
       html += '<style>';
       html += '@page { size: 3.38in 2.13in; margin: 0; }';
       html += 'body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 0; }';
-      html += '.bin-tag { width: 3.38in; height: 2.13in; page-break-after: always; box-sizing: border-box; overflow: hidden; border: 2px solid #000; background: #fff; }';
+      html += '.bin-tag { width: 3.38in; height: 2.13in; page-break-after: always; box-sizing: border-box; overflow: hidden; border: 1px solid #000; background: #fff; }';
       html += '.bin-tag:last-child { page-break-after: avoid; }';
       html += '@media print { body { margin: 0; } }';
       html += '</style></head><body>';
@@ -5918,21 +5925,21 @@
         html += '<div class="bin-tag">';
         
         // ROW 1: Logo (22%) | Sex+ID (53%) | QR (25%) - 47% height
-        html += '<div style="display: flex; height: 47%; border-bottom: 2px solid #000;">';
+        html += '<div style="display: flex; height: 47%; border-bottom: 1px solid #000;">';
         
         // Left: Logo (black bg, 22%)
         html += '<div style="width: 22%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px;">';
         if (logoUrl) {
           html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
         } else {
-          html += '<div style="font-size: 8px; font-weight: 800; text-align: center; letter-spacing: 0.3px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
+          html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 9px; font-weight: 400; text-align: center; letter-spacing: 0.5px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
         }
         html += '</div>';
         
         // Center: Sex + ID (white bg, 53%)
-        html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 2px solid #000; border-right: 2px solid #000;">';
-        html += '<div style="font-size: 18px; font-weight: 900; color: #000; letter-spacing: 1px;">' + escapeHtml(sexDisplay) + '</div>';
-        html += '<div style="font-size: 9px; font-weight: 700; color: #000; margin-top: 2px;">' + escapeHtml(id) + '</div>';
+        html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 1px solid #000; border-right: 1px solid #000;">';
+        html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 20px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
+        html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
         html += '</div>';
         
         // Right: QR (white bg, 25%)
@@ -5943,12 +5950,12 @@
         html += '</div>';
         
         // ROW 2: Animal Name (75%) | INFO header (25%) - 15% height
-        html += '<div style="display: flex; height: 15%; border-bottom: 2px solid #000;">';
-        html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 2px solid #000;">';
-        html += '<div style="font-size: 18px; font-weight: 900; color: #000; letter-spacing: -0.5px;">' + escapeHtml(name || "UNNAMED") + '</div>';
+        html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
+        html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
+        html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED") + '</div>';
         html += '</div>';
         html += '<div style="width: 25%; background: #000; display: flex; justify-content: center; align-items: center;">';
-        html += '<div style="font-size: 10px; font-weight: 900; color: #fff; letter-spacing: 1px;">INFO</div>';
+        html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
         html += '</div>';
         html += '</div>';
         
@@ -5956,22 +5963,22 @@
         html += '<div style="display: flex; height: 38%;">';
         
         // Left: Genetics (75%)
-        html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 2px solid #000;">';
+        html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 1px solid #000;">';
         html += '<div style="font-size: 9px; font-weight: 500; line-height: 1.2; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
         html += '</div>';
         
         // Right: Info boxes (25%)
-        html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 3px; gap: 2px;">';
+        html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 2px; gap: 2px;">';
         
         // Year Born box
-        html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
-        html += '<div style="font-size: 6px; font-weight: 800; color: #000;">YEAR BORN:</div>';
-        html += '<div style="font-size: 14px; font-weight: 700; color: #000;">' + (yearBorn || "--") + '</div>';
+        html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
+        html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">YEAR BORN:</div>';
+        html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 14px; font-weight: 400; color: #000;">' + (yearBorn || "--") + '</div>';
         html += '</div>';
         
         // Breeder box
-        html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
-        html += '<div style="font-size: 6px; font-weight: 800; color: #000;">BREEDER:</div>';
+        html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
+        html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">BREEDER:</div>';
         html += '<div style="font-size: 7px; font-weight: 600; color: #000; line-height: 1.1;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
         html += '</div>';
         
