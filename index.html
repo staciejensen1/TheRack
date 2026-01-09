@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.21
+  Version: 2.11.22
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.22: Filter bar fixes
+             - Fixed bug: Clutch search was showing on all tabs (now ONLY on Clutches)
+             - Moved Archive from Navigation to Tools section
+             - All filter bars now properly hide before showing correct one
   - 2.11.21: Invoice PDF fixes
              - Removed auto-generated Payment Method section (was incorrectly showing)
              - Fixed Amount Due gray bar to extend full width in PDF
@@ -270,6 +274,7 @@
             <button onclick="exportCSV('clutch'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
             <button onclick="showDataHealth(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
             <button onclick="openQRGenerator(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print QR Codes</button>
+            <button onclick="navigateTo('archive'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Archive</button>
             <button onclick="openSettingsModal(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Settings</button>
           </div>
         </div>
@@ -315,6 +320,7 @@
               <button onclick="exportCSV('clutch')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
               <button onclick="openQRGenerator()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print QR Codes</button>
               <button onclick="showDataHealth()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
+              <button onclick="navigateTo('archive')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Archive</button>
               <button onclick="openSettingsModal()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Settings</button>
             </div>
           </div>
@@ -722,7 +728,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.21";
+    var VERSION = "2.11.22";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1382,8 +1388,7 @@
         { key: "pairings", label: "Pairings" },
         { key: "hatchlings", label: "Hatchlings" },
         { key: "sales", label: "Sales" },
-        { key: "activity", label: "Activity" },
-        { key: "archive", label: "Archive" }
+        { key: "activity", label: "Activity" }
       ];
       
       // Desktop nav
@@ -1999,42 +2004,39 @@
       // Render stats cards for this view
       renderTableStats();
       
-      // Show/hide filter bar (only for collection-based views)
-      var filterBar = document.getElementById("filterBar");
-      var sheetKey = getSheetKey(state.activeTab);
       // Show/hide filter bars based on tab
+      var filterBar = document.getElementById("filterBar");
       var salesFilterBar = document.getElementById("salesFilterBar");
-      if (sheetKey === "collection" && state.activeTab !== "sales") {
-        filterBar.classList.remove("hidden");
-        salesFilterBar.classList.add("hidden");
-        populateSpeciesFilter();
-        // Sync search input
-        var searchInput = document.getElementById("searchInput");
-        if (searchInput) searchInput.value = state.filters.search || "";
-      } else if (state.activeTab === "sales") {
-        filterBar.classList.add("hidden");
-        salesFilterBar.classList.remove("hidden");
-        populateSalesYearFilter();
-        // Sync search input
-        var salesSearchInput = document.getElementById("salesSearchInput");
-        if (salesSearchInput) salesSearchInput.value = state.filters.search || "";
-      } else if (state.activeTab === "clutches") {
-        filterBar.classList.add("hidden");
-        salesFilterBar.classList.add("hidden");
-        var clutchesFilterBar = document.getElementById("clutchesFilterBar");
+      var clutchesFilterBar = document.getElementById("clutchesFilterBar");
+      var sheetKey = getSheetKey(state.activeTab);
+      
+      // Hide ALL filter bars first
+      filterBar.classList.add("hidden");
+      salesFilterBar.classList.add("hidden");
+      if (clutchesFilterBar) clutchesFilterBar.classList.add("hidden");
+      
+      // Show only the appropriate filter bar for current tab
+      if (state.activeTab === "clutches") {
         if (clutchesFilterBar) clutchesFilterBar.classList.remove("hidden");
         var clutchSearchInput = document.getElementById("clutchSearchInput");
         if (clutchSearchInput) clutchSearchInput.value = state.filters.search || "";
-      } else if (state.activeTab === "activity") {
-        // Show just search for activity
+      } else if (state.activeTab === "sales") {
+        salesFilterBar.classList.remove("hidden");
+        populateSalesYearFilter();
+        var salesSearchInput = document.getElementById("salesSearchInput");
+        if (salesSearchInput) salesSearchInput.value = state.filters.search || "";
+      } else if (sheetKey === "collection") {
+        // Collection, Hatchlings, Pairings tabs
         filterBar.classList.remove("hidden");
-        salesFilterBar.classList.add("hidden");
+        populateSpeciesFilter();
         var searchInput = document.getElementById("searchInput");
         if (searchInput) searchInput.value = state.filters.search || "";
-      } else {
-        filterBar.classList.add("hidden");
-        salesFilterBar.classList.add("hidden");
+      } else if (state.activeTab === "activity") {
+        filterBar.classList.remove("hidden");
+        var searchInput = document.getElementById("searchInput");
+        if (searchInput) searchInput.value = state.filters.search || "";
       }
+      // For archive and other tabs, all filter bars stay hidden
       
       // Show alert filter badge if active
       var alertFilterDisplay = document.getElementById("alertFilterDisplay");
