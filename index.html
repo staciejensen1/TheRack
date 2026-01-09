@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.11
+  Version: 2.11.12
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.12: Quick Activity save button now shows "Saving..." while saving
   - 2.11.11: Added Delete button to Activity table (direct delete, no archive)
   - 2.11.10: Fixed Activity not capturing UNIQUE ID
              - UNIQUE ID and CLUTCH ID are now allowed for Activity tab (not formulas there)
@@ -692,7 +693,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.11";
+    var VERSION = "2.11.12";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1262,6 +1263,7 @@
       
       // Save to sheet
       setStatus("Saving...");
+      document.getElementById("saveBtn").textContent = "Saving...";
       document.getElementById("saveBtn").disabled = true;
       
       apiCall('saveRecord', { tab: 'Activity', data: record })
@@ -1281,6 +1283,7 @@
           setStatus("Error: " + error.message, true);
         })
         .finally(function() {
+          document.getElementById("saveBtn").textContent = "Save";
           document.getElementById("saveBtn").disabled = false;
         });
     }
