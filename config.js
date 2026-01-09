@@ -8,7 +8,7 @@
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "2.12.11";
+var VERSION = "2.12.12";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {

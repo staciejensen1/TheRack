@@ -1,11 +1,11 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.11
+ * Version: 2.12.12
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.12: PDF fix - use line-height for vertical centering in Name/INFO row
  * - 2.12.11: PDF fix - Name and INFO cells vertically centered in row
- * - 2.12.10: PDF fix - name cell properly centered horizontally
  * - 2.12.6: Fixed logo not appearing in PDF - preload and convert to base64 before rendering
  * - 2.12.5: PDF now renders HTML with html2canvas for proper Norwester font
  * - 2.12.4: Fixed Norwester font import in index.html (was missing)
@@ -628,13 +628,14 @@ function downloadBinTagsPDFFile() {
       
       html += '</div>';
       
-      // ROW 2: Name (70%) | INFO (30%) - 15% height
+      // ROW 2: Name (70%) | INFO (30%) - 15% height (~31px)
+      var row2Height = Math.round(cardHeightPx * 0.15);
       html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
-      html += '<div style="width: 70%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000; box-sizing: border-box; padding: 0 4px;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px; text-align: center;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
+      html += '<div style="width: 70%; background: #fff; border-right: 1px solid #000; box-sizing: border-box; padding: 0 4px; line-height: ' + row2Height + 'px; text-align: center;">';
+      html += '<span style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</span>';
       html += '</div>';
-      html += '<div style="width: 30%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; box-sizing: border-box;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
+      html += '<div style="width: 30%; background: #000; box-sizing: border-box; line-height: ' + row2Height + 'px; text-align: center;">';
+      html += '<span style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</span>';
       html += '</div>';
       html += '</div>';
       
