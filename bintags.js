@@ -1,11 +1,11 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.8
+ * Version: 2.12.9
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.9: PDF fixes - name ALL CAPS, more top padding on Sex/ID, year spacing
  * - 2.12.8: Fixed PDF rendering - use screen-size HTML with html2canvas 3x scale
- * - 2.12.7: Added top gap to Sex+ID column for card cutout, logo upload stores as base64
  * - 2.12.6: Fixed logo not appearing in PDF - preload and convert to base64 before rendering
  * - 2.12.5: PDF now renders HTML with html2canvas for proper Norwester font
  * - 2.12.4: Fixed Norwester font import in index.html (was missing)
@@ -615,10 +615,10 @@ function downloadBinTagsPDFFile() {
       }
       html += '</div>';
       
-      // Sex + ID area (with top gap for card cutout)
-      html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 4px; padding-top: 14px; border-left: 1px solid #000; border-right: 1px solid #000; box-sizing: border-box;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 22px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
+      // Sex + ID area (with top gap for card cutout - ~0.25")
+      html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 4px; padding-top: 24px; border-left: 1px solid #000; border-right: 1px solid #000; box-sizing: border-box;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 20px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
       html += '</div>';
       
       // QR area
@@ -631,7 +631,7 @@ function downloadBinTagsPDFFile() {
       // ROW 2: Name (70%) | INFO (30%) - 15% height
       html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
       html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000; box-sizing: border-box; overflow: hidden;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%;">' + escapeHtml(name || "UNNAMED") + '</div>';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
       html += '</div>';
       html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center; box-sizing: border-box;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
@@ -650,9 +650,9 @@ function downloadBinTagsPDFFile() {
       html += '<div style="width: 30%; background: #fff; display: flex; flex-direction: column; box-sizing: border-box;">';
       
       // Year Born box
-      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-bottom: 1px solid #000; box-sizing: border-box;">';
+      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-bottom: 1px solid #000; box-sizing: border-box; padding-bottom: 4px;">';
       html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">YEAR BORN:</div>';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 16px; font-weight: 400; color: #000;">' + (yearBorn || "--") + '</div>';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 14px; font-weight: 400; color: #000; line-height: 1;">' + (yearBorn || "--") + '</div>';
       html += '</div>';
       
       // Breeder box
