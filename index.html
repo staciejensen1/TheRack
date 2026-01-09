@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.14
+  Version: 2.11.15
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.15: Added Pairings view and updated Dashboard activity section
+             - New Pairings tab shows all Paired and Lock activities for current year
+             - Pairings stats cards: Paired (year), Locked (year)
+             - Dashboard Activity section renamed to "This Month" with monthly counts
   - 2.11.14: Removed all corrupted Unicode characters from file
-             - Fixed overdue clutch warning icon (now shows red !)
-             - Cleaned up stray characters in comments
-  - 2.11.13: Added Activity stats cards
              - Activity table: Feedings, Refusals, Sheds, Ovulations (this month)
              - Dashboard: Took Meal, Refused Meal, Paired, Locked, Ovulation, Laid (season totals)
   - 2.11.12: Quick Activity save button now shows "Saving..." while saving
@@ -699,7 +700,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.14";
+    var VERSION = "2.11.15";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1302,6 +1303,7 @@
         { key: "dashboard", label: "Dashboard" },
         { key: "collection", label: "Collection" },
         { key: "clutches", label: "Clutches" },
+        { key: "pairings", label: "Pairings" },
         { key: "hatchlings", label: "Hatchlings" },
         { key: "sales", label: "Sales" },
         { key: "activity", label: "Activity" },
@@ -1355,6 +1357,7 @@
         dashboard: "Dashboard",
         collection: "Collection",
         clutches: "Clutches",
+        pairings: "Pairings",
         hatchlings: "Hatchlings",
         sales: "Sales",
         activity: "Activity",
@@ -1365,7 +1368,7 @@
       var isArchive = state.activeTab === "archive";
       document.getElementById("dashboardView").classList.toggle("hidden", !isDash);
       document.getElementById("tableView").classList.toggle("hidden", isDash || isArchive);
-      document.getElementById("addBtn").classList.toggle("hidden", isDash || isArchive);
+      document.getElementById("addBtn").classList.toggle("hidden", isDash || isArchive || state.activeTab === "pairings");
       
       // Always hide filter bar and stats on dashboard/archive
       if (isDash || isArchive) {
@@ -1791,13 +1794,16 @@
         refusalsMonth: 0,
         shedsMonth: 0,
         ovulationsMonth: 0,
-        // For dashboard
+        // For dashboard (this month)
         tookMeal: 0,
         refusedMeal: 0,
         paired: 0,
         locked: 0,
         ovulation: 0,
-        laid: 0
+        laid: 0,
+        // For pairings view (this year)
+        pairedYear: 0,
+        lockedYear: 0
       };
       
       rows.forEach(function(r) {
@@ -1818,13 +1824,25 @@
           if (activity === "ovulation") stats.ovulationsMonth++;
         }
         
-        // Count for Dashboard (all time / current season)
-        if (activity === "took meal") stats.tookMeal++;
-        if (activity === "refused meal") stats.refusedMeal++;
-        if (activity === "paired") stats.paired++;
-        if (activity === "lock") stats.locked++;
-        if (activity === "ovulation") stats.ovulation++;
-        if (activity === "laid") stats.laid++;
+        // Count for Dashboard (this month)
+        if (isThisMonth) {
+          if (activity === "took meal") stats.tookMeal++;
+          if (activity === "refused meal") stats.refusedMeal++;
+          if (activity === "paired") stats.paired++;
+          if (activity === "lock") stats.locked++;
+          if (activity === "ovulation") stats.ovulation++;
+          if (activity === "laid") stats.laid++;
+        }
+        
+        // Count for Pairings view (this year)
+        var isThisYear = false;
+        if (activityDate) {
+          isThisYear = (activityDate.getFullYear() === currentYear);
+        }
+        if (isThisYear) {
+          if (activity === "paired") stats.pairedYear++;
+          if (activity === "lock") stats.lockedYear++;
+        }
       });
       
       return stats;
@@ -2489,6 +2507,23 @@
         statsView.innerHTML = html;
         statsView.classList.remove("hidden");
         
+      } else if (state.activeTab === "pairings") {
+        var activityStats = calculateActivityStats();
+        var currentYear = new Date().getFullYear();
+        
+        html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Paired (' + currentYear + ')</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + activityStats.pairedYear + '</div>';
+        html += '</div>';
+        html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-500">Locked (' + currentYear + ')</div>';
+        html += '<div class="text-2xl font-black text-gray-900">' + activityStats.lockedYear + '</div>';
+        html += '</div>';
+        html += '</div>';
+        statsView.innerHTML = html;
+        statsView.classList.remove("hidden");
+        
       } else {
         statsView.classList.add("hidden");
         statsView.innerHTML = '';
@@ -2499,6 +2534,7 @@
       var prefs = {
         collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
         clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
+        pairings: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"],
         hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
         sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "DATE SOLD", "BUYER NAME"],
         activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
@@ -2614,6 +2650,20 @@
           }
           return true;
         }
+        if (state.activeTab === "pairings") {
+          // Filter to only show Paired and Lock activities for current year
+          var activity = (r.ACTIVITY || "").toLowerCase().trim();
+          if (!(activity === "paired" || activity === "lock")) {
+            return false;
+          }
+          // Filter to current year only
+          var activityDate = parseDate(r.DATE);
+          var currentYear = new Date().getFullYear();
+          if (activityDate && activityDate.getFullYear() !== currentYear) {
+            return false;
+          }
+          return true;
+        }
         return true;
       });
     }
@@ -2621,7 +2671,7 @@
     function getSheetKey(tab) {
       if (tab === "clutches") return "clutch";
       if (tab === "hatchlings" || tab === "sales" || tab === "collection") return "collection";
-      if (tab === "activity") return "activity";
+      if (tab === "activity" || tab === "pairings") return "activity";
       return "collection";
     }
 
