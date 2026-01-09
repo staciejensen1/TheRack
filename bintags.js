@@ -1,13 +1,14 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.28
+ * Version: 2.12.30
  * Last Updated: 2026-01-09
  * 
  * Changelog:
- * - 2.12.28: MAJOR FIX - PDF and HTML Print now use buildBinTagPreview directly (single source of truth)
+ * - 2.12.30: Print CSS fixes - proper @media print rules, align-items:flex-start, global box-sizing
+ * - 2.12.29: Added box-sizing:border-box to all elements in buildBinTagPreview to fix overflow
+ * - 2.12.28: PDF and HTML Print now use buildBinTagPreview directly (single source of truth)
  * - 2.12.27: PDF font sizes matched to preview
  * - 2.12.26: PDF fixes - waitForFontsAndImages before capture
- * - 2.12.25: Fixed print HTML - use same flexbox structure as preview
  * - 2.12.23: Complete rewrite - Norwester font preload, uppercase name, 32px top padding for Sex+ID
  */
 
@@ -253,13 +254,14 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
   
-  var html = '<div style="width:324px; height:204px; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; overflow:hidden;">';
+  // Use box-sizing:border-box on everything so borders don't add to dimensions
+  var html = '<div style="width:324px; height:204px; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; overflow:hidden; box-sizing:border-box;">';
   
-  // ROW 1 (47%)
-  html += '<div style="display:flex; height:47%; border-bottom:1px solid #000;">';
+  // ROW 1 (47%) - includes its bottom border in the height
+  html += '<div style="display:flex; height:47%; border-bottom:1px solid #000; box-sizing:border-box;">';
   
   // Logo
-  html += '<div style="width:25%; background:#000; display:flex; justify-content:center; align-items:center;">';
+  html += '<div style="width:25%; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
   if (logoUrl) {
     html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width:90%; max-height:90%; object-fit:contain;">';
   } else {
@@ -268,50 +270,50 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   html += '</div>';
   
   // Sex + ID
-  html += '<div style="width:45%; background:#fff; border-left:1px solid #000; border-right:1px solid #000; display:flex; flex-direction:column; justify-content:flex-start; align-items:center; padding-top:32px;">';
+  html += '<div style="width:45%; background:#fff; border-left:1px solid #000; border-right:1px solid #000; display:flex; flex-direction:column; justify-content:flex-start; align-items:center; padding-top:32px; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:24px; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
   html += '<div style="font-family:Norwester,sans-serif; font-size:12px; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR
-  html += '<div style="width:30%; background:#fff; display:flex; justify-content:center; align-items:center;">';
+  html += '<div style="width:30%; background:#fff; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<img src="' + qrUrl + '" style="width:85%; height:85%; object-fit:contain;">';
   html += '</div>';
   
   html += '</div>';
   
-  // ROW 2 (15%)
-  html += '<div style="display:flex; height:15%; border-bottom:1px solid #000;">';
+  // ROW 2 (15%) - includes its bottom border in the height
+  html += '<div style="display:flex; height:15%; border-bottom:1px solid #000; box-sizing:border-box;">';
   
   // Name
-  html += '<div style="width:70%; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center;">';
+  html += '<div style="width:70%; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:22px; color:#000; letter-spacing:1px;">' + escapeHtml(name) + '</div>';
   html += '</div>';
   
   // INFO
-  html += '<div style="width:30%; background:#000; display:flex; justify-content:center; align-items:center;">';
+  html += '<div style="width:30%; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:12px; color:#fff; letter-spacing:2px;">INFO</div>';
   html += '</div>';
   
   html += '</div>';
   
   // ROW 3 (38%)
-  html += '<div style="display:flex; height:38%;">';
+  html += '<div style="display:flex; height:38%; box-sizing:border-box;">';
   
   // Genetics
-  html += '<div style="width:70%; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; padding:6px; text-align:center;">';
+  html += '<div style="width:70%; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; padding:6px; text-align:center; box-sizing:border-box;">';
   html += '<div style="font-size:11px; font-weight:500; line-height:1.25; color:#000;">' + escapeHtml(genetics) + '</div>';
   html += '</div>';
   
   // Year + Breeder
-  html += '<div style="width:30%; background:#fff; display:flex; flex-direction:column;">';
+  html += '<div style="width:30%; background:#fff; display:flex; flex-direction:column; box-sizing:border-box;">';
   
-  html += '<div style="flex:1; border-bottom:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
+  html += '<div style="flex:1; border-bottom:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<div style="font-size:7px; font-weight:700; color:#000;">YEAR BORN:</div>';
   html += '<div style="font-family:Norwester,sans-serif; font-size:16px; color:#000;">' + yearBorn + '</div>';
   html += '</div>';
   
-  html += '<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
+  html += '<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<div style="font-size:7px; font-weight:700; color:#000;">BREEDER:</div>';
   html += '<div style="font-size:8px; font-weight:600; color:#000;">' + escapeHtml(breederSource) + '</div>';
   html += '</div>';
@@ -359,26 +361,38 @@ function printSingleBinTag(animal) {
 function printBinTagsHTML(animals, businessName, logoUrl) {
   var printWindow = window.open('', '_blank');
   
-  // Use EXACT same pixel dimensions as preview, then scale to fit card
-  // Preview is 324px x 204px, card is 3.38in x 2.13in
-  // At 96dpi: 3.38in = 324.48px, 2.13in = 204.48px - nearly identical!
-  
   var html = '<!DOCTYPE html><html><head><title>Bin Tags</title>';
   html += '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">';
   html += '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">';
   html += '<style>';
+  
+  // Page setup - no margins, exact card size
   html += '@page { size: 3.38in 2.13in; margin: 0; }';
-  html += 'html, body { margin: 0; padding: 0; }';
-  html += '.bin-tag-wrapper { width: 3.38in; height: 2.13in; display: flex; justify-content: center; align-items: center; page-break-after: always; overflow: hidden; }';
-  html += '.bin-tag-wrapper:last-child { page-break-after: avoid; }';
-  // Scale the 324x204 preview to fill 3.38x2.13 inch exactly
-  html += '.bin-tag-inner { transform-origin: top left; }';
+  
+  // Reset and base styles
+  html += '* { box-sizing: border-box; }';
+  html += 'html, body { margin: 0; padding: 0; width: 3.38in; height: 2.13in; }';
+  
+  // Each tag wrapper fills the page exactly
+  html += '.bin-tag-page { width: 3.38in; height: 2.13in; padding: 0; margin: 0; page-break-after: always; display: block; }';
+  html += '.bin-tag-page:last-child { page-break-after: avoid; }';
+  
+  // The inner content scales to fill - 324px at 96dpi = 3.375in, very close to 3.38in
+  // Use a wrapper to ensure it fills the page
+  html += '.bin-tag-scale { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; }';
+  
+  // Print-specific overrides
+  html += '@media print {';
+  html += '  html, body { width: 3.38in; height: 2.13in; }';
+  html += '  .bin-tag-page { width: 3.38in; height: 2.13in; overflow: hidden; }';
+  html += '  .bin-tag-scale { align-items: flex-start; justify-content: center; }';
+  html += '}';
+  
   html += '</style></head><body>';
   
   animals.forEach(function(animal) {
-    // Wrap the preview HTML in a scaling container
-    html += '<div class="bin-tag-wrapper">';
-    html += '<div class="bin-tag-inner">';
+    html += '<div class="bin-tag-page">';
+    html += '<div class="bin-tag-scale">';
     html += buildBinTagPreview(animal, businessName, logoUrl);
     html += '</div>';
     html += '</div>';
