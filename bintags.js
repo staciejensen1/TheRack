@@ -1,11 +1,13 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.25
+ * Version: 2.12.28
  * Last Updated: 2026-01-09
  * 
  * Changelog:
- * - 2.12.25: Fixed print HTML - use same flexbox structure as preview, explicit inch dimensions
- * - 2.12.24: Attempted table layout (failed)
+ * - 2.12.28: MAJOR FIX - PDF and HTML Print now use buildBinTagPreview directly (single source of truth)
+ * - 2.12.27: PDF font sizes matched to preview
+ * - 2.12.26: PDF fixes - waitForFontsAndImages before capture
+ * - 2.12.25: Fixed print HTML - use same flexbox structure as preview
  * - 2.12.23: Complete rewrite - Norwester font preload, uppercase name, 32px top padding for Sex+ID
  */
 
@@ -357,18 +359,29 @@ function printSingleBinTag(animal) {
 function printBinTagsHTML(animals, businessName, logoUrl) {
   var printWindow = window.open('', '_blank');
   
+  // Use EXACT same pixel dimensions as preview, then scale to fit card
+  // Preview is 324px x 204px, card is 3.38in x 2.13in
+  // At 96dpi: 3.38in = 324.48px, 2.13in = 204.48px - nearly identical!
+  
   var html = '<!DOCTYPE html><html><head><title>Bin Tags</title>';
   html += '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">';
   html += '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">';
   html += '<style>';
   html += '@page { size: 3.38in 2.13in; margin: 0; }';
-  html += 'html, body { margin: 0; padding: 0; width: 3.38in; height: 2.13in; }';
-  html += '.bin-tag { width: 3.38in; height: 2.13in; box-sizing: border-box; page-break-after: always; }';
-  html += '.bin-tag:last-child { page-break-after: avoid; }';
+  html += 'html, body { margin: 0; padding: 0; }';
+  html += '.bin-tag-wrapper { width: 3.38in; height: 2.13in; display: flex; justify-content: center; align-items: center; page-break-after: always; overflow: hidden; }';
+  html += '.bin-tag-wrapper:last-child { page-break-after: avoid; }';
+  // Scale the 324x204 preview to fill 3.38x2.13 inch exactly
+  html += '.bin-tag-inner { transform-origin: top left; }';
   html += '</style></head><body>';
   
   animals.forEach(function(animal) {
-    html += buildBinTagPrint(animal, businessName, logoUrl);
+    // Wrap the preview HTML in a scaling container
+    html += '<div class="bin-tag-wrapper">';
+    html += '<div class="bin-tag-inner">';
+    html += buildBinTagPreview(animal, businessName, logoUrl);
+    html += '</div>';
+    html += '</div>';
   });
   
   html += '</body></html>';
@@ -525,16 +538,18 @@ function downloadBinTagsPDFFile() {
 }
 
 function generateBinTagPDF(animals, businessName, logoBase64, btn) {
-  // Card: 3.38" x 2.13"
-  var cardW = 325;
-  var cardH = 205;
-  var pdfW = 3.38 * 72;
-  var pdfH = 2.13 * 72;
+  // PDF dimensions in points (72 points = 1 inch)
+  var pdfW = 3.38 * 72;  // 243.36pt
+  var pdfH = 2.13 * 72;  // 153.36pt
   
-  // Create hidden container with font preloaded
+  // Preview dimensions in pixels - this is what we render
+  var previewW = 324;
+  var previewH = 204;
+  
+  // Create hidden container with fonts preloaded
   var container = document.createElement('div');
   container.style.cssText = 'position:absolute; left:-9999px; top:0;';
-  container.innerHTML = '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet"><div style="font-family:Norwester;">.</div>';
+  container.innerHTML = '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><div style="font-family:Norwester,Inter;">.</div>';
   document.body.appendChild(container);
   
   var doc = new jspdf.jsPDF({
@@ -546,7 +561,23 @@ function generateBinTagPDF(animals, businessName, logoBase64, btn) {
   var total = animals.length;
   var current = 0;
   
-  // Wait for font to load
+  // Helper: Wait for fonts and images to load
+  function waitForFontsAndImages(rootEl) {
+    var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+    
+    var imgs = Array.from(rootEl.querySelectorAll("img"));
+    var imgsReady = Promise.all(imgs.map(function(img) {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise(function(resolve) {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+    
+    return Promise.all([fontsReady, imgsReady]);
+  }
+  
+  // Wait for initial font to load
   setTimeout(function() {
     processNextTag();
   }, 500);
@@ -567,16 +598,21 @@ function generateBinTagPDF(animals, businessName, logoBase64, btn) {
     var animal = animals[current];
     setStatus("Rendering " + (current + 1) + " of " + total + "...");
     
+    // Use the EXACT same buildBinTagPreview function - just swap logo if we have base64
     var tagDiv = document.createElement('div');
-    tagDiv.innerHTML = buildPDFBinTag(animal, businessName, logoBase64, cardW, cardH);
+    var previewHtml = buildBinTagPreview(animal, businessName, logoBase64 || '');
+    tagDiv.innerHTML = previewHtml;
     container.appendChild(tagDiv);
     
+    // Wait for fonts and images before capturing
     setTimeout(function() {
-      html2canvas(tagDiv.firstChild, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
+      waitForFontsAndImages(tagDiv).then(function() {
+        return html2canvas(tagDiv.firstChild, {
+          scale: 3,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff'
+        });
       }).then(function(canvas) {
         if (current > 0) {
           doc.addPage([pdfH, pdfW], 'landscape');
@@ -594,7 +630,7 @@ function generateBinTagPDF(animals, businessName, logoBase64, btn) {
         current++;
         processNextTag();
       });
-    }, 300);
+    }, 100);
   }
 }
 
@@ -641,8 +677,8 @@ function buildPDFBinTag(animal, businessName, logoUrl, w, h) {
   
   // Sex + ID (white, 32px top padding for card cutout = ~0.33")
   html += '<div style="position:absolute; left:' + col1W + 'px; top:0; width:' + col2W + 'px; height:' + row1H + 'px; background:#fff; border-left:1px solid #000; border-right:1px solid #000; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; padding-top:32px;">';
-  html += '<div style="font-size:20px; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-size:10px; color:#000; margin-top:2px; letter-spacing:1px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-size:24px; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
+  html += '<div style="font-size:12px; color:#000; margin-top:2px; letter-spacing:1px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR
@@ -657,12 +693,12 @@ function buildPDFBinTag(animal, businessName, logoUrl, w, h) {
   
   // Name (white)
   html += '<div style="position:absolute; left:0; top:' + row1H + 'px; width:' + col12W + 'px; height:' + row2H + 'px; background:#fff; border-right:1px solid #000; box-sizing:border-box; display:flex; justify-content:center; align-items:center;">';
-  html += '<div style="font-size:18px; color:#000; letter-spacing:1px;">' + escapeHtml(name) + '</div>';
+  html += '<div style="font-size:22px; color:#000; letter-spacing:1px; line-height:1;">' + escapeHtml(name) + '</div>';
   html += '</div>';
   
   // INFO (black)
   html += '<div style="position:absolute; right:0; top:' + row1H + 'px; width:' + col3W + 'px; height:' + row2H + 'px; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
-  html += '<div style="font-size:11px; color:#fff; letter-spacing:2px;">INFO</div>';
+  html += '<div style="font-size:12px; color:#fff; letter-spacing:2px; line-height:1;">INFO</div>';
   html += '</div>';
   
   // Border under row 2
@@ -673,7 +709,7 @@ function buildPDFBinTag(animal, businessName, logoUrl, w, h) {
   
   // Genetics (white)
   html += '<div style="position:absolute; left:0; top:' + row2Bottom + 'px; width:' + col12W + 'px; height:' + row3H + 'px; background:#fff; border-right:1px solid #000; box-sizing:border-box; display:flex; justify-content:center; align-items:center; padding:4px; text-align:center;">';
-  html += '<div style="font-family:Inter,sans-serif; font-size:10px; font-weight:500; line-height:1.2; color:#000;">' + escapeHtml(genetics) + '</div>';
+  html += '<div style="font-family:Inter,sans-serif; font-size:11px; font-weight:500; line-height:1.25; color:#000;">' + escapeHtml(genetics) + '</div>';
   html += '</div>';
   
   // Year Born + Breeder
@@ -681,14 +717,14 @@ function buildPDFBinTag(animal, businessName, logoUrl, w, h) {
   
   // Year Born
   html += '<div style="position:absolute; right:0; top:' + row2Bottom + 'px; width:' + col3W + 'px; height:' + infoBoxH + 'px; background:#fff; border-bottom:1px solid #000; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
-  html += '<div style="font-family:Inter,sans-serif; font-size:6px; font-weight:700; color:#000;">YEAR BORN:</div>';
-  html += '<div style="font-size:14px; color:#000;">' + yearBorn + '</div>';
+  html += '<div style="font-family:Inter,sans-serif; font-size:7px; font-weight:700; color:#000;">YEAR BORN:</div>';
+  html += '<div style="font-size:16px; color:#000;">' + yearBorn + '</div>';
   html += '</div>';
   
   // Breeder
   html += '<div style="position:absolute; right:0; top:' + (row2Bottom + infoBoxH) + 'px; width:' + col3W + 'px; height:' + infoBoxH + 'px; background:#fff; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
-  html += '<div style="font-family:Inter,sans-serif; font-size:6px; font-weight:700; color:#000;">BREEDER:</div>';
-  html += '<div style="font-family:Inter,sans-serif; font-size:7px; font-weight:600; color:#000;">' + escapeHtml(breederSource) + '</div>';
+  html += '<div style="font-family:Inter,sans-serif; font-size:7px; font-weight:700; color:#000;">BREEDER:</div>';
+  html += '<div style="font-family:Inter,sans-serif; font-size:8px; font-weight:600; color:#000;">' + escapeHtml(breederSource) + '</div>';
   html += '</div>';
   
   html += '</div>';
