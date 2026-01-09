@@ -1,10 +1,21 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.27
+  Version: 2.11.29
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.29: Print Bin Tags - complete feature
+             - Card size: 3.38" x 2.13" (credit card/PVC card size)
+             - Tag button on each animal row for quick single prints
+             - Batch print from Tools menu with animal selection
+             - Amazon links for recommended PVC cards and printer
+             - Settings: Added helper text for square logo recommendation
+  - 2.11.28: NEW - Print Bin Tags feature with professional design template
+             - Matching your custom Canva design: Logo, Sex/ID, QR, Name bar, Genetics, Info sidebar
+             - Select specific animals or batch print all
+             - 4x3" and 3x2" size options
+             - Print directly from browser
   - 2.11.27: All lookup fields now use searchable chip selector (Clutch ID, Sire, Dam)
   - 2.11.26: Added Empty Archive button to permanently delete all archived records
   - 2.11.25: Paired With field now uses searchable chip selector matching Select Animal style
@@ -275,6 +286,7 @@
           <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
           <div class="flex flex-col gap-1">
             <button onclick="navigateTo('sales'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Create Invoice</button>
+            <button onclick="openBinTagGenerator(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print Bin Tags</button>
             <button onclick="exportCSV('collection'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
             <button onclick="exportCSV('clutch'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
             <button onclick="showDataHealth(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
@@ -321,6 +333,7 @@
             <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
             <div class="flex flex-col gap-1">
               <button onclick="navigateTo('sales')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Create Invoice</button>
+              <button onclick="openBinTagGenerator()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print Bin Tags</button>
               <button onclick="exportCSV('collection')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
               <button onclick="exportCSV('clutch')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
               <button onclick="openQRGenerator()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print QR Codes</button>
@@ -480,6 +493,69 @@
           <!-- Preview -->
           <div id="qrPreview" class="border border-gray-200 rounded-xl p-4 bg-gray-50 max-h-96 overflow-auto">
             <p class="text-gray-500 text-sm">Loading preview...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bin Tag Generator Modal -->
+  <div id="binTagModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-5xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-slate-900">Print Bin Tags</h3>
+          <button onclick="closeBinTagModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="p-4 md:p-6">
+          <!-- Printer Recommendations -->
+          <div class="mb-6 bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <div class="text-sm font-semibold text-gray-800 mb-2">Recommended Supplies</div>
+            <div class="text-sm text-gray-600 space-y-1">
+              <div><strong>PVC Cards (waterproof):</strong> <a href="https://amzn.to/49KHshc" target="_blank" class="text-blue-600 hover:underline">3.38" x 2.13" PVC Cards on Amazon</a></div>
+              <div><strong>Card Printer:</strong> <a href="https://amzn.to/4sookwS" target="_blank" class="text-blue-600 hover:underline">Recommended Printer on Amazon</a></div>
+              <div class="text-gray-500 text-xs mt-2">Alternative: Use thick cardstock paper with any inkjet printer. PVC cards are waterproof and more durable for rack environments.</div>
+            </div>
+          </div>
+          
+          <!-- Options -->
+          <div class="mb-6 flex flex-wrap gap-4 items-center">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Select Animals</label>
+              <select id="binTagAnimalSelect" onchange="updateBinTagAnimalList(); updateBinTagPreview();" class="px-3 py-2 border border-gray-300 rounded-xl text-sm">
+                <option value="all">All Animals</option>
+                <option value="breeders">Breeders Only</option>
+                <option value="hatchlings">Hatchlings Only</option>
+              </select>
+            </div>
+            <button onclick="downloadBinTagsPDF()" id="binTagDownloadBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+              Print Tags
+            </button>
+          </div>
+          
+          <!-- Animal Selection List -->
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-medium text-gray-700">Select specific animals (or leave unchecked for all)</label>
+              <div class="flex gap-2">
+                <button onclick="selectAllBinTagAnimals()" class="text-xs text-gray-500 hover:text-gray-700">Select All</button>
+                <span class="text-gray-300">|</span>
+                <button onclick="deselectAllBinTagAnimals()" class="text-xs text-gray-500 hover:text-gray-700">Deselect All</button>
+              </div>
+            </div>
+            <div id="binTagAnimalList" class="border border-gray-200 rounded-xl p-3 bg-gray-50 max-h-40 overflow-auto">
+              <p class="text-gray-500 text-sm">Loading animals...</p>
+            </div>
+            <div class="mt-2 text-sm text-gray-500">
+              <span id="binTagSelectedCount">0</span> animals selected
+            </div>
+          </div>
+          
+          <!-- Preview -->
+          <div class="text-sm font-medium text-gray-700 mb-2">Preview</div>
+          <div id="binTagPreview" class="border border-gray-200 rounded-xl p-4 bg-gray-100 overflow-auto" style="max-height: 500px;">
+            <p class="text-gray-500 text-sm">Select animals to see preview...</p>
           </div>
         </div>
       </div>
@@ -733,7 +809,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.27";
+    var VERSION = "2.11.29";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -2212,6 +2288,17 @@
             return function() { archiveRecord(rowIndex, tab); };
           })(row.__rowIndex, archiveTab);
           actionTd.appendChild(archiveBtn);
+        }
+
+        // Print Tag button for collection and hatchlings (not clutches)
+        if (state.activeTab === "collection" || state.activeTab === "hatchlings") {
+          var tagBtn = document.createElement("button");
+          tagBtn.className = "px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200 ml-1";
+          tagBtn.textContent = "Tag";
+          tagBtn.onclick = (function(r) {
+            return function() { printSingleBinTag(r); };
+          })(row);
+          actionTd.appendChild(tagBtn);
         }
 
         // Delete button for activity table (direct delete, no archive)
@@ -5014,20 +5101,20 @@
       html += '<button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>';
       html += '</div>';
       
-      // Settings fields
+      // Settings fields with optional helper text
       var settingsFields = [
-        { key: "BUSINESS NAME", label: "Business Name", placeholder: "Your breeding business name" },
-        { key: "OWNER NAME", label: "Owner Name", placeholder: "Your name" },
-        { key: "LOGO URL", label: "Logo URL", placeholder: "https://..." },
-        { key: "EMAIL", label: "Email", placeholder: "contact@yourbusiness.com" },
-        { key: "PHONE", label: "Phone", placeholder: "(555) 123-4567" },
-        { key: "CITY, STATE, ZIP", label: "Location", placeholder: "City, State ZIP" },
-        { key: "WEBSITE", label: "Website", placeholder: "https://..." },
-        { key: "INSTAGRAM", label: "Instagram", placeholder: "@yourhandle" },
-        { key: "DEFAULT SPECIES", label: "Default Species", placeholder: "Ball Pythons" },
-        { key: "INCUBATION DAYS", label: "Default Incubation Days", placeholder: "55" },
-        { key: "DEFAULT TAX RATE", label: "Default Tax Rate (%)", placeholder: "0" },
-        { key: "INVOICE TERMS", label: "Invoice Terms / Health Guarantee", placeholder: "Live arrival guarantee. Health guarantee valid 7 days from delivery." }
+        { key: "BUSINESS NAME", label: "Business Name", placeholder: "Your breeding business name", helper: "" },
+        { key: "OWNER NAME", label: "Owner Name", placeholder: "Your name", helper: "" },
+        { key: "LOGO URL", label: "Logo URL", placeholder: "https://...", helper: "Use a square logo for best results on bin tags and invoices" },
+        { key: "EMAIL", label: "Email", placeholder: "contact@yourbusiness.com", helper: "" },
+        { key: "PHONE", label: "Phone", placeholder: "(555) 123-4567", helper: "" },
+        { key: "CITY, STATE, ZIP", label: "Location", placeholder: "City, State ZIP", helper: "" },
+        { key: "WEBSITE", label: "Website", placeholder: "https://...", helper: "" },
+        { key: "INSTAGRAM", label: "Instagram", placeholder: "@yourhandle", helper: "" },
+        { key: "DEFAULT SPECIES", label: "Default Species", placeholder: "Ball Pythons", helper: "" },
+        { key: "INCUBATION DAYS", label: "Default Incubation Days", placeholder: "55", helper: "" },
+        { key: "DEFAULT TAX RATE", label: "Default Tax Rate (%)", placeholder: "0", helper: "" },
+        { key: "INVOICE TERMS", label: "Invoice Terms / Health Guarantee", placeholder: "Live arrival guarantee. Health guarantee valid 7 days from delivery.", helper: "" }
       ];
       
       html += '<div class="space-y-4">';
@@ -5036,6 +5123,9 @@
         html += '<div>';
         html += '<label class="block text-sm font-medium text-gray-700 mb-1">' + field.label + '</label>';
         html += '<input type="text" id="setting_' + field.key.replace(/[^a-zA-Z0-9]/g, '_') + '" value="' + escapeHtml(value) + '" placeholder="' + field.placeholder + '" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm">';
+        if (field.helper) {
+          html += '<div class="text-xs text-gray-500 mt-1">' + field.helper + '</div>';
+        }
         html += '</div>';
       });
       html += '</div>';
@@ -5462,6 +5552,350 @@
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       printWindow.print();
+    }
+
+    // ============ BIN TAG GENERATOR ============
+    var binTagSelectedAnimals = [];
+    
+    function openBinTagGenerator() {
+      if (!state.isLoggedIn) {
+        setStatus("Please log in first", true);
+        return;
+      }
+      binTagSelectedAnimals = [];
+      document.getElementById("binTagModal").classList.remove("hidden");
+      updateBinTagAnimalList();
+      updateBinTagPreview();
+    }
+    
+    function closeBinTagModal() {
+      document.getElementById("binTagModal").classList.add("hidden");
+    }
+    
+    function updateBinTagAnimalList() {
+      var filter = document.getElementById("binTagAnimalSelect").value;
+      var listEl = document.getElementById("binTagAnimalList");
+      
+      var animals = state.data.collection.filter(function(r) {
+        var id = (r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "").trim();
+        var status = (r.STATUS || "").toLowerCase().trim();
+        if (!id) return false;
+        
+        if (filter === "breeders") {
+          return status === "breeder" || status === "on loan";
+        } else if (filter === "hatchlings") {
+          return status === "listed" || status === "unlisted" || status === "holdback" || status === "for sale";
+        }
+        return true;
+      });
+      
+      if (animals.length === 0) {
+        listEl.innerHTML = '<p class="text-gray-500 text-sm">No animals found.</p>';
+        return;
+      }
+      
+      var html = '<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">';
+      animals.forEach(function(animal, idx) {
+        var id = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
+        var name = animal["ANIMAL NAME"] || "";
+        var display = name ? name + " (" + id + ")" : id;
+        var checked = binTagSelectedAnimals.indexOf(id) >= 0 ? "checked" : "";
+        
+        html += '<label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded">';
+        html += '<input type="checkbox" value="' + escapeHtml(id) + '" onchange="toggleBinTagAnimal(this)" ' + checked + ' class="rounded">';
+        html += '<span class="truncate">' + escapeHtml(display) + '</span>';
+        html += '</label>';
+      });
+      html += '</div>';
+      
+      listEl.innerHTML = html;
+      updateBinTagSelectedCount();
+    }
+    
+    function toggleBinTagAnimal(checkbox) {
+      var id = checkbox.value;
+      if (checkbox.checked) {
+        if (binTagSelectedAnimals.indexOf(id) < 0) {
+          binTagSelectedAnimals.push(id);
+        }
+      } else {
+        var idx = binTagSelectedAnimals.indexOf(id);
+        if (idx >= 0) {
+          binTagSelectedAnimals.splice(idx, 1);
+        }
+      }
+      updateBinTagSelectedCount();
+      updateBinTagPreview();
+    }
+    
+    function selectAllBinTagAnimals() {
+      var checkboxes = document.querySelectorAll('#binTagAnimalList input[type="checkbox"]');
+      binTagSelectedAnimals = [];
+      checkboxes.forEach(function(cb) {
+        cb.checked = true;
+        binTagSelectedAnimals.push(cb.value);
+      });
+      updateBinTagSelectedCount();
+      updateBinTagPreview();
+    }
+    
+    function deselectAllBinTagAnimals() {
+      var checkboxes = document.querySelectorAll('#binTagAnimalList input[type="checkbox"]');
+      checkboxes.forEach(function(cb) {
+        cb.checked = false;
+      });
+      binTagSelectedAnimals = [];
+      updateBinTagSelectedCount();
+      updateBinTagPreview();
+    }
+    
+    function updateBinTagSelectedCount() {
+      document.getElementById("binTagSelectedCount").textContent = binTagSelectedAnimals.length;
+    }
+    
+    function updateBinTagPreview() {
+      var preview = document.getElementById("binTagPreview");
+      
+      // Get animals to preview
+      var animalsToShow = [];
+      if (binTagSelectedAnimals.length > 0) {
+        animalsToShow = state.data.collection.filter(function(r) {
+          var id = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "";
+          return binTagSelectedAnimals.indexOf(id) >= 0;
+        });
+      } else {
+        // Show first 3 as sample
+        var filter = document.getElementById("binTagAnimalSelect").value;
+        animalsToShow = state.data.collection.filter(function(r) {
+          var id = (r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "").trim();
+          var status = (r.STATUS || "").toLowerCase().trim();
+          if (!id) return false;
+          if (filter === "breeders") return status === "breeder" || status === "on loan";
+          if (filter === "hatchlings") return status === "listed" || status === "unlisted" || status === "holdback";
+          return true;
+        }).slice(0, 3);
+      }
+      
+      if (animalsToShow.length === 0) {
+        preview.innerHTML = '<p class="text-gray-500 text-sm">No animals to preview. Select some animals above.</p>';
+        return;
+      }
+      
+      // Card size: 3.38" x 2.13" = 324px x 204px at 96dpi
+      var dims = { w: 324, h: 204 };
+      
+      var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
+      var logoUrl = state.settings["LOGO URL"] || "";
+      
+      var html = '<div class="flex flex-wrap gap-4">';
+      
+      animalsToShow.forEach(function(animal) {
+        html += renderBinTagPreview(animal, dims, businessName, logoUrl);
+      });
+      
+      html += '</div>';
+      
+      if (binTagSelectedAnimals.length === 0) {
+        html += '<p class="text-gray-400 text-xs mt-4">Showing first 3 animals as sample. Select specific animals above or print all.</p>';
+      }
+      
+      preview.innerHTML = html;
+    }
+    
+    function renderBinTagPreview(animal, dims, businessName, logoUrl) {
+      var id = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
+      var name = animal["ANIMAL NAME"] || "";
+      var sex = (animal["SEX"] || "").toUpperCase();
+      var sexDisplay = sex.startsWith("M") ? "MALE" : (sex.startsWith("F") ? "FEMALE" : "");
+      var sexSymbol = sex.startsWith("M") ? "M" : (sex.startsWith("F") ? "F" : "?");
+      var genetics = animal["GENETIC SUMMARY"] || "";
+      var dob = animal["DATE OF BIRTH"] || "";
+      var breederSource = animal["BREEDER SOURCE"] || "";
+      
+      // Parse year from DOB
+      var yearBorn = "";
+      if (dob) {
+        var d = parseDate(dob);
+        if (d) yearBorn = String(d.getFullYear());
+      }
+      
+      // QR code URL
+      var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
+      
+      // Build the tag HTML - Credit card size 3.38" x 2.13"
+      var html = '<div class="bin-tag-preview bg-white border-2 border-black" style="width:' + dims.w + 'px; height:' + dims.h + 'px; font-family: Inter, system-ui, sans-serif; overflow: hidden;">';
+      
+      // Top row: Sex Symbol | ID | QR
+      html += '<div style="display:flex; height: 60px; border-bottom: 2px solid black;">';
+      
+      // Sex symbol (large)
+      html += '<div style="width: 50px; background: black; color: white; display: flex; justify-content: center; align-items: center;">';
+      html += '<span style="font-size: 28px; font-weight: 900;">' + sexSymbol + '</span>';
+      html += '</div>';
+      
+      // ID section
+      html += '<div style="flex: 1; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; background: #f3f4f6;">';
+      html += '<div style="font-size: 12px; font-weight: 700; color: #111; word-break: break-all; line-height: 1.1;">' + escapeHtml(id) + '</div>';
+      html += '</div>';
+      
+      // QR section
+      html += '<div style="width: 60px; padding: 4px; display: flex; justify-content: center; align-items: center; background: white;">';
+      html += '<img src="' + qrUrl + '" style="width: 52px; height: 52px;" alt="QR">';
+      html += '</div>';
+      
+      html += '</div>';
+      
+      // Name row
+      html += '<div style="background: black; color: white; padding: 4px 10px; height: 28px; display: flex; align-items: center;">';
+      html += '<div style="font-size: 16px; font-weight: 900; letter-spacing: -0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(name || "UNNAMED") + '</div>';
+      html += '</div>';
+      
+      // Bottom section: Genetics | Info
+      html += '<div style="display: flex; flex: 1; height: calc(100% - 88px);">';
+      
+      // Genetics section
+      html += '<div style="flex: 1; padding: 6px 10px; border-right: 2px solid black; overflow: hidden;">';
+      html += '<div style="font-size: 10px; font-weight: 600; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;">' + escapeHtml(genetics || "No genetics") + '</div>';
+      html += '</div>';
+      
+      // Info section
+      html += '<div style="width: 80px; background: black; color: white; padding: 6px 8px;">';
+      html += '<div style="font-size: 7px; color: #888; margin-bottom: 2px;">BORN</div>';
+      html += '<div style="font-size: 12px; font-weight: 700;">' + (yearBorn || "--") + '</div>';
+      html += '<div style="font-size: 7px; color: #888; margin-top: 4px;">SOURCE</div>';
+      html += '<div style="font-size: 8px; font-weight: 600; line-height: 1.1; overflow: hidden;">' + escapeHtml(breederSource || "--").substring(0, 20) + '</div>';
+      html += '</div>';
+      
+      html += '</div>';
+      
+      html += '</div>';
+      
+      return html;
+    }
+    
+    function downloadBinTagsPDF() {
+      var btn = document.getElementById("binTagDownloadBtn");
+      btn.textContent = "Generating...";
+      btn.disabled = true;
+      
+      // Get animals to include
+      var animalsToInclude = [];
+      if (binTagSelectedAnimals.length > 0) {
+        animalsToInclude = state.data.collection.filter(function(r) {
+          var id = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "";
+          return binTagSelectedAnimals.indexOf(id) >= 0;
+        });
+      } else {
+        var filter = document.getElementById("binTagAnimalSelect").value;
+        animalsToInclude = state.data.collection.filter(function(r) {
+          var id = (r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "").trim();
+          var status = (r.STATUS || "").toLowerCase().trim();
+          if (!id) return false;
+          if (filter === "breeders") return status === "breeder" || status === "on loan";
+          if (filter === "hatchlings") return status === "listed" || status === "unlisted" || status === "holdback";
+          return true;
+        });
+      }
+      
+      if (animalsToInclude.length === 0) {
+        setStatus("No animals selected", true);
+        btn.textContent = "Print Tags";
+        btn.disabled = false;
+        return;
+      }
+      
+      var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
+      var logoUrl = state.settings["LOGO URL"] || "";
+      
+      printBinTags(animalsToInclude, businessName, logoUrl);
+      
+      btn.textContent = "Print Tags";
+      btn.disabled = false;
+    }
+    
+    function printSingleBinTag(animal) {
+      var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
+      var logoUrl = state.settings["LOGO URL"] || "";
+      printBinTags([animal], businessName, logoUrl);
+    }
+    
+    function printBinTags(animals, businessName, logoUrl) {
+      // Card size: 3.38" x 2.13" in pixels at 96dpi = 324 x 204
+      // For print, use inches directly with CSS
+      var printWindow = window.open('', '_blank');
+      
+      var html = '<!DOCTYPE html><html><head><title>Bin Tags - The Rack</title>';
+      html += '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">';
+      html += '<style>';
+      html += '@page { size: 3.38in 2.13in; margin: 0; }';
+      html += 'body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 0; }';
+      html += '.bin-tag { width: 3.38in; height: 2.13in; page-break-after: always; box-sizing: border-box; overflow: hidden; }';
+      html += '.bin-tag:last-child { page-break-after: avoid; }';
+      html += '@media print { body { margin: 0; } .bin-tag { border: none !important; } }';
+      html += '</style></head><body>';
+      
+      animals.forEach(function(animal) {
+        var id = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
+        var name = animal["ANIMAL NAME"] || "";
+        var sex = (animal["SEX"] || "").toUpperCase();
+        var sexSymbol = sex.startsWith("M") ? "M" : (sex.startsWith("F") ? "F" : "?");
+        var genetics = animal["GENETIC SUMMARY"] || "";
+        var dob = animal["DATE OF BIRTH"] || "";
+        var breederSource = animal["BREEDER SOURCE"] || "";
+        
+        var yearBorn = "";
+        if (dob) {
+          var d = parseDate(dob);
+          if (d) yearBorn = String(d.getFullYear());
+        }
+        
+        var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
+        
+        html += '<div class="bin-tag" style="border: 1px solid #ccc;">';
+        
+        // Top row: Sex | ID | QR
+        html += '<div style="display:flex; height: 0.6in; border-bottom: 2px solid black;">';
+        html += '<div style="width: 0.5in; background: black; color: white; display: flex; justify-content: center; align-items: center;">';
+        html += '<span style="font-size: 24px; font-weight: 900;">' + sexSymbol + '</span>';
+        html += '</div>';
+        html += '<div style="flex: 1; padding: 4px 8px; display: flex; flex-direction: column; justify-content: center; background: #f3f4f6;">';
+        html += '<div style="font-size: 11px; font-weight: 700; color: #111; word-break: break-all; line-height: 1.1;">' + escapeHtml(id) + '</div>';
+        html += '</div>';
+        html += '<div style="width: 0.6in; padding: 2px; display: flex; justify-content: center; align-items: center; background: white;">';
+        html += '<img src="' + qrUrl + '" style="width: 0.52in; height: 0.52in;" alt="QR">';
+        html += '</div>';
+        html += '</div>';
+        
+        // Name row
+        html += '<div style="background: black; color: white; padding: 3px 8px; height: 0.28in; display: flex; align-items: center;">';
+        html += '<div style="font-size: 14px; font-weight: 900; letter-spacing: -0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(name || "UNNAMED") + '</div>';
+        html += '</div>';
+        
+        // Bottom: Genetics | Info
+        html += '<div style="display: flex; height: calc(2.13in - 0.6in - 0.28in - 2px);">';
+        html += '<div style="flex: 1; padding: 4px 8px; border-right: 2px solid black; overflow: hidden;">';
+        html += '<div style="font-size: 9px; font-weight: 600; line-height: 1.2;">' + escapeHtml(genetics || "No genetics") + '</div>';
+        html += '</div>';
+        html += '<div style="width: 0.75in; background: black; color: white; padding: 4px 6px;">';
+        html += '<div style="font-size: 6px; color: #888;">BORN</div>';
+        html += '<div style="font-size: 11px; font-weight: 700;">' + (yearBorn || "--") + '</div>';
+        html += '<div style="font-size: 6px; color: #888; margin-top: 2px;">SOURCE</div>';
+        html += '<div style="font-size: 7px; font-weight: 600; line-height: 1.1;">' + escapeHtml(breederSource || "--").substring(0, 20) + '</div>';
+        html += '</div>';
+        html += '</div>';
+        
+        html += '</div>';
+      });
+      
+      html += '</body></html>';
+      
+      printWindow.document.write(html);
+      printWindow.document.close();
+      
+      // Wait for images/fonts to load then print
+      setTimeout(function() {
+        printWindow.print();
+      }, 1000);
     }
 
     // ============ MORPHMARKET IMPORT ============
