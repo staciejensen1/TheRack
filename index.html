@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.4
+  Version: 2.11.5
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.5: New features and character encoding fixes
+            - Added: + Activity button on Collection, Clutch, Hatchling tables
+            - Added: Animal search/select dropdown in Add Activity form  
+            - Added: Invoice button in sidebar (links to Sales view)
+            - Fixed: All corrupted emoji characters removed
+            - Fixed: Back button now shows < Back properly
   - 2.11.4: Critical fixes for formula protection and sales stats
             - CRITICAL: Protected ALL formula columns (UNIQUE ID, QR CODE, CLUTCH ID, DAYS TILL HATCH, etc.)
             - CRITICAL: Forms never send data to formula columns - database handles them
@@ -224,6 +230,7 @@
         <div class="pt-4 border-t border-gray-100">
           <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
           <div class="flex flex-col gap-1">
+            <button onclick="navigateTo('sales'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Create Invoice</button>
             <button onclick="exportCSV('collection'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
             <button onclick="exportCSV('clutch'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
             <button onclick="showDataHealth(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Data Health</button>
@@ -268,6 +275,7 @@
           <div class="mt-6 pt-4 border-t border-gray-100">
             <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
             <div class="flex flex-col gap-1">
+              <button onclick="navigateTo('sales')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Create Invoice</button>
               <button onclick="exportCSV('collection')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
               <button onclick="exportCSV('clutch')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Clutches</button>
               <button onclick="openQRGenerator()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print QR Codes</button>
@@ -304,7 +312,7 @@
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
               <button id="backBtn" onclick="goBack()" class="px-3 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 text-sm hidden">
-                ! Back
+                < Back
               </button>
               <h2 id="pageTitle" class="text-xl font-bold text-gray-900 capitalize">Dashboard</h2>
             </div>
@@ -666,7 +674,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.4";
+    var VERSION = "2.11.5";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1104,6 +1112,31 @@
       document.getElementById("modal").classList.remove("hidden");
     }
 
+    // Quick Activity modal - called from + Activity button on tables
+    function openQuickActivityModal(row) {
+      // For clutches, we need to handle differently - log activity for the clutch
+      if (state.activeTab === "clutches") {
+        // For clutches, open a note activity with the clutch ID
+        state.modalMode = "add";
+        state.modalTab = "activity";
+        state.editRowIndex = null;
+        state.formData = {
+          "DATE": new Date().toISOString().split('T')[0],
+          "UNIQUE ID": row["CLUTCH ID"] || ""
+        };
+        
+        var clutchInfo = {
+          "ANIMAL NAME": "Clutch: " + (row["CLUTCH ID"] || "Unknown"),
+          "UNIQUE ID": row["CLUTCH ID"] || ""
+        };
+        renderActivityModalForQR(clutchInfo);
+        document.getElementById("modal").classList.remove("hidden");
+      } else {
+        // For collection/hatchlings, use the existing function
+        openActivityForAnimal(row);
+      }
+    }
+
     function renderActivityModalForQR(animal) {
       var animalName = animal["ANIMAL NAME"] || animal["UNIQUE ID"];
       var animalId = animal["UNIQUE ID"];
@@ -1332,7 +1365,7 @@
       
       if (hasAlerts) {
         html += '<div class="mb-8">';
-        html += '<div class="text-xs uppercase tracking-wider text-gray-900 font-semibold mb-3">âš ï¸ Alerts</div>';
+        html += '<div class="text-xs uppercase tracking-wider text-gray-900 font-semibold mb-3">ALERTS</div>';
         html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">';
         
         //  Overdue Clutches (DARKEST - most urgent)
@@ -1343,12 +1376,12 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-300">Overdue Clutches</div>';
           html += '<div class="text-2xl font-black text-white">' + stats.overdueClutches + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl"></div>';
+          html += '';
           html += '</div>';
           html += '</div>';
         }
         
-        // â° Clutches Due Soon (DARK)
+        //  Clutches Due Soon (DARK)
         if (stats.clutchesDueSoon > 0) {
           html += '<div onclick="navigateTo(\'clutches\');" class="cursor-pointer bg-gradient-to-br from-gray-500 to-gray-600 border-2 border-gray-700 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1356,7 +1389,7 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-200">Due Within 7 Days</div>';
           html += '<div class="text-2xl font-black text-white">' + stats.clutchesDueSoon + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl">â°</div>';
+          html += '';
           html += '</div>';
           html += '</div>';
         }
@@ -1369,7 +1402,7 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-100">Unshipped Sales</div>';
           html += '<div class="text-2xl font-black text-white">' + stats.unshipped + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl"></div>';
+          html += '';
           html += '</div>';
           html += '</div>';
         }
@@ -1382,7 +1415,7 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Shipping in 3 Days</div>';
           html += '<div class="text-2xl font-black text-gray-900">' + stats.shippingSoon + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl"></div>';
+          html += '';
           html += '</div>';
           html += '</div>';
         }
@@ -1395,12 +1428,12 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Unpaid Deposits</div>';
           html += '<div class="text-2xl font-black text-gray-900">' + stats.unpaidDeposits + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl"></div>';
+          html += '';
           html += '</div>';
           html += '</div>';
         }
         
-        // â“ Needs Sexing (LIGHT)
+        // � Needs Sexing (LIGHT)
         if (stats.needsSexing > 0) {
           html += '<div onclick="navigateTo(\'hatchlings\');" class="cursor-pointer bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-gray-400 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
@@ -1408,7 +1441,7 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-600">Needs Sexing</div>';
           html += '<div class="text-2xl font-black text-gray-900">' + stats.needsSexing + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl">â“</div>';
+          html += '';
           html += '</div>';
           html += '</div>';
         }
@@ -1421,7 +1454,7 @@
           html += '<div class="text-xs uppercase tracking-wider text-gray-600">Ready to List</div>';
           html += '<div class="text-2xl font-black text-gray-900">' + stats.readyToList + '</div>';
           html += '</div>';
-          html += '<div class="text-3xl"></div>';
+          html += '';
           html += '</div>';
           html += '</div>';
         }
@@ -1833,6 +1866,17 @@
         editBtn.onclick = function() { openEditModal(row); };
         actionTd.appendChild(editBtn);
 
+        // + Activity button for collection, clutches, hatchlings (not activity tab itself)
+        if (state.activeTab === "collection" || state.activeTab === "clutches" || state.activeTab === "hatchlings") {
+          var activityBtn = document.createElement("button");
+          activityBtn.className = "px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 mr-1";
+          activityBtn.textContent = "+ Activity";
+          activityBtn.onclick = (function(r) {
+            return function() { openQuickActivityModal(r); };
+          })(row);
+          actionTd.appendChild(activityBtn);
+        }
+
         if (showHatch) {
           var hatchBtn = document.createElement("button");
           hatchBtn.className = "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1";
@@ -1916,7 +1960,7 @@
           }
           // Add warning icon to first data column if overdue
           else if (colIdx === 0 && isOverdue) {
-            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">âš ï¸</span>' + escapeHtml(row[col] || "--");
+            td.innerHTML = '<span class="text-gray-900 mr-1" title="Overdue - past estimated hatch date">ï¸</span>' + escapeHtml(row[col] || "--");
           } 
           // Format date columns nicely
           else if (col.toUpperCase().includes("DATE") && row[col]) {
@@ -2713,7 +2757,18 @@
         var input = "";
         var opts = getFieldOptions(h, state.modalTab);
         
-        if (opts && opts.length > 0) {
+        // Special searchable dropdown for UNIQUE ID in activity form
+        if (h.toUpperCase() === "UNIQUE ID" && state.modalTab === "activity" && opts && opts.length > 0) {
+          input = '<div class="relative">';
+          input += '<input type="text" id="animalSearch" placeholder="Search by name or ID..." oninput="filterAnimalDropdown(this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm mb-1">';
+          input += '<select id="animalSelect" onchange="updateFormField(\'UNIQUE ID\', this.value); document.getElementById(\'animalSearch\').value=this.options[this.selectedIndex].text;" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm" size="6">';
+          opts.forEach(function(o) {
+            var sel = (val && (val === o || val.toLowerCase() === o.toLowerCase())) ? " selected" : "";
+            input += '<option value="' + escapeHtml(o) + '"' + sel + '>' + escapeHtml(o) + '</option>';
+          });
+          input += '</select>';
+          input += '</div>';
+        } else if (opts && opts.length > 0) {
           input = '<select onchange="updateFormField(\'' + h + '\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
           input += '<option value="">Select...</option>';
           opts.forEach(function(o) {
@@ -2942,6 +2997,24 @@
       return opts;
     }
 
+    // Filter the animal dropdown based on search input
+    function filterAnimalDropdown(searchText) {
+      var select = document.getElementById("animalSelect");
+      if (!select) return;
+      
+      var search = searchText.toLowerCase();
+      var options = select.options;
+      
+      for (var i = 0; i < options.length; i++) {
+        var optionText = options[i].text.toLowerCase();
+        if (search === "" || optionText.indexOf(search) >= 0) {
+          options[i].style.display = "";
+        } else {
+          options[i].style.display = "none";
+        }
+      }
+    }
+
     function getBreederOptions(sex) {
       var rows = state.data.collection || [];
       var opts = [];
@@ -3158,7 +3231,7 @@
             state.data[savedTab].push(newRow);
           }
           
-          setStatus("Saved! âœ“");
+          setStatus("Saved!");
           closeModal();
           renderCurrentView(); // Render immediately with local data
           
@@ -3324,7 +3397,7 @@
         html += '<div class="bg-slate-50 rounded-xl p-4 border border-slate-200">';
         html += '<div class="flex items-center justify-between mb-3">';
         html += '<div class="font-bold text-slate-800 mono">' + draft.id + '</div>';
-        html += '<button onclick="removeHatchDraft(' + idx + ')" class="text-red-500 hover:text-red-700 text-sm">âœ• Remove</button>';
+        html += '<button onclick="removeHatchDraft(' + idx + ')" class="text-red-500 hover:text-red-700 text-sm">x Remove</button>';
         html += '</div>';
         
         html += '<div class="grid grid-cols-2 md:grid-cols-3 gap-3">';
