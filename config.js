@@ -1,15 +1,17 @@
 /*
  * THE RACK - Configuration
- * Version: 2.12.41
+ * Version: 2.12.43
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.43: Fixed missing modal HTML - added all modals back to index.html
+ * - 2.12.42: Added debug logging to trace script loading
  * - 2.12.41: Fixed button closures in tables.js, removed duplicate init() call
  * - 2.12.40: Removed bin tag PDF code, HTML print only
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "2.12.42";
+var VERSION = "2.12.43";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {

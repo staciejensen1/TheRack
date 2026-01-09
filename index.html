@@ -462,6 +462,314 @@
     </div>
   </div>
 
+  <!-- Bin Tag Generator Modal -->
+  <div id="binTagModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-5xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-slate-900">Print Bin Tags</h3>
+          <button onclick="closeBinTagModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="p-4 md:p-6">
+          <!-- Printer Recommendations -->
+          <div class="mb-6 bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <div class="text-sm font-semibold text-gray-800 mb-2">Recommended Supplies</div>
+            <div class="text-sm text-gray-600 space-y-1">
+              <div><strong>PVC Cards (waterproof):</strong> <a href="https://amzn.to/49KHshc" target="_blank" class="text-blue-600 hover:underline">3.38" x 2.13" PVC Cards on Amazon</a></div>
+              <div><strong>Card Printer:</strong> <a href="https://amzn.to/4sookwS" target="_blank" class="text-blue-600 hover:underline">Recommended Printer on Amazon</a></div>
+              <div class="text-gray-500 text-xs mt-2">Alternative: Use thick cardstock paper with any inkjet printer. PVC cards are waterproof and more durable for rack environments.</div>
+            </div>
+          </div>
+          
+          <!-- Options -->
+          <div class="mb-6 flex flex-wrap gap-4 items-center">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Select Animals</label>
+              <select id="binTagAnimalSelect" onchange="updateBinTagAnimalList(); updateBinTagPreview();" class="px-3 py-2 border border-gray-300 rounded-xl text-sm">
+                <option value="all">All Animals</option>
+                <option value="breeders">Breeders Only</option>
+                <option value="hatchlings">Hatchlings Only</option>
+              </select>
+            </div>
+            <button onclick="downloadBinTagsPDF()" id="binTagDownloadBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+              Print Tags
+            </button>
+          </div>
+          
+          <!-- Animal Selection List -->
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-medium text-gray-700">Select specific animals (or leave unchecked for all)</label>
+              <div class="flex gap-2">
+                <button onclick="selectAllBinTagAnimals()" class="text-xs text-gray-500 hover:text-gray-700">Select All</button>
+                <span class="text-gray-300">|</span>
+                <button onclick="deselectAllBinTagAnimals()" class="text-xs text-gray-500 hover:text-gray-700">Deselect All</button>
+              </div>
+            </div>
+            <div id="binTagAnimalList" class="border border-gray-200 rounded-xl p-3 bg-gray-50 max-h-40 overflow-auto">
+              <p class="text-gray-500 text-sm">Loading animals...</p>
+            </div>
+            <div class="mt-2 text-sm text-gray-500">
+              <span id="binTagSelectedCount">0</span> animals selected
+            </div>
+          </div>
+          
+          <!-- Preview -->
+          <div class="text-sm font-medium text-gray-700 mb-2">Preview</div>
+          <div id="binTagPreview" class="border border-gray-200 rounded-xl p-4 bg-gray-100 overflow-auto" style="max-height: 500px;">
+            <p class="text-gray-500 text-sm">Select animals to see preview...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div id="importModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-slate-900">Import from MorphMarket</h3>
+          <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="p-4 md:p-6">
+          <!-- Step 1: Upload -->
+          <div id="importStep1">
+            <div class="mb-4">
+              <p class="text-gray-600 mb-4">Upload your MorphMarket CSV export file. Go to MorphMarket &gt; My Store &gt; Inventory &gt; Export to download your file.</p>
+              <label class="block">
+                <span class="sr-only">Choose CSV file</span>
+                <input type="file" id="importFileInput" accept=".csv" onchange="handleImportFile(event)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-black cursor-pointer"/>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Step 2: Preview -->
+          <div id="importStep2" class="hidden">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <span id="importCount" class="font-bold text-gray-900">0</span>
+                <span class="text-gray-600">animals to import</span>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="resetImport()" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 text-sm">
+                  Back
+                </button>
+                <button onclick="executeImport()" id="importBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+                  Import All
+                </button>
+              </div>
+            </div>
+            
+            <!-- Preview Table -->
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+              <div class="max-h-96 overflow-auto">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Action</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Manual ID</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Sex</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Status</th>
+                      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Genes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="importPreviewBody" class="divide-y divide-gray-100">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Step 3: Progress -->
+          <div id="importStep3" class="hidden">
+            <div class="text-center py-8">
+              <div class="mb-4">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-gray-900"></div>
+              </div>
+              <p id="importProgress" class="text-gray-600 font-medium">Importing...</p>
+              <p class="text-gray-400 text-sm mt-2">Please be patient - this may take a few minutes for large imports.</p>
+              <p class="text-gray-400 text-sm">Do not close this window.</p>
+            </div>
+          </div>
+          
+          <!-- Step 4: Complete -->
+          <div id="importStep4" class="hidden">
+            <div class="text-center py-8">
+              <div class="text-4xl mb-4">Done!</div>
+              <p id="importResult" class="text-gray-600 mb-4">Successfully imported 0 animals.</p>
+              <button onclick="closeImportModal(); loadData();" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="modal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-2xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 id="modalTitle" class="text-xl font-bold text-slate-900">Add New</h3>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <!-- Read-only ID display -->
+        <div id="modalIdDisplay" class="hidden px-4 md:px-6 pt-4">
+          <div class="bg-slate-100 rounded-xl px-4 py-3">
+            <div class="text-xs text-slate-500 uppercase">Unique ID</div>
+            <div id="modalIdValue" class="font-bold mono text-lg"></div>
+            <div class="text-xs text-slate-400">Auto-generated (read-only)</div>
+          </div>
+        </div>
+
+        <div id="modalBody" class="p-4 md:p-6 max-h-[60vh] overflow-auto"></div>
+
+        <div class="p-4 md:p-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <span id="modalError" class="text-red-600 text-sm"></span>
+          <div class="flex gap-3">
+            <button onclick="closeModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+              Cancel
+            </button>
+            <button id="saveBtn" onclick="saveRecord()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hatch Modal -->
+  <div id="hatchModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">Hatch Clutch</h3>
+            <p id="hatchClutchId" class="text-sm text-slate-500"></p>
+          </div>
+          <button onclick="closeHatchModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div id="hatchModalBody" class="p-4 md:p-6"></div>
+
+        <div class="p-4 md:p-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <span id="hatchModalError" class="text-red-600 text-sm"></span>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="closeHatchModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+              Cancel
+            </button>
+            <button id="hatchOnlyBtn" onclick="markHatchedOnly()" class="px-5 py-2.5 bg-gray-600 text-white font-bold rounded-xl hover:bg-gray-700">
+              Mark Hatched Only
+            </button>
+            <button id="hatchAndCreateBtn" onclick="hatchAndCreateHatchlings()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+              Hatch & Create Hatchlings
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sale Modal -->
+  <div id="saleModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-lg my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">Record Sale</h3>
+            <p id="saleAnimalId" class="text-sm text-slate-500 mono"></p>
+          </div>
+          <button onclick="closeSaleModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div id="saleModalBody" class="p-4 md:p-6"></div>
+
+        <div class="p-4 md:p-6 border-t border-slate-200 flex justify-between items-center">
+          <span id="saleModalError" class="text-red-600 text-sm"></span>
+          <div class="flex gap-3">
+            <button onclick="closeSaleModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+              Cancel
+            </button>
+            <button id="saveSaleBtn" onclick="saveSale()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+              Save Sale
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Modal -->
+  <div id="invoiceModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">Create Invoice</h3>
+            <p id="invoiceNumber" class="text-sm text-slate-500 mono"></p>
+          </div>
+          <button onclick="closeInvoiceModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div id="invoiceModalBody" class="p-4 md:p-6 max-h-[70vh] overflow-auto"></div>
+
+        <div class="p-4 md:p-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <span id="invoiceModalError" class="text-red-600 text-sm"></span>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="closeInvoiceModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+              Cancel
+            </button>
+            <button onclick="previewInvoice()" class="px-5 py-2.5 bg-gray-600 text-white font-bold rounded-xl hover:bg-gray-700">
+              Preview
+            </button>
+            <button onclick="downloadInvoicePDF()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+              Download PDF
+            </button>
+            <button onclick="printInvoice()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+              Print
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Preview Modal -->
+  <div id="invoicePreviewModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-slate-900">Invoice Preview</h3>
+          <button onclick="closeInvoicePreview()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div id="invoicePreviewBody" class="p-4 md:p-6 max-h-[70vh] overflow-auto bg-gray-100">
+          <div id="invoicePrintArea"></div>
+        </div>
+
+        <div class="p-4 md:p-6 border-t border-slate-200 flex justify-end gap-3">
+          <button onclick="closeInvoicePreview()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+            Back to Edit
+          </button>
+          <button onclick="downloadInvoicePDF()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+            Download PDF
+          </button>
+          <button onclick="printInvoiceFromPreview()" class="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black">
+            Print
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="mt-8 py-6 border-t border-gray-200 bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
@@ -478,26 +786,18 @@
 
   <!-- JavaScript Files (order matters!) -->
   <script src="config.js"></script>
-  <script>console.log("config.js loaded, VERSION:", typeof VERSION !== 'undefined' ? VERSION : 'NOT DEFINED');</script>
   <script src="api.js"></script>
-  <script>console.log("api.js loaded, apiCall:", typeof apiCall);</script>
   <script src="app.js"></script>
-  <script>console.log("app.js loaded, init:", typeof init);</script>
   <script src="dashboard.js"></script>
-  <script>console.log("dashboard.js loaded, renderDashboard:", typeof renderDashboard);</script>
   <script src="tables.js"></script>
-  <script>console.log("tables.js loaded, renderTable:", typeof renderTable);</script>
   <script src="modals.js"></script>
-  <script>console.log("modals.js loaded, openAddModal:", typeof openAddModal, "openEditModal:", typeof openEditModal);</script>
   <script src="hatch-sale.js"></script>
-  <script>console.log("hatch-sale.js loaded, openHatchModal:", typeof openHatchModal);</script>
   <script src="tools.js"></script>
   <script src="archive.js"></script>
   <script src="bintags.js"></script>
   <script src="import.js"></script>
   <script src="invoice.js"></script>
   <script src="qr-activity.js"></script>
-  <script>console.log("All scripts loaded. Testing openAddModal directly..."); if(typeof openAddModal === 'function') console.log("openAddModal IS a function"); else console.error("openAddModal is NOT defined!");</script>
   
   <!-- Initialize -->
   <script>
