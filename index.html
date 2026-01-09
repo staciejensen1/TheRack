@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.40
+  Version: 2.11.41
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.41: CRITICAL FIX - Clutch edit form now uses same clean form as Add:
+             - Removed unwanted fields (DAYS TILL HATCH, # HATCHED, HATCH DATE, etc.)
+             - Renamed renderClutchAddForm to renderClutchForm (used for both add/edit)
+             - Egg counts now save correctly
   - 2.11.40: Fixed clutch egg counts not saving:
              - Added oninput event to capture values immediately (not just onchange)
              - Added safeguard in saveRecord to grab values directly from inputs before save
@@ -834,7 +838,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.40";
+    var VERSION = "2.11.41";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -3288,9 +3292,9 @@
         return;
       }
       
-      // Special rendering for Clutch ADD form
-      if (state.modalTab === "clutch" && state.modalMode === "add") {
-        renderClutchAddForm();
+      // Special rendering for Clutch form (both ADD and EDIT)
+      if (state.modalTab === "clutch") {
+        renderClutchForm();
         return;
       }
       
@@ -3652,7 +3656,8 @@
     }
 
     // Custom Clutch Add Form with searchable selectors
-    function renderClutchAddForm() {
+    // Custom Clutch Form - used for both Add and Edit
+    function renderClutchForm() {
       var html = '<div class="space-y-4">';
       var today = state.formData["LAY DATE"] || new Date().toISOString().split("T")[0];
       
@@ -3817,27 +3822,27 @@
     
     function selectClutchSire(label) {
       state.formData["SIRE"] = label;
-      renderClutchAddForm();
+      renderClutchForm();
     }
     
     function selectClutchDam(label) {
       state.formData["DAM"] = label;
-      renderClutchAddForm();
+      renderClutchForm();
     }
     
     function clearClutchSire() {
       state.formData["SIRE"] = "";
-      renderClutchAddForm();
+      renderClutchForm();
     }
     
     function clearClutchDam() {
       state.formData["DAM"] = "";
-      renderClutchAddForm();
+      renderClutchForm();
     }
     
     function updateClutchLayDate(value) {
       state.formData["LAY DATE"] = value;
-      renderClutchAddForm();
+      renderClutchForm();
     }
 
     // Custom Activity Add Form - cleaner design
