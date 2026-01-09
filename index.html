@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.39
+  Version: 2.11.40
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.40: Fixed clutch egg counts not saving:
+             - Added oninput event to capture values immediately (not just onchange)
+             - Added safeguard in saveRecord to grab values directly from inputs before save
+             - Egg count fields now have IDs for direct access
   - 2.11.39: Fixed truncated HTML closing tag that broke page load
   - 2.11.38: Fixed syntax error (extra closing brace) in saveRecord that broke clutch saves
   - 2.11.37: Removed debug logging that was breaking site startup
@@ -830,7 +834,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.39";
+    var VERSION = "2.11.40";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -3750,15 +3754,15 @@
       html += '<div class="grid grid-cols-3 gap-4">';
       html += '<div>';
       html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1"># Laid</label>';
-      html += '<input type="number" value="' + laidVal + '" onchange="updateFormField(\'# LAID\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
+      html += '<input type="number" id="clutchLaid" value="' + laidVal + '" oninput="updateFormField(\'# LAID\', this.value)" onchange="updateFormField(\'# LAID\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
       html += '</div>';
       html += '<div>';
       html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1"># Slugs</label>';
-      html += '<input type="number" value="' + slugsVal + '" onchange="updateFormField(\'# SLUGS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
+      html += '<input type="number" id="clutchSlugs" value="' + slugsVal + '" oninput="updateFormField(\'# SLUGS\', this.value)" onchange="updateFormField(\'# SLUGS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
       html += '</div>';
       html += '<div>';
       html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1"># Fertile</label>';
-      html += '<input type="number" value="' + fertileVal + '" onchange="updateFormField(\'# FERTILE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
+      html += '<input type="number" id="clutchFertile" value="' + fertileVal + '" oninput="updateFormField(\'# FERTILE\', this.value)" onchange="updateFormField(\'# FERTILE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
       html += '</div>';
       html += '</div>';
       
@@ -4329,6 +4333,17 @@
     function saveRecord() {
       var headers = state.headers[state.modalTab] || [];
       if (!headers.length) { document.getElementById("modalError").textContent = "No headers"; return; }
+
+      // SAFEGUARD: For clutch form, grab egg count values directly from inputs
+      // This ensures we capture values even if onchange/oninput didn't fire
+      if (state.modalTab === "clutch") {
+        var laidInput = document.getElementById("clutchLaid");
+        var slugsInput = document.getElementById("clutchSlugs");
+        var fertileInput = document.getElementById("clutchFertile");
+        if (laidInput && laidInput.value) state.formData["# LAID"] = laidInput.value;
+        if (slugsInput && slugsInput.value) state.formData["# SLUGS"] = slugsInput.value;
+        if (fertileInput && fertileInput.value) state.formData["# FERTILE"] = fertileInput.value;
+      }
 
       // Auto-calculate EST. HATCH DATE for clutches
       if (state.modalTab === "clutch" && state.formData["LAY DATE"]) {
