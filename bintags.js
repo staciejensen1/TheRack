@@ -1,14 +1,14 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.32
+ * Version: 2.12.34
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.34: Reduced inner tag height to 1.80in to prevent bottom border cutoff
+ * - 2.12.33: Increased genetics font from 7pt to 9pt in HTML print
  * - 2.12.32: Added 0.15in bleed margin - tag is now 3.08x1.83in centered on 3.38x2.13in card
- * - 2.12.31: New buildBinTagForPrint with inch dimensions, PDF uses explicit width/height in html2canvas
- * - 2.12.30: Print CSS fixes - proper @media print rules, align-items:flex-start, global box-sizing
- * - 2.12.29: Added box-sizing:border-box to all elements in buildBinTagPreview to fix overflow
- * - 2.12.23: Complete rewrite - Norwester font preload, uppercase name, 32px top padding for Sex+ID
+ * - 2.12.31: New buildBinTagForPrint with inch dimensions
+ * - 2.12.23: Complete rewrite - Norwester font preload, uppercase name
  */
 
 
@@ -511,11 +511,11 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   // Outer wrapper centers the tag on the card stock
   var html = '<div style="width:3.38in; height:2.13in; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
   
-  // Actual tag: 3.08in x 1.83in (with 0.15in bleed margin)
-  html += '<div style="width:3.08in; height:1.83in; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; box-sizing:border-box;">';
+  // Actual tag: 3.08in x 1.80in (slightly smaller to ensure border fits)
+  html += '<div style="width:3.08in; height:1.80in; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; box-sizing:border-box;">';
   
-  // ROW 1: 47% of 1.83in = 0.86in
-  html += '<div style="display:flex; height:0.86in; border-bottom:1px solid #000; box-sizing:border-box;">';
+  // ROW 1: 47% of 1.80in = 0.846in
+  html += '<div style="display:flex; height:0.85in; border-bottom:1px solid #000; box-sizing:border-box;">';
   
   // Logo (25% = 0.77in)
   html += '<div style="width:0.77in; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
@@ -554,12 +554,12 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   
   html += '</div>';
   
-  // ROW 3: 38% of 1.83in = 0.70in
-  html += '<div style="display:flex; height:0.70in; box-sizing:border-box;">';
+  // ROW 3: 38% of 1.80in = 0.68in
+  html += '<div style="display:flex; height:0.68in; box-sizing:border-box;">';
   
   // Genetics (70% = 2.156in)
   html += '<div style="width:2.156in; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; padding:4pt; text-align:center; box-sizing:border-box;">';
-  html += '<div style="font-family:Inter,sans-serif; font-size:7pt; font-weight:500; line-height:1.3; color:#000;">' + escapeHtml(genetics) + '</div>';
+  html += '<div style="font-family:Inter,sans-serif; font-size:9pt; font-weight:500; line-height:1.3; color:#000;">' + escapeHtml(genetics) + '</div>';
   html += '</div>';
   
   // Year + Breeder (30% = 0.924in)
