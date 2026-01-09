@@ -1,9 +1,11 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.17
+ * Version: 2.12.19
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.19: Increased Sex+ID top padding - PDF to 37px, HTML to 33px for card cutout clearance
+ * - 2.12.18: PDF Row 2 uses explicit padding for vertical centering (html2canvas fix), HTML print centers on page
  * - 2.12.17: PDF now uses colgroup for consistent column widths, removed redundant inline widths
  * - 2.12.16: Print Tags now uses TABLE layout with colgroup for consistent 30% column width
  * - 2.12.15: PDF rewrite - use TABLE layout instead of flexbox for reliable rendering
@@ -401,11 +403,12 @@ function printBinTags(animals, businessName, logoUrl) {
   html += '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">';
   html += '<style>';
   html += '@page { size: 3.38in 2.13in; margin: 0; }';
-  html += 'body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 0; }';
-  html += '.bin-tag { width: 3.38in; height: 2.13in; page-break-after: always; box-sizing: border-box; overflow: hidden; border: 1px solid #000; background: #fff; }';
+  html += 'html, body { margin: 0; padding: 0; width: 3.38in; height: 2.13in; }';
+  html += 'body { font-family: Inter, system-ui, sans-serif; display: flex; justify-content: center; align-items: center; }';
+  html += '.bin-tag { width: 3.38in; height: 2.13in; page-break-after: always; box-sizing: border-box; overflow: hidden; border: 1px solid #000; background: #fff; margin: 0 auto; }';
   html += '.bin-tag:last-child { page-break-after: avoid; }';
   html += 'table { border-collapse: collapse; table-layout: fixed; }';
-  html += '@media print { body { margin: 0; } }';
+  html += '@media print { html, body { margin: 0; padding: 0; } .bin-tag { margin: 0; } }';
   html += '</style></head><body>';
   
   animals.forEach(function(animal) {
@@ -447,8 +450,8 @@ function printBinTags(animals, businessName, logoUrl) {
     }
     html += '</td>';
     
-    // Sex + ID cell (with top padding for card cutout)
-    html += '<td style="background: #fff; text-align: center; vertical-align: top; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; padding-top: 20px;">';
+    // Sex + ID cell (with top padding for card cutout - ~0.35")
+    html += '<td style="background: #fff; text-align: center; vertical-align: top; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; padding-top: 33px;">';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 20px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
     html += '</td>';
@@ -649,8 +652,8 @@ function downloadBinTagsPDFFile() {
       }
       html += '</td>';
       
-      // Sex + ID cell (with top padding for card cutout)
-      html += '<td style="background: #fff; text-align: center; vertical-align: top; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; padding-top: 24px;">';
+      // Sex + ID cell (with top padding for card cutout - ~0.38")
+      html += '<td style="background: #fff; text-align: center; vertical-align: top; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; padding-top: 37px;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 20px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
       html += '</td>';
@@ -663,16 +666,18 @@ function downloadBinTagsPDFFile() {
       html += '</tr>';
       
       // ROW 2: Name (70%) | INFO (30%)
+      // row2Height is ~31px, font is 18px, so pad top ~6px to center
+      var row2Pad = Math.max(0, Math.floor((row2Height - 20) / 2));
       html += '<tr style="height: ' + row2Height + 'px;">';
       
       // Name cell - spans first 2 columns
-      html += '<td colspan="2" style="background: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; border-right: 1px solid #000;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
+      html += '<td colspan="2" style="background: #fff; text-align: center; border-bottom: 1px solid #000; border-right: 1px solid #000; padding-top: ' + row2Pad + 'px;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px; line-height: 1;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
       html += '</td>';
       
       // INFO cell
-      html += '<td style="background: #000; text-align: center; vertical-align: middle; border-bottom: 1px solid #000;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
+      html += '<td style="background: #000; text-align: center; border-bottom: 1px solid #000; padding-top: ' + row2Pad + 'px;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px; line-height: 1;">INFO</div>';
       html += '</td>';
       
       html += '</tr>';
