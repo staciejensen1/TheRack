@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.33
+  Version: 2.11.34
   Last Updated: 2026-01-09
   
   Changelog:
-  - 2.11.33: Bin Tag design refinement - better proportions matching Canva:
-             - Row heights: 47% top, 18% name, 35% bottom
-             - Column widths: 30/40/30 top, 54/46 bottom
-             - Proper borders between all sections
-             - Italic bold MALE/FEMALE text matching original
-             - INFO boxes with inner borders
+  - 2.11.34: Bin Tag design fixes:
+             - Name row now 75% width with INFO header (25%) next to it
+             - Logo box shows logo image OR business name (not both)
+             - Sex text is black (no color)
+             - Adjusted proportions to match Canva template
+  - 2.11.33: Bin Tag design refinement - better proportions matching Canva
   - 2.11.32: FIX: Clutch egg counts now save properly - removed code that was skipping # fields
   - 2.11.31: Bin Tag design updated to match exact Canva template:
              - Top row: Logo+Business (black) | Sex+ID (white) | QR (white)
@@ -823,7 +823,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.33";
+    var VERSION = "2.11.34";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -5743,17 +5743,18 @@
       // ROW 1: Logo | Sex+ID | QR (about 47% of height)
       html += '<div style="display: flex; height: 47%; border-bottom: 3px solid #000;">';
       
-      // Left: Logo section (black background, 30% width)
-      html += '<div style="width: 30%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px;">';
+      // Left: Logo section (black background, 22% width)
+      html += '<div style="width: 22%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px;">';
       if (logoUrl) {
-        html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 80%; max-height: 55%; object-fit: contain;" alt="Logo">';
+        html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
+      } else {
+        html += '<div style="font-size: 9px; font-weight: 800; text-align: center; letter-spacing: 0.3px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
       }
-      html += '<div style="font-size: 8px; font-weight: 800; margin-top: 3px; text-align: center; letter-spacing: 0.3px; line-height: 1.1;">' + escapeHtml(businessName).toUpperCase() + '</div>';
       html += '</div>';
       
-      // Center: Sex + ID (white background, 40% width)
-      html += '<div style="width: 40%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 3px solid #000; border-right: 3px solid #000;">';
-      html += '<div style="font-size: 20px; font-weight: 900; color: #2563eb; letter-spacing: 1px; font-style: italic;">' + escapeHtml(sexDisplay) + '</div>';
+      // Center: Sex + ID (white background, 48% width)
+      html += '<div style="width: 48%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 3px solid #000; border-right: 3px solid #000;">';
+      html += '<div style="font-size: 22px; font-weight: 900; color: #000; letter-spacing: 1px;">' + escapeHtml(sexDisplay) + '</div>';
       html += '<div style="font-size: 11px; font-weight: 700; color: #000; margin-top: 2px;">' + escapeHtml(id) + '</div>';
       html += '</div>';
       
@@ -5764,35 +5765,35 @@
       
       html += '</div>';
       
-      // ROW 2: Animal Name (white background, centered, about 18% height)
-      html += '<div style="height: 18%; background: #fff; display: flex; justify-content: center; align-items: center; border-bottom: 3px solid #000;">';
+      // ROW 2: Animal Name (white, ~75%) | INFO header (black, ~25%) - about 15% height
+      html += '<div style="display: flex; height: 15%; border-bottom: 3px solid #000;">';
+      html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 3px solid #000;">';
       html += '<div style="font-size: 22px; font-weight: 900; color: #000; letter-spacing: -0.5px;">' + escapeHtml(name || "UNNAMED") + '</div>';
       html += '</div>';
+      html += '<div style="width: 25%; background: #000; display: flex; justify-content: center; align-items: center;">';
+      html += '<div style="font-size: 12px; font-weight: 900; color: #fff; letter-spacing: 1px;">INFO</div>';
+      html += '</div>';
+      html += '</div>';
       
-      // ROW 3: Genetics | INFO sidebar (remaining 35% height)
-      html += '<div style="display: flex; height: 35%;">';
+      // ROW 3: Genetics (left ~55%) | Year Born + Breeder boxes (right ~45%) - remaining 38% height
+      html += '<div style="display: flex; height: 38%;">';
       
-      // Left: Genetics (white background, 54% width)
-      html += '<div style="width: 54%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 3px solid #000;">';
+      // Left: Genetics (white background)
+      html += '<div style="width: 55%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 3px solid #000;">';
       html += '<div style="font-size: 11px; font-weight: 500; line-height: 1.25; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
       html += '</div>';
       
-      // Right: INFO sidebar (black background with white boxes, 46% width)
-      html += '<div style="width: 46%; background: #000; display: flex; flex-direction: column;">';
-      
-      // INFO header
-      html += '<div style="background: #000; color: #fff; padding: 2px 0; text-align: center; height: 22%;">';
-      html += '<div style="font-size: 12px; font-weight: 900; letter-spacing: 1px;">INFO</div>';
-      html += '</div>';
+      // Right: Info boxes (black background with white boxes)
+      html += '<div style="width: 45%; background: #000; display: flex; flex-direction: column; padding: 4px; gap: 3px;">';
       
       // Year Born box (white)
-      html += '<div style="background: #fff; margin: 2px 4px; padding: 2px; text-align: center; height: 34%; display: flex; flex-direction: column; justify-content: center; border: 1px solid #000;">';
+      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
       html += '<div style="font-size: 8px; font-weight: 800; color: #000;">YEAR BORN:</div>';
-      html += '<div style="font-size: 14px; font-weight: 700; color: #000;">' + (yearBorn || "--") + '</div>';
+      html += '<div style="font-size: 16px; font-weight: 700; color: #000;">' + (yearBorn || "--") + '</div>';
       html += '</div>';
       
-      // Breeder box (white)
-      html += '<div style="background: #fff; margin: 2px 4px 4px 4px; padding: 2px; text-align: center; height: 34%; display: flex; flex-direction: column; justify-content: center; border: 1px solid #000;">';
+      // Breeder box (white) - only show if breeder source exists
+      html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
       html += '<div style="font-size: 8px; font-weight: 800; color: #000;">BREEDER:</div>';
       html += '<div style="font-size: 9px; font-weight: 600; color: #000; line-height: 1.1; overflow: hidden;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
       html += '</div>';
@@ -5888,17 +5889,18 @@
         // ROW 1: Logo | Sex+ID | QR (47% height)
         html += '<div style="display: flex; height: 47%; border-bottom: 2px solid #000;">';
         
-        // Left: Logo (black bg, 30%)
-        html += '<div style="width: 30%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px;">';
+        // Left: Logo (black bg, 22%)
+        html += '<div style="width: 22%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px;">';
         if (logoUrl) {
-          html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 80%; max-height: 55%; object-fit: contain;" alt="Logo">';
+          html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
+        } else {
+          html += '<div style="font-size: 8px; font-weight: 800; text-align: center; letter-spacing: 0.3px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
         }
-        html += '<div style="font-size: 7px; font-weight: 800; margin-top: 2px; text-align: center; letter-spacing: 0.3px; line-height: 1.1;">' + escapeHtml(businessName).toUpperCase() + '</div>';
         html += '</div>';
         
-        // Center: Sex + ID (white bg, 40%)
-        html += '<div style="width: 40%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 2px solid #000; border-right: 2px solid #000;">';
-        html += '<div style="font-size: 16px; font-weight: 900; color: #2563eb; letter-spacing: 1px; font-style: italic;">' + escapeHtml(sexDisplay) + '</div>';
+        // Center: Sex + ID (white bg, 48%)
+        html += '<div style="width: 48%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 2px solid #000; border-right: 2px solid #000;">';
+        html += '<div style="font-size: 18px; font-weight: 900; color: #000; letter-spacing: 1px;">' + escapeHtml(sexDisplay) + '</div>';
         html += '<div style="font-size: 9px; font-weight: 700; color: #000; margin-top: 2px;">' + escapeHtml(id) + '</div>';
         html += '</div>';
         
@@ -5909,35 +5911,35 @@
         
         html += '</div>';
         
-        // ROW 2: Animal Name (18% height)
-        html += '<div style="height: 18%; background: #fff; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid #000;">';
+        // ROW 2: Animal Name (~75%) | INFO header (~25%) - 15% height
+        html += '<div style="display: flex; height: 15%; border-bottom: 2px solid #000;">';
+        html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 2px solid #000;">';
         html += '<div style="font-size: 18px; font-weight: 900; color: #000; letter-spacing: -0.5px;">' + escapeHtml(name || "UNNAMED") + '</div>';
         html += '</div>';
+        html += '<div style="width: 25%; background: #000; display: flex; justify-content: center; align-items: center;">';
+        html += '<div style="font-size: 10px; font-weight: 900; color: #fff; letter-spacing: 1px;">INFO</div>';
+        html += '</div>';
+        html += '</div>';
         
-        // ROW 3: Genetics | INFO (35% height)
-        html += '<div style="display: flex; height: 35%;">';
+        // ROW 3: Genetics (~55%) | Year Born + Breeder (~45%) - 38% height
+        html += '<div style="display: flex; height: 38%;">';
         
-        // Left: Genetics (54%)
-        html += '<div style="width: 54%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 2px solid #000;">';
+        // Left: Genetics
+        html += '<div style="width: 55%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 2px solid #000;">';
         html += '<div style="font-size: 9px; font-weight: 500; line-height: 1.2; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
         html += '</div>';
         
-        // Right: INFO sidebar (46%)
-        html += '<div style="width: 46%; background: #000; display: flex; flex-direction: column;">';
-        
-        // INFO header
-        html += '<div style="background: #000; color: #fff; padding: 1px 0; text-align: center; height: 22%;">';
-        html += '<div style="font-size: 10px; font-weight: 900; letter-spacing: 1px;">INFO</div>';
-        html += '</div>';
+        // Right: Info boxes
+        html += '<div style="width: 45%; background: #000; display: flex; flex-direction: column; padding: 3px; gap: 2px;">';
         
         // Year Born box
-        html += '<div style="background: #fff; margin: 1px 3px; padding: 1px; text-align: center; height: 34%; display: flex; flex-direction: column; justify-content: center; border: 1px solid #000;">';
+        html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
         html += '<div style="font-size: 6px; font-weight: 800; color: #000;">YEAR BORN:</div>';
-        html += '<div style="font-size: 12px; font-weight: 700; color: #000;">' + (yearBorn || "--") + '</div>';
+        html += '<div style="font-size: 14px; font-weight: 700; color: #000;">' + (yearBorn || "--") + '</div>';
         html += '</div>';
         
         // Breeder box
-        html += '<div style="background: #fff; margin: 1px 3px 3px 3px; padding: 1px; text-align: center; height: 34%; display: flex; flex-direction: column; justify-content: center; border: 1px solid #000;">';
+        html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
         html += '<div style="font-size: 6px; font-weight: 800; color: #000;">BREEDER:</div>';
         html += '<div style="font-size: 7px; font-weight: 600; color: #000; line-height: 1.1;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
         html += '</div>';
