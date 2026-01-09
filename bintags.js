@@ -1,13 +1,13 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.34
+ * Version: 2.12.35
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.35: Print CSS fixes - !important margins, overflow:visible, -webkit-print-color-adjust
  * - 2.12.34: Reduced inner tag height to 1.80in to prevent bottom border cutoff
  * - 2.12.33: Increased genetics font from 7pt to 9pt in HTML print
- * - 2.12.32: Added 0.15in bleed margin - tag is now 3.08x1.83in centered on 3.38x2.13in card
- * - 2.12.31: New buildBinTagForPrint with inch dimensions
+ * - 2.12.32: Added 0.15in bleed margin - tag centered on card
  * - 2.12.23: Complete rewrite - Norwester font preload, uppercase name
  */
 
@@ -456,17 +456,18 @@ function printBinTagsHTML(animals, businessName, logoUrl) {
   html += '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">';
   html += '<style>';
   
-  // Page setup
-  html += '@page { size: 3.38in 2.13in; margin: 0; }';
+  // Page setup - be explicit about no margins anywhere
+  html += '@page { size: 3.38in 2.13in; margin: 0 !important; padding: 0 !important; }';
   html += '* { box-sizing: border-box; margin: 0; padding: 0; }';
-  html += 'html, body { margin: 0; padding: 0; }';
-  html += '.bin-tag-page { width: 3.38in; height: 2.13in; page-break-after: always; }';
+  html += 'html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: visible; }';
+  html += '.bin-tag-page { width: 3.38in; height: 2.13in; page-break-after: always; overflow: visible; }';
   html += '.bin-tag-page:last-child { page-break-after: avoid; }';
   
   // Print media query
   html += '@media print {';
-  html += '  html, body { margin: 0; padding: 0; }';
-  html += '  .bin-tag-page { width: 3.38in; height: 2.13in; }';
+  html += '  @page { margin: 0 !important; }';
+  html += '  html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }';
+  html += '  .bin-tag-page { width: 3.38in; height: 2.13in; overflow: visible; page-break-inside: avoid; }';
   html += '}';
   
   html += '</style></head><body>';
