@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.15
+  Version: 2.11.16
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.16: Added Balance Due alert on Dashboard
+             - New alert shows count of On Hold/Sold animals where TOTAL PAID < SOLD PRICE
+             - All alert cards already link to their respective tables (verified)
   - 2.11.15: Added Pairings view and updated Dashboard activity section
-             - New Pairings tab shows all Paired and Lock activities for current year
-             - Pairings stats cards: Paired (year), Locked (year)
-             - Dashboard Activity section renamed to "This Month" with monthly counts
-  - 2.11.14: Removed all corrupted Unicode characters from file
              - Activity table: Feedings, Refusals, Sheds, Ovulations (this month)
              - Dashboard: Took Meal, Refused Meal, Paired, Locked, Ovulation, Laid (season totals)
   - 2.11.12: Quick Activity save button now shows "Saving..." while saving
@@ -700,7 +699,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.15";
+    var VERSION = "2.11.16";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1393,7 +1392,7 @@
       // Alerts Section (only show if there are alerts)
       var hasAlerts = stats.overdueClutches > 0 || stats.clutchesDueSoon > 0 || stats.unshipped > 0 || 
                       stats.needsSexing > 0 || stats.readyToList > 0 ||
-                      stats.unpaidDeposits > 0 || stats.shippingSoon > 0;
+                      stats.unpaidDeposits > 0 || stats.shippingSoon > 0 || stats.unpaidBalance > 0;
       
       if (hasAlerts) {
         html += '<div class="mb-8">';
@@ -1459,6 +1458,19 @@
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Unpaid Deposits</div>';
           html += '<div class="text-2xl font-black text-gray-900">' + stats.unpaidDeposits + '</div>';
+          html += '</div>';
+          html += '';
+          html += '</div>';
+          html += '</div>';
+        }
+        
+        // Balance Due (MEDIUM) - Sold Price > Total Paid
+        if (stats.unpaidBalance > 0) {
+          html += '<div onclick="navigateTo(\'sales\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div class="flex items-center justify-between">';
+          html += '<div>';
+          html += '<div class="text-xs uppercase tracking-wider text-gray-700">Balance Due</div>';
+          html += '<div class="text-2xl font-black text-gray-900">' + stats.unpaidBalance + '</div>';
           html += '</div>';
           html += '';
           html += '</div>';
@@ -1615,7 +1627,8 @@
         needsSexing: 0,
         readyToList: 0,
         unpaidDeposits: 0,
-        shippingSoon: 0
+        shippingSoon: 0,
+        unpaidBalance: 0
       };
       
       var lastYear = year - 1;
@@ -1652,10 +1665,16 @@
         // Sales
         if (st === "on hold" || st === "hold") {
           s.onHold++;
-          // Check for unpaid deposits
+          // Check for unpaid deposits (old method)
           if (paymentStatus === "deposit") s.unpaidDeposits++;
           // Check shipping soon
           if (shipDate && shipDate >= today && shipDate <= threeDaysOut) s.shippingSoon++;
+          // Check for unpaid balance (sold price vs total paid)
+          var soldPrice = parseFloat(r["SOLD PRICE"]) || 0;
+          var totalPaid = parseFloat(r["TOTAL PAID"]) || 0;
+          if (soldPrice > 0 && totalPaid < soldPrice) {
+            s.unpaidBalance++;
+          }
         }
         if (st === "sold") {
           var soldYear = getYearFromDate(r["DATE SOLD"]);
@@ -1676,6 +1695,11 @@
           }
           // Check shipping soon for sold items too
           if (shipDate && shipDate >= today && shipDate <= threeDaysOut) s.shippingSoon++;
+          // Check for unpaid balance (sold price vs total paid)
+          var totalPaid = parseFloat(r["TOTAL PAID"]) || 0;
+          if (price > 0 && totalPaid < price) {
+            s.unpaidBalance++;
+          }
         }
       });
 
