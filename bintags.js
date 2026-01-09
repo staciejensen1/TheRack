@@ -1,14 +1,13 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.30
+ * Version: 2.12.32
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.32: Added 0.15in bleed margin - tag is now 3.08x1.83in centered on 3.38x2.13in card
+ * - 2.12.31: New buildBinTagForPrint with inch dimensions, PDF uses explicit width/height in html2canvas
  * - 2.12.30: Print CSS fixes - proper @media print rules, align-items:flex-start, global box-sizing
  * - 2.12.29: Added box-sizing:border-box to all elements in buildBinTagPreview to fix overflow
- * - 2.12.28: PDF and HTML Print now use buildBinTagPreview directly (single source of truth)
- * - 2.12.27: PDF font sizes matched to preview
- * - 2.12.26: PDF fixes - waitForFontsAndImages before capture
  * - 2.12.23: Complete rewrite - Norwester font preload, uppercase name, 32px top padding for Sex+ID
  */
 
@@ -327,6 +326,97 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   return html;
 }
 
+// Smaller version for PDF - 296x176 pixels (3.08in x 1.83in with bleed margins)
+function buildBinTagPreviewSmall(animal, businessName, logoUrl) {
+  var id = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
+  var name = (animal["ANIMAL NAME"] || "UNNAMED").toUpperCase();
+  var sex = (animal["SEX"] || "").toUpperCase();
+  var sexDisplay = sex.startsWith("M") ? "MALE" : (sex.startsWith("F") ? "FEMALE" : "");
+  var genetics = animal["GENETIC SUMMARY"] || "No genetics listed";
+  var dob = animal["DATE OF BIRTH"] || "";
+  var breederSource = (animal["BREEDER SOURCE"] || "--").toUpperCase();
+  
+  var yearBorn = "--";
+  if (dob) {
+    var d = parseDate(dob);
+    if (d) yearBorn = String(d.getFullYear()).slice(-2);
+  }
+  
+  var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
+  
+  // 296x176 pixels = 3.08in x 1.83in at 96dpi
+  var html = '<div style="width:296px; height:176px; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; overflow:hidden; box-sizing:border-box;">';
+  
+  // ROW 1 (47% = 82.72px)
+  html += '<div style="display:flex; height:47%; border-bottom:1px solid #000; box-sizing:border-box;">';
+  
+  // Logo (25%)
+  html += '<div style="width:25%; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  if (logoUrl) {
+    html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width:90%; max-height:90%; object-fit:contain;">';
+  } else {
+    html += '<div style="font-family:Norwester,sans-serif; font-size:8px; color:#fff; text-align:center;">' + escapeHtml(businessName).toUpperCase() + '</div>';
+  }
+  html += '</div>';
+  
+  // Sex + ID (45%)
+  html += '<div style="width:45%; background:#fff; border-left:1px solid #000; border-right:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:20px; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:10px; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '</div>';
+  
+  // QR (30%)
+  html += '<div style="width:30%; background:#fff; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<img src="' + qrUrl + '" style="width:70px; height:70px; object-fit:contain;">';
+  html += '</div>';
+  
+  html += '</div>';
+  
+  // ROW 2 (15% = 26.4px)
+  html += '<div style="display:flex; height:15%; border-bottom:1px solid #000; box-sizing:border-box;">';
+  
+  // Name (70%)
+  html += '<div style="width:70%; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:18px; color:#000; letter-spacing:1px;">' + escapeHtml(name) + '</div>';
+  html += '</div>';
+  
+  // INFO (30%)
+  html += '<div style="width:30%; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:10px; color:#fff; letter-spacing:2px;">INFO</div>';
+  html += '</div>';
+  
+  html += '</div>';
+  
+  // ROW 3 (38% = 66.88px)
+  html += '<div style="display:flex; height:38%; box-sizing:border-box;">';
+  
+  // Genetics (70%)
+  html += '<div style="width:70%; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; padding:4px; text-align:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Inter,sans-serif; font-size:9px; font-weight:500; line-height:1.25; color:#000;">' + escapeHtml(genetics) + '</div>';
+  html += '</div>';
+  
+  // Year + Breeder (30%)
+  html += '<div style="width:30%; background:#fff; display:flex; flex-direction:column; box-sizing:border-box;">';
+  
+  html += '<div style="flex:1; border-bottom:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Inter,sans-serif; font-size:6px; font-weight:700; color:#000;">YEAR BORN:</div>';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:14px; color:#000;">' + yearBorn + '</div>';
+  html += '</div>';
+  
+  html += '<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Inter,sans-serif; font-size:6px; font-weight:700; color:#000;">BREEDER:</div>';
+  html += '<div style="font-family:Inter,sans-serif; font-size:7px; font-weight:600; color:#000;">' + escapeHtml(breederSource) + '</div>';
+  html += '</div>';
+  
+  html += '</div>';
+  
+  html += '</div>';
+  
+  html += '</div>';
+  
+  return html;
+}
+
 
 // ============ PRINT BIN TAGS (HTML) ============
 function downloadBinTagsPDF() {
@@ -366,35 +456,24 @@ function printBinTagsHTML(animals, businessName, logoUrl) {
   html += '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">';
   html += '<style>';
   
-  // Page setup - no margins, exact card size
+  // Page setup
   html += '@page { size: 3.38in 2.13in; margin: 0; }';
-  
-  // Reset and base styles
-  html += '* { box-sizing: border-box; }';
-  html += 'html, body { margin: 0; padding: 0; width: 3.38in; height: 2.13in; }';
-  
-  // Each tag wrapper fills the page exactly
-  html += '.bin-tag-page { width: 3.38in; height: 2.13in; padding: 0; margin: 0; page-break-after: always; display: block; }';
+  html += '* { box-sizing: border-box; margin: 0; padding: 0; }';
+  html += 'html, body { margin: 0; padding: 0; }';
+  html += '.bin-tag-page { width: 3.38in; height: 2.13in; page-break-after: always; }';
   html += '.bin-tag-page:last-child { page-break-after: avoid; }';
   
-  // The inner content scales to fill - 324px at 96dpi = 3.375in, very close to 3.38in
-  // Use a wrapper to ensure it fills the page
-  html += '.bin-tag-scale { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; }';
-  
-  // Print-specific overrides
+  // Print media query
   html += '@media print {';
-  html += '  html, body { width: 3.38in; height: 2.13in; }';
-  html += '  .bin-tag-page { width: 3.38in; height: 2.13in; overflow: hidden; }';
-  html += '  .bin-tag-scale { align-items: flex-start; justify-content: center; }';
+  html += '  html, body { margin: 0; padding: 0; }';
+  html += '  .bin-tag-page { width: 3.38in; height: 2.13in; }';
   html += '}';
   
   html += '</style></head><body>';
   
   animals.forEach(function(animal) {
     html += '<div class="bin-tag-page">';
-    html += '<div class="bin-tag-scale">';
-    html += buildBinTagPreview(animal, businessName, logoUrl);
-    html += '</div>';
+    html += buildBinTagForPrint(animal, businessName, logoUrl);
     html += '</div>';
   });
   
@@ -406,6 +485,106 @@ function printBinTagsHTML(animals, businessName, logoUrl) {
   setTimeout(function() {
     printWindow.print();
   }, 1000);
+}
+
+// Dedicated function for print - uses inch dimensions
+// Card stock: 3.38in x 2.13in
+// Bleed margin: 0.15in on each side
+// Actual tag: 3.08in x 1.83in
+function buildBinTagForPrint(animal, businessName, logoUrl) {
+  var id = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
+  var name = (animal["ANIMAL NAME"] || "UNNAMED").toUpperCase();
+  var sex = (animal["SEX"] || "").toUpperCase();
+  var sexDisplay = sex.startsWith("M") ? "MALE" : (sex.startsWith("F") ? "FEMALE" : "");
+  var genetics = animal["GENETIC SUMMARY"] || "No genetics listed";
+  var dob = animal["DATE OF BIRTH"] || "";
+  var breederSource = (animal["BREEDER SOURCE"] || "--").toUpperCase();
+  
+  var yearBorn = "--";
+  if (dob) {
+    var d = parseDate(dob);
+    if (d) yearBorn = String(d.getFullYear()).slice(-2);
+  }
+  
+  var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
+  
+  // Outer wrapper centers the tag on the card stock
+  var html = '<div style="width:3.38in; height:2.13in; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  
+  // Actual tag: 3.08in x 1.83in (with 0.15in bleed margin)
+  html += '<div style="width:3.08in; height:1.83in; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; box-sizing:border-box;">';
+  
+  // ROW 1: 47% of 1.83in = 0.86in
+  html += '<div style="display:flex; height:0.86in; border-bottom:1px solid #000; box-sizing:border-box;">';
+  
+  // Logo (25% = 0.77in)
+  html += '<div style="width:0.77in; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  if (logoUrl) {
+    html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width:90%; max-height:90%; object-fit:contain;">';
+  } else {
+    html += '<div style="font-family:Norwester,sans-serif; font-size:7pt; color:#fff; text-align:center;">' + escapeHtml(businessName).toUpperCase() + '</div>';
+  }
+  html += '</div>';
+  
+  // Sex + ID (45% = 1.386in)
+  html += '<div style="width:1.386in; background:#fff; border-left:1px solid #000; border-right:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:16pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '</div>';
+  
+  // QR (30% = 0.924in)
+  html += '<div style="width:0.924in; background:#fff; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<img src="' + qrUrl + '" style="width:0.75in; height:0.75in; object-fit:contain;">';
+  html += '</div>';
+  
+  html += '</div>';
+  
+  // ROW 2: 15% of 1.83in = 0.27in
+  html += '<div style="display:flex; height:0.27in; border-bottom:1px solid #000; box-sizing:border-box;">';
+  
+  // Name (70% = 2.156in)
+  html += '<div style="width:2.156in; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:14pt; color:#000; letter-spacing:1px;">' + escapeHtml(name) + '</div>';
+  html += '</div>';
+  
+  // INFO (30% = 0.924in)
+  html += '<div style="width:0.924in; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#fff; letter-spacing:2px;">INFO</div>';
+  html += '</div>';
+  
+  html += '</div>';
+  
+  // ROW 3: 38% of 1.83in = 0.70in
+  html += '<div style="display:flex; height:0.70in; box-sizing:border-box;">';
+  
+  // Genetics (70% = 2.156in)
+  html += '<div style="width:2.156in; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; padding:4pt; text-align:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Inter,sans-serif; font-size:7pt; font-weight:500; line-height:1.3; color:#000;">' + escapeHtml(genetics) + '</div>';
+  html += '</div>';
+  
+  // Year + Breeder (30% = 0.924in)
+  html += '<div style="width:0.924in; background:#fff; display:flex; flex-direction:column; box-sizing:border-box;">';
+  
+  // Year Born
+  html += '<div style="flex:1; border-bottom:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Inter,sans-serif; font-size:5pt; font-weight:700; color:#000;">YEAR BORN:</div>';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:11pt; color:#000;">' + yearBorn + '</div>';
+  html += '</div>';
+  
+  // Breeder
+  html += '<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<div style="font-family:Inter,sans-serif; font-size:5pt; font-weight:700; color:#000;">BREEDER:</div>';
+  html += '<div style="font-family:Inter,sans-serif; font-size:5pt; font-weight:600; color:#000;">' + escapeHtml(breederSource) + '</div>';
+  html += '</div>';
+  
+  html += '</div>';
+  
+  html += '</div>';
+  
+  html += '</div>'; // Close inner tag
+  html += '</div>'; // Close outer wrapper
+  
+  return html;
 }
 
 function buildBinTagPrint(animal, businessName, logoUrl) {
@@ -552,13 +731,20 @@ function downloadBinTagsPDFFile() {
 }
 
 function generateBinTagPDF(animals, businessName, logoBase64, btn) {
-  // PDF dimensions in points (72 points = 1 inch)
-  var pdfW = 3.38 * 72;  // 243.36pt
-  var pdfH = 2.13 * 72;  // 153.36pt
+  // Card stock dimensions in points (72 points = 1 inch)
+  var cardW = 3.38 * 72;  // 243.36pt
+  var cardH = 2.13 * 72;  // 153.36pt
   
-  // Preview dimensions in pixels - this is what we render
-  var previewW = 324;
-  var previewH = 204;
+  // Bleed margin: 0.15in on each side
+  var bleed = 0.15 * 72;  // 10.8pt
+  
+  // Actual tag dimensions (card minus bleed on all sides)
+  var tagW = 3.08 * 72;   // 221.76pt
+  var tagH = 1.83 * 72;   // 131.76pt
+  
+  // Preview renders at these pixel dimensions (matching the 3.08 x 1.83 ratio)
+  var previewW = 296;  // ~3.08in at 96dpi
+  var previewH = 176;  // ~1.83in at 96dpi
   
   // Create hidden container with fonts preloaded
   var container = document.createElement('div');
@@ -569,7 +755,7 @@ function generateBinTagPDF(animals, businessName, logoBase64, btn) {
   var doc = new jspdf.jsPDF({
     orientation: 'landscape',
     unit: 'pt',
-    format: [pdfH, pdfW]
+    format: [cardH, cardW]
   });
   
   var total = animals.length;
@@ -612,28 +798,37 @@ function generateBinTagPDF(animals, businessName, logoBase64, btn) {
     var animal = animals[current];
     setStatus("Rendering " + (current + 1) + " of " + total + "...");
     
-    // Use the EXACT same buildBinTagPreview function - just swap logo if we have base64
+    // Create wrapper with explicit dimensions for the smaller tag (with bleed margin)
     var tagDiv = document.createElement('div');
-    var previewHtml = buildBinTagPreview(animal, businessName, logoBase64 || '');
+    tagDiv.style.cssText = 'width:' + previewW + 'px; height:' + previewH + 'px; position:relative; overflow:visible;';
+    var previewHtml = buildBinTagPreviewSmall(animal, businessName, logoBase64 || '');
     tagDiv.innerHTML = previewHtml;
     container.appendChild(tagDiv);
     
     // Wait for fonts and images before capturing
     setTimeout(function() {
       waitForFontsAndImages(tagDiv).then(function() {
-        return html2canvas(tagDiv.firstChild, {
+        // Capture the inner element (the actual bin tag)
+        var targetEl = tagDiv.firstChild;
+        return html2canvas(targetEl, {
+          width: previewW,
+          height: previewH,
           scale: 3,
           useCORS: true,
           allowTaint: true,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          logging: false,
+          windowWidth: previewW,
+          windowHeight: previewH
         });
       }).then(function(canvas) {
         if (current > 0) {
-          doc.addPage([pdfH, pdfW], 'landscape');
+          doc.addPage([cardH, cardW], 'landscape');
         }
         
         var imgData = canvas.toDataURL('image/png');
-        doc.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+        // Center the tag on the card with bleed margins
+        doc.addImage(imgData, 'PNG', bleed, bleed, tagW, tagH);
         
         container.removeChild(tagDiv);
         current++;
