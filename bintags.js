@@ -1,12 +1,12 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.38
+ * Version: 2.12.39
  * Last Updated: 2026-01-09
  * 
  * Changelog:
- * - 2.12.38: Reduced tag to 1.70in, rows to 0.78/0.26/0.60, added overflow:hidden
- * - 2.12.37: Absolute positioning, reduced tag to 1.75in height
- * - 2.12.35: Print CSS fixes
+ * - 2.12.39: Larger tag 3.18x1.93in, 0.10in bleed, explicit row 3 heights
+ * - 2.12.38: Reduced tag to 1.70in, rows to 0.78/0.26/0.60
+ * - 2.12.37: Absolute positioning
  * - 2.12.33: Increased genetics font to 9pt
  * - 2.12.23: Complete rewrite - Norwester font
  */
@@ -512,14 +512,14 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   // Outer wrapper - use absolute positioning to ensure tag fits
   var html = '<div style="width:3.38in; height:2.13in; position:relative; box-sizing:border-box;">';
   
-  // Actual tag: 3.08in x 1.70in - smaller to account for border rendering
-  html += '<div style="position:absolute; left:0.15in; top:0.15in; width:3.08in; height:1.70in; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; box-sizing:border-box; overflow:hidden;">';
+  // Actual tag: 3.18in x 1.93in - tighter bleed margin (0.10in each side)
+  html += '<div style="position:absolute; left:0.10in; top:0.10in; width:3.18in; height:1.93in; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; box-sizing:border-box; overflow:hidden;">';
   
-  // ROW 1: 0.78in (borders eat into height)
-  html += '<div style="display:flex; height:0.78in; border-bottom:1px solid #000; box-sizing:border-box;">';
+  // ROW 1: 0.90in
+  html += '<div style="display:flex; height:0.90in; border-bottom:1px solid #000; box-sizing:border-box;">';
   
-  // Logo (25% = 0.77in)
-  html += '<div style="width:0.77in; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  // Logo (25% = 0.795in)
+  html += '<div style="width:0.795in; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
   if (logoUrl) {
     html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width:90%; max-height:90%; object-fit:contain;">';
   } else {
@@ -527,53 +527,53 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   }
   html += '</div>';
   
-  // Sex + ID (45% = 1.386in)
-  html += '<div style="width:1.386in; background:#fff; border-left:1px solid #000; border-right:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
+  // Sex + ID (45% = 1.431in)
+  html += '<div style="width:1.431in; background:#fff; border-left:1px solid #000; border-right:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:16pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
   html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
-  // QR (30% = 0.924in)
-  html += '<div style="width:0.924in; background:#fff; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
-  html += '<img src="' + qrUrl + '" style="width:0.75in; height:0.75in; object-fit:contain;">';
+  // QR (30% = 0.954in)
+  html += '<div style="width:0.954in; background:#fff; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  html += '<img src="' + qrUrl + '" style="width:0.80in; height:0.80in; object-fit:contain;">';
   html += '</div>';
   
   html += '</div>';
   
-  // ROW 2: 0.26in
-  html += '<div style="display:flex; height:0.26in; border-bottom:1px solid #000; box-sizing:border-box;">';
+  // ROW 2: 0.30in
+  html += '<div style="display:flex; height:0.30in; border-bottom:1px solid #000; box-sizing:border-box;">';
   
-  // Name (70% = 2.156in)
-  html += '<div style="width:2.156in; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  // Name (70% = 2.226in)
+  html += '<div style="width:2.226in; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:14pt; color:#000; letter-spacing:1px;">' + escapeHtml(name) + '</div>';
   html += '</div>';
   
-  // INFO (30% = 0.924in)
-  html += '<div style="width:0.924in; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
+  // INFO (30% = 0.954in)
+  html += '<div style="width:0.954in; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#fff; letter-spacing:2px;">INFO</div>';
   html += '</div>';
   
   html += '</div>';
   
-  // ROW 3: 0.60in (remaining height)
-  html += '<div style="display:flex; height:0.60in; box-sizing:border-box;">';
+  // ROW 3: 0.70in (remaining height, minus borders)
+  html += '<div style="display:flex; height:0.70in; box-sizing:border-box;">';
   
-  // Genetics (70% = 2.156in)
-  html += '<div style="width:2.156in; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; padding:4pt; text-align:center; box-sizing:border-box;">';
+  // Genetics (70% = 2.226in)
+  html += '<div style="width:2.226in; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; padding:4pt; text-align:center; box-sizing:border-box;">';
   html += '<div style="font-family:Inter,sans-serif; font-size:9pt; font-weight:500; line-height:1.3; color:#000;">' + escapeHtml(genetics) + '</div>';
   html += '</div>';
   
-  // Year + Breeder (30% = 0.924in)
-  html += '<div style="width:0.924in; background:#fff; display:flex; flex-direction:column; box-sizing:border-box;">';
+  // Year + Breeder (30% = 0.954in) - use explicit heights
+  html += '<div style="width:0.954in; height:0.70in; background:#fff; display:flex; flex-direction:column; box-sizing:border-box;">';
   
-  // Year Born
-  html += '<div style="flex:1; border-bottom:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
+  // Year Born (50% = 0.35in)
+  html += '<div style="height:0.35in; border-bottom:1px solid #000; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<div style="font-family:Inter,sans-serif; font-size:5pt; font-weight:700; color:#000;">YEAR BORN:</div>';
   html += '<div style="font-family:Norwester,sans-serif; font-size:11pt; color:#000;">' + yearBorn + '</div>';
   html += '</div>';
   
-  // Breeder
-  html += '<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
+  // Breeder (50% = 0.35in)
+  html += '<div style="height:0.35in; display:flex; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;">';
   html += '<div style="font-family:Inter,sans-serif; font-size:5pt; font-weight:700; color:#000;">BREEDER:</div>';
   html += '<div style="font-family:Inter,sans-serif; font-size:5pt; font-weight:600; color:#000;">' + escapeHtml(breederSource) + '</div>';
   html += '</div>';
