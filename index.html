@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.19
+  Version: 2.11.20
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.20: Dashboard alert cards now filter to show only matching items
+             - Overdue Clutches: Shows only incubating clutches past est. hatch date
+             - Due Within 7 Days: Shows only clutches due in next 7 days
+             - Unshipped Sales: Shows only sold items needing shipping
+             - Shipping Soon: Shows items shipping within 3 days
+             - Unpaid Deposits: Shows only on-hold items with deposit status
+             - Balance Due: Shows items where total paid < sold price
+             - Needs Sexing: Shows unlisted hatchlings with unknown sex
+             - Ready to List: Shows unlisted hatchlings 30+ days old
+             - Dark filter badge shows active filter with X to clear
   - 2.11.19: Redesigned Add Activity modal
-             - Cleaner step-by-step layout
-             - Type-to-search animal selector with visual selection
-             - Activity types organized by category (Feeding, General, Breeding)
-             - Visual button selection for activity type
-             - Conditional value fields based on activity type
-  - 2.11.18: Sales table improvements
              - Activity table: Feedings, Refusals, Sheds, Ovulations (this month)
              - Dashboard: Took Meal, Refused Meal, Paired, Locked, Ovulation, Laid (season totals)
   - 2.11.12: Quick Activity save button now shows "Saving..." while saving
@@ -397,9 +401,18 @@
               <option value="On Hold">On Hold</option>
               <option value="Sold">Sold</option>
             </select>
-            <span id="balanceDueFilterDisplay" class="hidden px-3 py-1 bg-red-100 border border-red-300 rounded-full text-sm flex items-center gap-2 text-red-700">
-              <span>Balance Due Only</span>
-              <button onclick="clearBalanceDueFilter()" class="text-red-500 hover:text-red-700 font-bold">&times;</button>
+          </div>
+          
+          <!-- Clutches Filter Bar -->
+          <div id="clutchesFilterBar" class="hidden mb-4 flex flex-wrap gap-2 items-center">
+            <input type="text" id="clutchSearchInput" placeholder="Search clutch ID..." oninput="applyFilter('search', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white w-48">
+          </div>
+          
+          <!-- Alert Filter Display (shown on any table when filtering by alert) -->
+          <div id="alertFilterDisplay" class="hidden mb-4">
+            <span class="px-3 py-2 bg-gray-800 text-white rounded-full text-sm flex items-center gap-2 inline-flex">
+              <span id="alertFilterLabel">Filter Active</span>
+              <button onclick="clearAlertFilter()" class="text-gray-300 hover:text-white font-bold">&times;</button>
             </span>
           </div>
 
@@ -706,7 +719,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.19";
+    var VERSION = "2.11.20";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1462,7 +1475,7 @@
         
         //  Overdue Clutches (DARKEST - most urgent)
         if (stats.overdueClutches > 0) {
-          html += '<div onclick="navigateTo(\'clutches\');" class="cursor-pointer bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-900 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="filterByAlert(\'overdueClutches\');" class="cursor-pointer bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-900 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-300">Overdue Clutches</div>';
@@ -1475,7 +1488,7 @@
         
         //  Clutches Due Soon (DARK)
         if (stats.clutchesDueSoon > 0) {
-          html += '<div onclick="navigateTo(\'clutches\');" class="cursor-pointer bg-gradient-to-br from-gray-500 to-gray-600 border-2 border-gray-700 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="filterByAlert(\'clutchesDueSoon\');" class="cursor-pointer bg-gradient-to-br from-gray-500 to-gray-600 border-2 border-gray-700 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-200">Due Within 7 Days</div>';
@@ -1488,7 +1501,7 @@
         
         //  Unshipped Sales (MEDIUM-DARK)
         if (stats.unshipped > 0) {
-          html += '<div onclick="navigateTo(\'sales\');" class="cursor-pointer bg-gradient-to-br from-gray-400 to-gray-500 border-2 border-gray-600 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="filterByAlert(\'unshipped\');" class="cursor-pointer bg-gradient-to-br from-gray-400 to-gray-500 border-2 border-gray-600 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-100">Unshipped Sales</div>';
@@ -1501,7 +1514,7 @@
         
         //  Shipping Soon (MEDIUM)
         if (stats.shippingSoon > 0) {
-          html += '<div onclick="navigateTo(\'sales\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="filterByAlert(\'shippingSoon\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Shipping in 3 Days</div>';
@@ -1514,7 +1527,7 @@
         
         //  Unpaid Deposits (MEDIUM)
         if (stats.unpaidDeposits > 0) {
-          html += '<div onclick="navigateTo(\'sales\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="filterByAlert(\'unpaidDeposits\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Unpaid Deposits</div>';
@@ -1527,7 +1540,7 @@
         
         // Balance Due (MEDIUM) - Sold Price > Total Paid
         if (stats.unpaidBalance > 0) {
-          html += '<div onclick="filterByBalanceDue();" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="filterByAlert(\'balanceDue\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Balance Due</div>';
@@ -1540,7 +1553,7 @@
         
         // Needs Sexing (LIGHT)
         if (stats.needsSexing > 0) {
-          html += '<div onclick="navigateTo(\'hatchlings\');" class="cursor-pointer bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-gray-400 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="filterByAlert(\'needsSexing\');" class="cursor-pointer bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-gray-400 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-600">Needs Sexing</div>';
@@ -1553,7 +1566,7 @@
         
         //  Ready to List (LIGHTEST)
         if (stats.readyToList > 0) {
-          html += '<div onclick="navigateTo(\'hatchlings\');" class="cursor-pointer bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="filterByAlert(\'readyToList\');" class="cursor-pointer bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-600">Ready to List</div>';
@@ -2002,25 +2015,33 @@
         // Sync search input
         var salesSearchInput = document.getElementById("salesSearchInput");
         if (salesSearchInput) salesSearchInput.value = state.filters.search || "";
-        // Show/hide balance due filter indicator
-        var balanceDueDisplay = document.getElementById("balanceDueFilterDisplay");
-        if (balanceDueDisplay) {
-          if (state.filters.balanceDue) {
-            balanceDueDisplay.classList.remove("hidden");
-          } else {
-            balanceDueDisplay.classList.add("hidden");
-          }
-        }
-      } else if (state.activeTab === "clutches" || state.activeTab === "activity") {
-        // Show just search for clutches and activity
+      } else if (state.activeTab === "clutches") {
+        filterBar.classList.add("hidden");
+        salesFilterBar.classList.add("hidden");
+        var clutchesFilterBar = document.getElementById("clutchesFilterBar");
+        if (clutchesFilterBar) clutchesFilterBar.classList.remove("hidden");
+        var clutchSearchInput = document.getElementById("clutchSearchInput");
+        if (clutchSearchInput) clutchSearchInput.value = state.filters.search || "";
+      } else if (state.activeTab === "activity") {
+        // Show just search for activity
         filterBar.classList.remove("hidden");
         salesFilterBar.classList.add("hidden");
-        // Hide other filters, just show search
         var searchInput = document.getElementById("searchInput");
         if (searchInput) searchInput.value = state.filters.search || "";
       } else {
         filterBar.classList.add("hidden");
         salesFilterBar.classList.add("hidden");
+      }
+      
+      // Show alert filter badge if active
+      var alertFilterDisplay = document.getElementById("alertFilterDisplay");
+      var alertFilterLabel = document.getElementById("alertFilterLabel");
+      if (alertFilterDisplay && state.filters.alertFilter) {
+        var label = ALERT_FILTER_LABELS[state.filters.alertFilter] || state.filters.alertFilter;
+        alertFilterLabel.textContent = label;
+        alertFilterDisplay.classList.remove("hidden");
+      } else if (alertFilterDisplay) {
+        alertFilterDisplay.classList.add("hidden");
       }
 
       // Header
@@ -2416,22 +2437,47 @@
       renderTable();
     }
     
-    function filterByBalanceDue() {
-      state.filters.balanceDue = true;
-      navigateTo('sales');
+    // Alert filter labels for display
+    var ALERT_FILTER_LABELS = {
+      overdueClutches: "Overdue Clutches",
+      clutchesDueSoon: "Due Within 7 Days",
+      unshipped: "Unshipped Sales",
+      shippingSoon: "Shipping Soon",
+      unpaidDeposits: "Unpaid Deposits",
+      balanceDue: "Balance Due",
+      needsSexing: "Needs Sexing",
+      readyToList: "Ready to List"
+    };
+    
+    // Alert filter destinations
+    var ALERT_FILTER_TABS = {
+      overdueClutches: "clutches",
+      clutchesDueSoon: "clutches",
+      unshipped: "sales",
+      shippingSoon: "sales",
+      unpaidDeposits: "sales",
+      balanceDue: "sales",
+      needsSexing: "hatchlings",
+      readyToList: "hatchlings"
+    };
+    
+    function filterByAlert(alertType) {
+      state.filters.alertFilter = alertType;
+      var targetTab = ALERT_FILTER_TABS[alertType] || "collection";
+      navigateTo(targetTab);
       updateClearFiltersVisibility();
     }
     
-    function clearBalanceDueFilter() {
-      state.filters.balanceDue = false;
-      var balanceDueDisplay = document.getElementById("balanceDueFilterDisplay");
-      if (balanceDueDisplay) balanceDueDisplay.classList.add("hidden");
+    function clearAlertFilter() {
+      state.filters.alertFilter = "";
+      var alertFilterDisplay = document.getElementById("alertFilterDisplay");
+      if (alertFilterDisplay) alertFilterDisplay.classList.add("hidden");
       updateClearFiltersVisibility();
       renderTable();
     }
     
     function clearAllFilters() {
-      state.filters = { sex: "", status: "", species: "", gene: "", salesYear: "", salesStatus: "", search: "", balanceDue: false };
+      state.filters = { sex: "", status: "", species: "", gene: "", salesYear: "", salesStatus: "", search: "", alertFilter: "" };
       document.getElementById("filterSex").value = "";
       document.getElementById("filterStatus").value = "";
       document.getElementById("filterSpecies").value = "";
@@ -2445,14 +2491,14 @@
       if (salesStatusSelect) salesStatusSelect.value = "";
       document.getElementById("geneFilterDisplay").classList.add("hidden");
       document.getElementById("clearFiltersBtn").classList.add("hidden");
-      // Hide balance due filter display if exists
-      var balanceDueDisplay = document.getElementById("balanceDueFilterDisplay");
-      if (balanceDueDisplay) balanceDueDisplay.classList.add("hidden");
+      // Hide all alert filter displays
+      var alertFilterDisplay = document.getElementById("alertFilterDisplay");
+      if (alertFilterDisplay) alertFilterDisplay.classList.add("hidden");
       renderTable();
     }
     
     function updateClearFiltersVisibility() {
-      var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene || state.filters.salesYear || state.filters.salesStatus || state.filters.search || state.filters.balanceDue;
+      var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene || state.filters.salesYear || state.filters.salesStatus || state.filters.search || state.filters.alertFilter;
       document.getElementById("clearFiltersBtn").classList.toggle("hidden", !hasFilters);
     }
     
@@ -2689,6 +2735,15 @@
       var sheetKey = getSheetKey(state.activeTab);
       var rows = state.data[sheetKey] || [];
       var searchTerm = (state.filters.search || "").toLowerCase().trim();
+      var alertFilter = state.filters.alertFilter || "";
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      var sevenDaysOut = new Date(today);
+      sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
+      var threeDaysOut = new Date(today);
+      threeDaysOut.setDate(threeDaysOut.getDate() + 3);
+      var thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
       return rows.filter(function(r) {
         var st = (r.STATUS || "").toLowerCase().trim();
@@ -2735,7 +2790,27 @@
           return true;
         }
         if (state.activeTab === "clutches") {
-          // Show all clutches (including hatched)
+          // Alert filters for clutches
+          if (alertFilter === "overdueClutches") {
+            var estHatchDate = r["EST. HATCH DATE"] || r["EST HATCH DATE"] || r["ESTIMATED HATCH DATE"] || "";
+            var clutchStatus = (r.STATUS || "").toLowerCase();
+            if (clutchStatus !== "incubating") return false;
+            if (!estHatchDate) return false;
+            var estDate = parseDate(estHatchDate);
+            if (!estDate || estDate >= today) return false;
+            return true;
+          }
+          if (alertFilter === "clutchesDueSoon") {
+            var estHatchDate = r["EST. HATCH DATE"] || r["EST HATCH DATE"] || r["ESTIMATED HATCH DATE"] || "";
+            var clutchStatus = (r.STATUS || "").toLowerCase();
+            if (clutchStatus !== "incubating") return false;
+            if (!estHatchDate) return false;
+            var estDate = parseDate(estHatchDate);
+            if (!estDate) return false;
+            if (estDate < today || estDate > sevenDaysOut) return false;
+            return true;
+          }
+          // Show all clutches (including hatched) when no alert filter
           return true;
         }
         if (state.activeTab === "hatchlings") {
@@ -2743,6 +2818,21 @@
           if (!(st === "listed" || st === "unlisted" || st === "not listed" || st === "for sale")) {
             return false;
           }
+          
+          // Alert filters for hatchlings
+          if (alertFilter === "needsSexing") {
+            var sex = (r.SEX || "").toLowerCase();
+            if (st !== "unlisted" && st !== "not listed") return false;
+            if (sex && sex !== "unknown") return false;
+            return true;
+          }
+          if (alertFilter === "readyToList") {
+            if (st !== "unlisted" && st !== "not listed") return false;
+            var dob = parseDate(r["DATE OF BIRTH"]);
+            if (!dob || dob > thirtyDaysAgo) return false;
+            return true;
+          }
+          
           // Apply sex filter
           if (state.filters.sex && r.SEX !== state.filters.sex) {
             return false;
@@ -2769,14 +2859,34 @@
           if (!(st === "on hold" || st === "hold" || st === "sold")) {
             return false;
           }
-          // Apply balance due filter if set
-          if (state.filters.balanceDue) {
+          
+          // Alert filters for sales
+          if (alertFilter === "balanceDue") {
             var soldPrice = parseFloat(r["SOLD PRICE"]) || 0;
             var totalPaid = parseFloat(r["TOTAL PAID"]) || 0;
-            if (!(soldPrice > 0 && totalPaid < soldPrice)) {
-              return false;
-            }
+            if (!(soldPrice > 0 && totalPaid < soldPrice)) return false;
+            return true;
           }
+          if (alertFilter === "unshipped") {
+            if (st !== "sold") return false;
+            var shipDate = parseDate(r["SHIP DATE"]);
+            if (!shipDate) return true; // No ship date = unshipped
+            if (shipDate <= sevenDaysOut) return true;
+            return false;
+          }
+          if (alertFilter === "shippingSoon") {
+            var shipDate = parseDate(r["SHIP DATE"]);
+            if (!shipDate) return false;
+            if (shipDate < today || shipDate > threeDaysOut) return false;
+            return true;
+          }
+          if (alertFilter === "unpaidDeposits") {
+            if (st !== "on hold" && st !== "hold") return false;
+            var paymentStatus = (r["PAYMENT STATUS"] || "").toLowerCase();
+            if (paymentStatus !== "deposit") return false;
+            return true;
+          }
+          
           // Apply year filter if set
           if (state.filters.salesYear) {
             var soldDate = parseDate(r["DATE SOLD"]);
