@@ -1,11 +1,11 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.13
+ * Version: 2.12.14
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.14: PDF fix - Row 2 now matches preview exactly (simple flexbox, no extra props)
  * - 2.12.13: PDF fix - Row 2 now matches Row 3 flexbox pattern exactly
- * - 2.12.12: PDF fix - use line-height for vertical centering in Name/INFO row
  * - 2.12.6: Fixed logo not appearing in PDF - preload and convert to base64 before rendering
  * - 2.12.5: PDF now renders HTML with html2canvas for proper Norwester font
  * - 2.12.4: Fixed Norwester font import in index.html (was missing)
@@ -630,10 +630,10 @@ function downloadBinTagsPDFFile() {
       
       // ROW 2: Name (70%) | INFO (30%) - 15% height
       html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
-      html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 1px solid #000; box-sizing: border-box; overflow: hidden;">';
+      html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
       html += '</div>';
-      html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; box-sizing: border-box; overflow: hidden;">';
+      html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
       html += '</div>';
       html += '</div>';
