@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.26
+  Version: 2.11.27
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.27: All lookup fields now use searchable chip selector (Clutch ID, Sire, Dam)
   - 2.11.26: Added Empty Archive button to permanently delete all archived records
   - 2.11.25: Paired With field now uses searchable chip selector matching Select Animal style
   - 2.11.24: Simplified Archive view to show only Unique ID and Restore button
@@ -732,7 +733,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.26";
+    var VERSION = "2.11.27";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -3175,6 +3176,12 @@
         return;
       }
       
+      // Special rendering for Clutch ADD form
+      if (state.modalTab === "clutch" && state.modalMode === "add") {
+        renderClutchAddForm();
+        return;
+      }
+      
       // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
       var skipFields = ["__rowIndex", "__raw", "QR CODE", "SHEET ID", "SHEET_ID"];
       if (state.modalTab !== "activity") {
@@ -3352,128 +3359,166 @@
     }
     
     function renderHatchlingForm(headers) {
-      var html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+      var html = '<div class="space-y-4">';
       
-      // 1. CLUTCH ID dropdown (first - required)
+      // 1. CLUTCH ID - searchable chip selector
       var clutchOpts = getClutchOptions() || [];
       var clutchVal = state.formData["CLUTCH ID"] || "";
-      html += '<div class="md:col-span-2">';
-      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Clutch ID <span class="text-red-500">*</span></label>';
-      html += '<select onchange="updateHatchlingClutch(this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
-      html += '<option value="">Select Clutch...</option>';
-      clutchOpts.forEach(function(o) {
-        var sel = (clutchVal === o) ? " selected" : "";
-        html += '<option value="' + escapeHtml(o) + '"' + sel + '>' + escapeHtml(o) + '</option>';
+      html += '<div>';
+      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Clutch ID <span class="text-red-500">*</span></label>';
+      html += '<div class="relative">';
+      html += '<input type="text" id="hatchlingClutchSearch" placeholder="Type to search..." ';
+      html += 'oninput="filterHatchlingClutches(this.value)" ';
+      html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
+      html += '<div id="hatchlingClutchList" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white ' + (clutchVal ? 'hidden' : '') + '">';
+      clutchOpts.forEach(function(clutchId) {
+        // Get clutch details for display
+        var clutch = state.data.clutch.find(function(c) { return c["CLUTCH ID"] === clutchId; });
+        var sire = clutch ? (clutch["SIRE"] || "") : "";
+        var dam = clutch ? (clutch["DAM"] || "") : "";
+        var pairing = (sire && dam) ? sire + " x " + dam : "";
+        html += '<div onclick="selectHatchlingClutch(\'' + escapeHtml(clutchId).replace(/'/g, "\\'") + '\')" ';
+        html += 'class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-50 last:border-0">';
+        html += '<span class="font-medium">' + escapeHtml(clutchId) + '</span>';
+        if (pairing) html += ' <span class="text-gray-400 text-xs">' + escapeHtml(pairing) + '</span>';
+        html += '</div>';
       });
-      html += '</select>';
+      html += '</div>';
+      html += '</div>';
+      
+      // Show selected clutch
+      if (clutchVal) {
+        var selectedClutch = state.data.clutch.find(function(c) { return c["CLUTCH ID"] === clutchVal; });
+        var displayPairing = "";
+        if (selectedClutch) {
+          var s = selectedClutch["SIRE"] || "";
+          var d = selectedClutch["DAM"] || "";
+          if (s && d) displayPairing = " - " + s + " x " + d;
+        }
+        html += '<div id="selectedClutchDisplay" class="mt-2 px-4 py-3 bg-gray-900 text-white rounded-xl flex items-center justify-between">';
+        html += '<span class="font-medium">' + escapeHtml(clutchVal) + escapeHtml(displayPairing) + '</span>';
+        html += '<button type="button" onclick="clearHatchlingClutch()" class="text-gray-400 hover:text-white text-lg">&times;</button>';
+        html += '</div>';
+      }
       html += '</div>';
       
       // 2. DAM and SIRE (read-only, auto-filled from clutch)
       var damVal = state.formData["DAM"] || "";
       var sireVal = state.formData["SIRE"] || "";
+      html += '<div class="grid grid-cols-2 gap-4">';
       html += '<div>';
-      html += '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Dam (from clutch)</label>';
-      html += '<div class="w-full px-3 py-2 rounded-xl border border-slate-100 bg-slate-100 text-sm text-slate-600">' + (damVal || "--") + '</div>';
+      html += '<label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Dam (from clutch)</label>';
+      html += '<div class="w-full px-3 py-2 rounded-xl border border-gray-100 bg-gray-100 text-sm text-gray-600">' + (damVal || "--") + '</div>';
       html += '</div>';
       html += '<div>';
-      html += '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Sire (from clutch)</label>';
-      html += '<div class="w-full px-3 py-2 rounded-xl border border-slate-100 bg-slate-100 text-sm text-slate-600">' + (sireVal || "--") + '</div>';
+      html += '<label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Sire (from clutch)</label>';
+      html += '<div class="w-full px-3 py-2 rounded-xl border border-gray-100 bg-gray-100 text-sm text-gray-600">' + (sireVal || "--") + '</div>';
+      html += '</div>';
       html += '</div>';
       
-      // 3. DATE OF BIRTH (required) - displays as "Hatch Date" but saves to DATE OF BIRTH column
+      // 3. DATE OF BIRTH and SEX row
       var dobVal = state.formData["DATE OF BIRTH"] || "";
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Hatch Date <span class="text-red-500">*</span></label>';
-      html += '<input type="date" value="' + dobVal + '" onchange="updateFormField(\'DATE OF BIRTH\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm" required>';
-      html += '</div>';
-      
-      // 4. SEX
       var sexVal = state.formData["SEX"] || "Unknown";
+      html += '<div class="grid grid-cols-2 gap-4">';
       html += '<div>';
-      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Sex</label>';
-      html += '<select onchange="updateFormField(\'SEX\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Hatch Date <span class="text-red-500">*</span></label>';
+      html += '<input type="date" value="' + dobVal + '" onchange="updateFormField(\'DATE OF BIRTH\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 mono text-sm" required>';
+      html += '</div>';
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Sex</label>';
+      html += '<select onchange="updateFormField(\'SEX\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
       ["Unknown", "Female", "Male"].forEach(function(o) {
         var sel = (sexVal === o) ? " selected" : "";
         html += '<option value="' + o + '"' + sel + '>' + o + '</option>';
       });
       html += '</select>';
       html += '</div>';
+      html += '</div>';
       
-      // 5. STATUS
+      // 4. STATUS and HATCH WEIGHT row
       var statusVal = state.formData["STATUS"] || "Unlisted";
+      var weightVal = state.formData["HATCH WEIGHT (G)"] || "";
+      html += '<div class="grid grid-cols-2 gap-4">';
       html += '<div>';
-      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Status</label>';
-      html += '<select onchange="updateFormField(\'STATUS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Status</label>';
+      html += '<select onchange="updateFormField(\'STATUS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
       ["Unlisted", "Listed", "Holdback"].forEach(function(o) {
         var sel = (statusVal === o) ? " selected" : "";
         html += '<option value="' + o + '"' + sel + '>' + o + '</option>';
       });
       html += '</select>';
       html += '</div>';
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Hatch Weight (g)</label>';
+      html += '<input type="number" step="any" value="' + weightVal + '" onchange="updateFormField(\'HATCH WEIGHT (G)\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 mono text-sm">';
+      html += '</div>';
+      html += '</div>';
       
-      // 6. HATCH WEIGHT
-      if (headers.indexOf("HATCH WEIGHT (G)") >= 0) {
-        var weightVal = state.formData["HATCH WEIGHT (G)"] || "";
-        html += '<div>';
-        html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Hatch Weight (g)</label>';
-        html += '<input type="number" step="any" value="' + weightVal + '" onchange="updateFormField(\'HATCH WEIGHT (G)\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 mono text-sm">';
-        html += '</div>';
-      }
-      
-      // 7. SPECIES
+      // 5. SPECIES
       var speciesVal = state.formData["SPECIES"] || "Ball Python";
       html += '<div>';
-      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Species</label>';
-      html += '<input type="text" value="' + escapeHtml(speciesVal) + '" onchange="updateFormField(\'SPECIES\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Species</label>';
+      html += '<input type="text" value="' + escapeHtml(speciesVal) + '" onchange="updateFormField(\'SPECIES\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
       html += '</div>';
       
-      // 8. GENETIC SUMMARY
+      // 6. GENETIC SUMMARY
       var geneticsVal = state.formData["GENETIC SUMMARY"] || "";
-      html += '<div class="md:col-span-2">';
-      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Genetic Summary</label>';
-      html += '<input type="text" value="' + escapeHtml(geneticsVal) + '" onchange="updateFormField(\'GENETIC SUMMARY\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm" placeholder="e.g. Pastel Het Clown">';
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Genetic Summary</label>';
+      html += '<input type="text" value="' + escapeHtml(geneticsVal) + '" onchange="updateFormField(\'GENETIC SUMMARY\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm" placeholder="e.g. Pastel Het Clown">';
       html += '</div>';
       
-      // 9. BREEDER SOURCE
+      // 7. BREEDER SOURCE
       var sourceVal = state.formData["BREEDER SOURCE"] || "Produced In House";
       html += '<div>';
-      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Breeder Source</label>';
-      html += '<input type="text" value="' + escapeHtml(sourceVal) + '" onchange="updateFormField(\'BREEDER SOURCE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm">';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Breeder Source</label>';
+      html += '<input type="text" value="' + escapeHtml(sourceVal) + '" onchange="updateFormField(\'BREEDER SOURCE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
       html += '</div>';
       
-      // Empty spacer for alignment
-      html += '<div></div>';
-      
-      // 10. Custom Unique ID (optional) - at end
+      // 8. Custom Unique ID and Notes row
       var manualVal = state.formData["MANUAL OVERRIDE"] || "";
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Custom Unique ID (optional)</label>';
-      html += '<input type="text" value="' + escapeHtml(manualVal) + '" onchange="updateFormField(\'MANUAL OVERRIDE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm" placeholder="Your own ID system">';
-      html += '</div>';
-      
-      // 11. NOTES - at end
       var notesVal = state.formData["NOTES"] || "";
+      html += '<div class="grid grid-cols-2 gap-4">';
       html += '<div>';
-      html += '<label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Notes</label>';
-      html += '<textarea onchange="updateFormField(\'NOTES\', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm" rows="2">' + escapeHtml(notesVal) + '</textarea>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Custom Unique ID (optional)</label>';
+      html += '<input type="text" value="' + escapeHtml(manualVal) + '" onchange="updateFormField(\'MANUAL OVERRIDE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm" placeholder="Your own ID system">';
+      html += '</div>';
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Notes</label>';
+      html += '<input type="text" value="' + escapeHtml(notesVal) + '" onchange="updateFormField(\'NOTES\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
+      html += '</div>';
       html += '</div>';
       
       html += '</div>';
       return html;
     }
     
-    function updateHatchlingClutch(clutchId) {
+    function filterHatchlingClutches(search) {
+      var list = document.getElementById("hatchlingClutchList");
+      if (!list) return;
+      var items = list.getElementsByTagName("div");
+      var searchLower = search.toLowerCase();
+      var anyVisible = false;
+      
+      for (var i = 0; i < items.length; i++) {
+        var text = items[i].textContent.toLowerCase();
+        if (text.indexOf(searchLower) >= 0) {
+          items[i].style.display = "";
+          anyVisible = true;
+        } else {
+          items[i].style.display = "none";
+        }
+      }
+      
+      list.classList.toggle("hidden", !anyVisible && !search);
+    }
+    
+    function selectHatchlingClutch(clutchId) {
       state.formData["CLUTCH ID"] = clutchId;
       
       // Look up the clutch to get DAM and SIRE
       var clutchRows = state.data.clutch || [];
-      var found = null;
-      for (var i = 0; i < clutchRows.length; i++) {
-        if (clutchRows[i]["CLUTCH ID"] === clutchId) {
-          found = clutchRows[i];
-          break;
-        }
-      }
+      var found = clutchRows.find(function(c) { return c["CLUTCH ID"] === clutchId; });
       
       if (found) {
         state.formData["DAM"] = found["DAM"] || "";
@@ -3485,6 +3530,202 @@
       
       // Re-render the form
       renderModalForm("hatchling");
+    }
+    
+    function clearHatchlingClutch() {
+      state.formData["CLUTCH ID"] = "";
+      state.formData["DAM"] = "";
+      state.formData["SIRE"] = "";
+      renderModalForm("hatchling");
+    }
+
+    // Custom Clutch Add Form with searchable selectors
+    function renderClutchAddForm() {
+      var html = '<div class="space-y-4">';
+      var today = state.formData["LAY DATE"] || new Date().toISOString().split("T")[0];
+      
+      // Show estimated hatch date preview
+      if (today) {
+        var estHatch = calculateEstHatchDate(today);
+        html += '<div class="bg-gray-100 border border-gray-300 rounded-xl px-4 py-3">';
+        html += '<div class="text-xs text-gray-600 uppercase font-semibold">Estimated Hatch Date (Lay Date + 59 days)</div>';
+        html += '<div class="font-bold text-gray-800 text-lg">' + estHatch + '</div>';
+        html += '</div>';
+      }
+      
+      // Get breeders for Sire/Dam selection
+      var males = state.data.collection.filter(function(r) {
+        var st = (r.STATUS || "").toLowerCase();
+        var sex = (r.SEX || "").toLowerCase();
+        return (st === "breeder" || st === "holdback" || st === "on loan") && sex.startsWith("m");
+      });
+      var females = state.data.collection.filter(function(r) {
+        var st = (r.STATUS || "").toLowerCase();
+        var sex = (r.SEX || "").toLowerCase();
+        return (st === "breeder" || st === "holdback" || st === "on loan") && sex.startsWith("f");
+      });
+      
+      // 1. SIRE - searchable chip selector
+      var sireVal = state.formData["SIRE"] || "";
+      html += '<div>';
+      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Sire (Male)</label>';
+      html += '<div class="relative">';
+      html += '<input type="text" id="clutchSireSearch" placeholder="Type to search males..." ';
+      html += 'oninput="filterClutchSires(this.value)" ';
+      html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
+      html += '<div id="clutchSireList" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white ' + (sireVal ? 'hidden' : '') + '">';
+      males.forEach(function(a) {
+        var name = a["ANIMAL NAME"] || "";
+        var id = a["UNIQUE ID"] || "";
+        var label = name ? name + " | " + id : id;
+        html += '<div onclick="selectClutchSire(\'' + escapeHtml(label).replace(/'/g, "\\'") + '\')" ';
+        html += 'class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-50 last:border-0">';
+        html += '<span class="font-medium">' + escapeHtml(name || id) + '</span>';
+        if (name && id) html += ' <span class="text-gray-400 text-xs">' + escapeHtml(id) + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '</div>';
+      
+      // Show selected sire
+      if (sireVal) {
+        html += '<div class="mt-2 px-4 py-3 bg-gray-900 text-white rounded-xl flex items-center justify-between">';
+        html += '<span class="font-medium">' + escapeHtml(sireVal) + '</span>';
+        html += '<button type="button" onclick="clearClutchSire()" class="text-gray-400 hover:text-white text-lg">&times;</button>';
+        html += '</div>';
+      }
+      html += '</div>';
+      
+      // 2. DAM - searchable chip selector
+      var damVal = state.formData["DAM"] || "";
+      html += '<div>';
+      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Dam (Female)</label>';
+      html += '<div class="relative">';
+      html += '<input type="text" id="clutchDamSearch" placeholder="Type to search females..." ';
+      html += 'oninput="filterClutchDams(this.value)" ';
+      html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
+      html += '<div id="clutchDamList" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white ' + (damVal ? 'hidden' : '') + '">';
+      females.forEach(function(a) {
+        var name = a["ANIMAL NAME"] || "";
+        var id = a["UNIQUE ID"] || "";
+        var label = name ? name + " | " + id : id;
+        html += '<div onclick="selectClutchDam(\'' + escapeHtml(label).replace(/'/g, "\\'") + '\')" ';
+        html += 'class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-50 last:border-0">';
+        html += '<span class="font-medium">' + escapeHtml(name || id) + '</span>';
+        if (name && id) html += ' <span class="text-gray-400 text-xs">' + escapeHtml(id) + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '</div>';
+      
+      // Show selected dam
+      if (damVal) {
+        html += '<div class="mt-2 px-4 py-3 bg-gray-900 text-white rounded-xl flex items-center justify-between">';
+        html += '<span class="font-medium">' + escapeHtml(damVal) + '</span>';
+        html += '<button type="button" onclick="clearClutchDam()" class="text-gray-400 hover:text-white text-lg">&times;</button>';
+        html += '</div>';
+      }
+      html += '</div>';
+      
+      // 3. LAY DATE
+      html += '<div>';
+      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Lay Date</label>';
+      html += '<input type="date" id="clutchLayDate" value="' + today + '" ';
+      html += 'onchange="updateClutchLayDate(this.value)" ';
+      html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
+      html += '</div>';
+      
+      // 4. Egg counts row
+      var eggsVal = state.formData["# EGGS"] || "";
+      var fertileVal = state.formData["# FERTILE"] || "";
+      var slugsVal = state.formData["# SLUGS"] || "";
+      html += '<div class="grid grid-cols-3 gap-4">';
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1"># Eggs</label>';
+      html += '<input type="number" value="' + eggsVal + '" onchange="updateFormField(\'# EGGS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
+      html += '</div>';
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1"># Fertile</label>';
+      html += '<input type="number" value="' + fertileVal + '" onchange="updateFormField(\'# FERTILE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
+      html += '</div>';
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1"># Slugs</label>';
+      html += '<input type="number" value="' + slugsVal + '" onchange="updateFormField(\'# SLUGS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
+      html += '</div>';
+      html += '</div>';
+      
+      // 5. STATUS
+      var statusVal = state.formData["STATUS"] || "Incubating";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Status</label>';
+      html += '<select onchange="updateFormField(\'STATUS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
+      ["Incubating", "Hatched", "Failed"].forEach(function(o) {
+        var sel = (statusVal === o) ? " selected" : "";
+        html += '<option value="' + o + '"' + sel + '>' + o + '</option>';
+      });
+      html += '</select>';
+      html += '</div>';
+      
+      // 6. NOTES
+      var notesVal = state.formData["NOTES"] || "";
+      html += '<div>';
+      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Notes</label>';
+      html += '<textarea onchange="updateFormField(\'NOTES\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm" rows="2">' + escapeHtml(notesVal) + '</textarea>';
+      html += '</div>';
+      
+      html += '</div>';
+      document.getElementById("modalBody").innerHTML = html;
+    }
+    
+    function filterClutchSires(search) {
+      var list = document.getElementById("clutchSireList");
+      if (!list) return;
+      var items = list.getElementsByTagName("div");
+      var searchLower = search.toLowerCase();
+      
+      for (var i = 0; i < items.length; i++) {
+        var text = items[i].textContent.toLowerCase();
+        items[i].style.display = (text.indexOf(searchLower) >= 0) ? "" : "none";
+      }
+      list.classList.remove("hidden");
+    }
+    
+    function filterClutchDams(search) {
+      var list = document.getElementById("clutchDamList");
+      if (!list) return;
+      var items = list.getElementsByTagName("div");
+      var searchLower = search.toLowerCase();
+      
+      for (var i = 0; i < items.length; i++) {
+        var text = items[i].textContent.toLowerCase();
+        items[i].style.display = (text.indexOf(searchLower) >= 0) ? "" : "none";
+      }
+      list.classList.remove("hidden");
+    }
+    
+    function selectClutchSire(label) {
+      state.formData["SIRE"] = label;
+      renderClutchAddForm();
+    }
+    
+    function selectClutchDam(label) {
+      state.formData["DAM"] = label;
+      renderClutchAddForm();
+    }
+    
+    function clearClutchSire() {
+      state.formData["SIRE"] = "";
+      renderClutchAddForm();
+    }
+    
+    function clearClutchDam() {
+      state.formData["DAM"] = "";
+      renderClutchAddForm();
+    }
+    
+    function updateClutchLayDate(value) {
+      state.formData["LAY DATE"] = value;
+      renderClutchAddForm();
     }
 
     // Custom Activity Add Form - cleaner design
