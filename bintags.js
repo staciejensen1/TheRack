@@ -1,20 +1,9 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.21
+ * Version: 2.12.3
  * Last Updated: 2026-01-09
  * 
  * Changelog:
- * - 2.12.21: Fixed PDF Row 2 centering - use line-height equal to row height for true centering
- * - 2.12.20: Fixed PDF Row 2 centering - correct padding calc for 18px name and 11px INFO
- * - 2.12.19: Increased Sex+ID top padding - PDF to 37px, HTML to 33px for card cutout clearance
- * - 2.12.18: PDF Row 2 uses explicit padding for vertical centering (html2canvas fix), HTML print centers on page
- * - 2.12.17: PDF now uses colgroup for consistent column widths, removed redundant inline widths
- * - 2.12.16: Print Tags now uses TABLE layout with colgroup for consistent 30% column width
- * - 2.12.15: PDF rewrite - use TABLE layout instead of flexbox for reliable rendering
- * - 2.12.14: PDF fix - Row 2 now matches preview exactly (simple flexbox, no extra props)
- * - 2.12.6: Fixed logo not appearing in PDF - preload and convert to base64 before rendering
- * - 2.12.5: PDF now renders HTML with html2canvas for proper Norwester font
- * - 2.12.4: Fixed Norwester font import in index.html (was missing)
  * - 2.12.3: Fixed bin tag layout to match final approved design:
  *           Row 1 (47%): Logo 25% | Sex+ID 45% | QR 30%
  *           Row 2 (15%): Name 70% | INFO 30%
@@ -242,7 +231,7 @@ function updateBinTagPreview() {
   var dims = { w: 324, h: 204 };
   
   var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
-  var logoUrl = state.settings["LOGO DATA"] || state.settings["LOGO URL"] || "";
+  var logoUrl = state.settings["LOGO URL"] || "";
   
   var html = '<div class="flex flex-wrap gap-4">';
   
@@ -296,7 +285,7 @@ function renderBinTagPreview(animal, dims, businessName, logoUrl) {
   html += '</div>';
   
   // Center: Sex + ID (white background, 45% width)
-  html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 4px; padding-top: 18px; border-left: 1px solid #000; border-right: 1px solid #000;">';
+  html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 1px solid #000; border-right: 1px solid #000;">';
   html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 24px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
   html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 12px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
@@ -382,7 +371,7 @@ function downloadBinTagsPDF() {
   }
   
   var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
-  var logoUrl = state.settings["LOGO DATA"] || state.settings["LOGO URL"] || "";
+  var logoUrl = state.settings["LOGO URL"] || "";
   
   printBinTags(animalsToInclude, businessName, logoUrl);
   
@@ -392,7 +381,7 @@ function downloadBinTagsPDF() {
 
 function printSingleBinTag(animal) {
   var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
-  var logoUrl = state.settings["LOGO DATA"] || state.settings["LOGO URL"] || "";
+  var logoUrl = state.settings["LOGO URL"] || "";
   printBinTags([animal], businessName, logoUrl);
 }
 
@@ -405,12 +394,10 @@ function printBinTags(animals, businessName, logoUrl) {
   html += '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">';
   html += '<style>';
   html += '@page { size: 3.38in 2.13in; margin: 0; }';
-  html += 'html, body { margin: 0; padding: 0; width: 3.38in; height: 2.13in; }';
-  html += 'body { font-family: Inter, system-ui, sans-serif; display: flex; justify-content: center; align-items: center; }';
-  html += '.bin-tag { width: 3.38in; height: 2.13in; page-break-after: always; box-sizing: border-box; overflow: hidden; border: 1px solid #000; background: #fff; margin: 0 auto; }';
+  html += 'body { font-family: Inter, system-ui, sans-serif; margin: 0; padding: 0; }';
+  html += '.bin-tag { width: 3.38in; height: 2.13in; page-break-after: always; box-sizing: border-box; overflow: hidden; border: 1px solid #000; background: #fff; }';
   html += '.bin-tag:last-child { page-break-after: avoid; }';
-  html += 'table { border-collapse: collapse; table-layout: fixed; }';
-  html += '@media print { html, body { margin: 0; padding: 0; } .bin-tag { margin: 0; } }';
+  html += '@media print { body { margin: 0; } }';
   html += '</style></head><body>';
   
   animals.forEach(function(animal) {
@@ -431,89 +418,69 @@ function printBinTags(animals, businessName, logoUrl) {
     var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
     
     html += '<div class="bin-tag">';
-    html += '<table style="width: 100%; height: 100%;">';
     
-    // Define column widths: 25% | 45% | 30%
-    html += '<colgroup>';
-    html += '<col style="width: 25%;">';
-    html += '<col style="width: 45%;">';
-    html += '<col style="width: 30%;">';
-    html += '</colgroup>';
+    // ROW 1: Logo (25%) | Sex+ID (45%) | QR (30%) - 47% height
+    html += '<div style="display: flex; height: 47%; border-bottom: 1px solid #000;">';
     
-    // ROW 1: Logo | Sex+ID | QR - 47% height
-    html += '<tr style="height: 47%;">';
-    
-    // Logo cell
-    html += '<td style="background: #000; color: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px;">';
+    // Left: Logo (black bg, 25%)
+    html += '<div style="width: 25%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px;">';
     if (logoUrl) {
-      html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 85px; object-fit: contain;" alt="Logo">';
+      html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
     } else {
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 9px; font-weight: 400; letter-spacing: 0.5px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 9px; font-weight: 400; text-align: center; letter-spacing: 0.5px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
     }
-    html += '</td>';
+    html += '</div>';
     
-    // Sex + ID cell (with top padding for card cutout - ~0.35")
-    html += '<td style="background: #fff; text-align: center; vertical-align: top; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; padding-top: 33px;">';
+    // Center: Sex + ID (white bg, 45%)
+    html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 1px solid #000; border-right: 1px solid #000;">';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 20px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
-    html += '</td>';
+    html += '</div>';
     
-    // QR cell
-    html += '<td style="background: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; padding: 4px;">';
-    html += '<img src="' + qrUrl + '" style="width: 85%; height: auto; max-height: 85px;" alt="QR">';
-    html += '</td>';
+    // Right: QR (white bg, 30%)
+    html += '<div style="width: 30%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 3px;">';
+    html += '<img src="' + qrUrl + '" style="width: 90%; height: 90%; object-fit: contain;" alt="QR">';
+    html += '</div>';
     
-    html += '</tr>';
+    html += '</div>';
     
-    // ROW 2: Name (spans 2 cols) | INFO - 15% height
-    html += '<tr style="height: 15%;">';
-    
-    // Name cell spans first 2 columns
-    html += '<td colspan="2" style="background: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; border-right: 1px solid #000;">';
-    html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
-    html += '</td>';
-    
-    // INFO cell
-    html += '<td style="background: #000; text-align: center; vertical-align: middle; border-bottom: 1px solid #000;">';
+    // ROW 2: Animal Name (70%) | INFO header (30%) - 15% height
+    html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
+    html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
+    html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED") + '</div>';
+    html += '</div>';
+    html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center;">';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
-    html += '</td>';
+    html += '</div>';
+    html += '</div>';
     
-    html += '</tr>';
+    // ROW 3: Genetics (70%) | Year Born + Breeder (30%) - 38% height
+    html += '<div style="display: flex; height: 38%;">';
     
-    // ROW 3: Genetics (spans 2 cols) | Year+Breeder - 38% height
-    html += '<tr style="height: 38%;">';
+    // Left: Genetics (70%)
+    html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 1px solid #000;">';
+    html += '<div style="font-size: 9px; font-weight: 500; line-height: 1.2; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
+    html += '</div>';
     
-    // Genetics cell spans first 2 columns
-    html += '<td colspan="2" style="background: #fff; text-align: center; vertical-align: middle; border-right: 1px solid #000; padding: 4px;">';
-    html += '<div style="font-size: 9px; font-weight: 500; line-height: 1.3; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
-    html += '</td>';
+    // Right: Info boxes (30% - white background, thin 1px borders only)
+    html += '<div style="width: 30%; background: #fff; display: flex; flex-direction: column;">';
     
-    // Year + Breeder cell (nested table for split)
-    html += '<td style="background: #fff; padding: 0; vertical-align: top;">';
-    html += '<table style="width: 100%; height: 100%;">';
-    
-    // Year Born row
-    html += '<tr style="height: 50%;">';
-    html += '<td style="text-align: center; vertical-align: middle; border-bottom: 1px solid #000; padding: 2px;">';
+    // Year Born box (thin 1px border on bottom only)
+    html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-bottom: 1px solid #000;">';
     html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">YEAR BORN:</div>';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 14px; font-weight: 400; color: #000;">' + (yearBorn || "--") + '</div>';
-    html += '</td>';
-    html += '</tr>';
+    html += '</div>';
     
-    // Breeder row
-    html += '<tr style="height: 50%;">';
-    html += '<td style="text-align: center; vertical-align: middle; padding: 2px;">';
+    // Breeder box (no extra borders)
+    html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
     html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">BREEDER:</div>';
     html += '<div style="font-size: 7px; font-weight: 600; color: #000; line-height: 1.1;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
-    html += '</td>';
-    html += '</tr>';
+    html += '</div>';
     
-    html += '</table>';
-    html += '</td>';
+    html += '</div>';
     
-    html += '</tr>';
+    html += '</div>';
     
-    html += '</table>';
     html += '</div>';
   });
   
@@ -561,52 +528,59 @@ function downloadBinTagsPDFFile() {
       btn.textContent = "Download PDF";
       btn.disabled = false;
     }
+    return;
   }
   
   var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
-  var logoUrl = state.settings["LOGO DATA"] || state.settings["LOGO URL"] || "";
+  var logoUrl = state.settings["LOGO URL"] || "";
   
-  // Card size at screen resolution (96 DPI) - html2canvas will scale up
-  var cardWidthPx = 325;   // ~3.38" at 96 DPI
-  var cardHeightPx = 205;  // ~2.13" at 96 DPI
-  var cardWidthPt = 3.38 * 72;   // 243.36pt for PDF
-  var cardHeightPt = 2.13 * 72;  // 153.36pt for PDF
+  // Card size: 3.38" x 2.13" in points (72 points per inch)
+  var cardWidthPt = 3.38 * 72;  // 243.36
+  var cardHeightPt = 2.13 * 72; // 153.36
   
-  // Pre-load logo image and convert to base64 for PDF rendering
-  var logoBase64 = null;
+  // Create PDF with custom page size
+  var doc = new jspdf.jsPDF({
+    orientation: 'landscape',
+    unit: 'pt',
+    format: [cardHeightPt, cardWidthPt]
+  });
   
-  function startPDFGeneration() {
-    // Create a hidden container for rendering
-    var container = document.createElement('div');
-    container.style.cssText = 'position: absolute; left: -9999px; top: 0;';
-    document.body.appendChild(container);
-    
-    // Create PDF
-    var doc = new jspdf.jsPDF({
-      orientation: 'landscape',
-      unit: 'pt',
-      format: [cardHeightPt, cardWidthPt]
+  var totalAnimals = animalsToInclude.length;
+  var processed = 0;
+  var qrImages = {};
+  
+  // First, load all QR code images
+  var loadPromises = animalsToInclude.map(function(animal) {
+    return new Promise(function(resolve) {
+      var id = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
+      var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
+      
+      var img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        qrImages[id] = canvas.toDataURL('image/png');
+        resolve();
+      };
+      img.onerror = function() {
+        qrImages[id] = null;
+        resolve();
+      };
+      img.src = qrUrl;
     });
-    
-    var totalAnimals = animalsToInclude.length;
-    var currentIndex = 0;
-    
-    // Process animals one at a time
-    function processNextAnimal() {
-      if (currentIndex >= totalAnimals) {
-        // All done - save PDF
-        document.body.removeChild(container);
-        var filename = "bin-tags-" + new Date().toISOString().split('T')[0] + ".pdf";
-        doc.save(filename);
-        if (btn) {
-          btn.textContent = "Download PDF";
-          btn.disabled = false;
-        }
-        setStatus("PDF downloaded: " + filename);
-        return;
+  });
+  
+  Promise.all(loadPromises).then(function() {
+    // Now generate PDF pages
+    animalsToInclude.forEach(function(animal, index) {
+      if (index > 0) {
+        doc.addPage([cardHeightPt, cardWidthPt], 'landscape');
       }
       
-      var animal = animalsToInclude[currentIndex];
       var id = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "";
       var name = animal["ANIMAL NAME"] || "";
       var sex = (animal["SEX"] || "").toUpperCase();
@@ -621,176 +595,162 @@ function downloadBinTagsPDFFile() {
         if (d) yearBorn = String(d.getFullYear()).slice(-2);
       }
       
-      var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
+      // Dimensions in points
+      var w = cardWidthPt;
+      var h = cardHeightPt;
       
-      // Create the bin tag HTML at screen resolution using TABLE for reliable rendering
-      var tagDiv = document.createElement('div');
-      tagDiv.style.cssText = 'width: ' + cardWidthPx + 'px; height: ' + cardHeightPx + 'px; background: #fff; font-family: Norwester, Inter, sans-serif; box-sizing: border-box; border: 1px solid #000; overflow: hidden;';
+      // Row heights
+      var row1H = h * 0.47;
+      var row2H = h * 0.15;
+      var row3H = h * 0.38;
       
-      var row1Height = Math.round(cardHeightPx * 0.47);
-      var row2Height = Math.round(cardHeightPx * 0.15);
-      var row3Height = cardHeightPx - row1Height - row2Height - 2; // -2 for borders
+      // Column widths for row 1
+      var col1W = w * 0.25;  // Logo
+      var col2W = w * 0.45;  // Sex + ID
+      var col3W = w * 0.30;  // QR
       
-      var html = '<table style="width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed;">';
+      // Column widths for rows 2 & 3
+      var leftColW = w * 0.70;
+      var rightColW = w * 0.30;
       
-      // Define column widths explicitly
-      html += '<colgroup>';
-      html += '<col style="width: 25%;">';
-      html += '<col style="width: 45%;">';
-      html += '<col style="width: 30%;">';
-      html += '</colgroup>';
+      // Draw border
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.5);
+      doc.rect(0, 0, w, h);
       
-      // ROW 1: Logo (25%) | Sex+ID (45%) | QR (30%)
-      html += '<tr style="height: ' + row1Height + 'px;">';
+      // ROW 1
+      // Logo area (black background)
+      doc.setFillColor(0, 0, 0);
+      doc.rect(0, 0, col1W, row1H, 'F');
       
-      // Logo cell
-      html += '<td style="background: #000; color: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px;">';
-      if (logoBase64) {
-        html += '<img src="' + logoBase64 + '" style="max-width: 90%; max-height: ' + (row1Height - 10) + 'px; object-fit: contain;">';
-      } else if (logoUrl) {
-        html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: ' + (row1Height - 10) + 'px; object-fit: contain;">';
-      } else {
-        html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; letter-spacing: 0.5px; line-height: 1.2;">' + escapeHtml(businessName).toUpperCase() + '</div>';
+      // Business name in logo area
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      var bizLines = doc.splitTextToSize(businessName.toUpperCase(), col1W - 6);
+      var bizY = (row1H / 2) - ((bizLines.length * 9) / 2) + 7;
+      bizLines.forEach(function(line, i) {
+        doc.text(line, col1W / 2, bizY + (i * 9), { align: 'center' });
+      });
+      
+      // Sex + ID area (white)
+      doc.setDrawColor(0);
+      doc.line(col1W, 0, col1W, row1H);
+      doc.line(col1W + col2W, 0, col1W + col2W, row1H);
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text(sexDisplay, col1W + (col2W / 2), row1H * 0.4, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(id, col1W + (col2W / 2), row1H * 0.65, { align: 'center' });
+      
+      // QR code area
+      var qrData = qrImages[id];
+      if (qrData) {
+        var qrSize = Math.min(col3W, row1H) * 0.85;
+        var qrX = col1W + col2W + (col3W - qrSize) / 2;
+        var qrY = (row1H - qrSize) / 2;
+        doc.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
       }
-      html += '</td>';
       
-      // Sex + ID cell (with top padding for card cutout - ~0.38")
-      html += '<td style="background: #fff; text-align: center; vertical-align: top; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; padding-top: 37px;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 20px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
-      html += '</td>';
+      // Row 1 bottom border
+      doc.line(0, row1H, w, row1H);
       
-      // QR cell
-      html += '<td style="background: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; padding: 4px;">';
-      html += '<img src="' + qrUrl + '" style="width: 85%; height: auto; max-height: ' + (row1Height - 10) + 'px;">';
-      html += '</td>';
+      // ROW 2
+      var row2Y = row1H;
       
-      html += '</tr>';
+      // Animal name area
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      var displayName = name || "UNNAMED";
+      // Truncate if too long
+      while (doc.getTextWidth(displayName) > leftColW - 10 && displayName.length > 3) {
+        displayName = displayName.slice(0, -1);
+      }
+      doc.text(displayName, leftColW / 2, row2Y + (row2H / 2) + 5, { align: 'center' });
       
-      // ROW 2: Name (70%) | INFO (30%)
-      // Use line-height equal to row height for true vertical centering
-      html += '<tr style="height: ' + row2Height + 'px;">';
+      // INFO header (black background)
+      doc.setFillColor(0, 0, 0);
+      doc.rect(leftColW, row2Y, rightColW, row2H, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text("INFO", leftColW + (rightColW / 2), row2Y + (row2H / 2) + 3, { align: 'center' });
       
-      // Name cell - spans first 2 columns
-      html += '<td colspan="2" style="background: #fff; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 0; height: ' + row2Height + 'px;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px; line-height: ' + row2Height + 'px; margin: 0;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
-      html += '</td>';
+      // Vertical divider
+      doc.setDrawColor(0);
+      doc.line(leftColW, row2Y, leftColW, row2Y + row2H);
       
-      // INFO cell
-      html += '<td style="background: #000; text-align: center; vertical-align: middle; border-bottom: 1px solid #000; padding: 0; height: ' + row2Height + 'px;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px; line-height: ' + row2Height + 'px; margin: 0;">INFO</div>';
-      html += '</td>';
+      // Row 2 bottom border
+      doc.line(0, row2Y + row2H, w, row2Y + row2H);
       
-      html += '</tr>';
+      // ROW 3
+      var row3Y = row1H + row2H;
       
-      // ROW 3: Genetics (70%) | Year+Breeder (30%)
-      html += '<tr style="height: ' + row3Height + 'px;">';
+      // Genetics area
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      var geneticsText = genetics || "No genetics listed";
+      var geneticsLines = doc.splitTextToSize(geneticsText, leftColW - 12);
+      var geneticsStartY = row3Y + (row3H / 2) - ((geneticsLines.length * 10) / 2) + 5;
+      geneticsLines.forEach(function(line, i) {
+        doc.text(line, leftColW / 2, geneticsStartY + (i * 10), { align: 'center' });
+      });
       
-      // Genetics cell
-      html += '<td colspan="2" style="background: #fff; text-align: center; vertical-align: middle; border-right: 1px solid #000; padding: 4px;">';
-      html += '<div style="font-size: 10px; font-weight: 500; line-height: 1.2; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
-      html += '</td>';
+      // Right info column (white background, NO black - just thin borders)
+      // Vertical divider between genetics and info column
+      doc.setDrawColor(0);
+      doc.line(leftColW, row3Y, leftColW, row3Y + row3H);
       
-      // Year Born + Breeder cell (nested table for split)
-      html += '<td style="background: #fff; padding: 0; vertical-align: top;">';
-      html += '<table style="width: 100%; height: 100%; border-collapse: collapse;">';
+      // Year Born box (white with border on bottom only for divider)
+      var infoBoxH = row3H / 2;
+      var infoBoxW = rightColW;
+      var infoBoxX = leftColW;
+      var infoBox1Y = row3Y;
       
-      // Year Born row
-      html += '<tr style="height: 50%;">';
-      html += '<td style="text-align: center; vertical-align: middle; border-bottom: 1px solid #000;">';
-      html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">YEAR BORN:</div>';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 14px; font-weight: 400; color: #000;">' + (yearBorn || "--") + '</div>';
-      html += '</td>';
-      html += '</tr>';
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(5);
+      doc.setFont('helvetica', 'bold');
+      doc.text("YEAR BORN:", infoBoxX + (infoBoxW / 2), infoBox1Y + 10, { align: 'center' });
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(yearBorn || "--", infoBoxX + (infoBoxW / 2), infoBox1Y + infoBoxH - 4, { align: 'center' });
       
-      // Breeder row
-      html += '<tr style="height: 50%;">';
-      html += '<td style="text-align: center; vertical-align: middle; padding: 2px;">';
-      html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">BREEDER:</div>';
-      html += '<div style="font-size: 7px; font-weight: 600; color: #000; line-height: 1.1;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
-      html += '</td>';
-      html += '</tr>';
+      // Horizontal divider between year born and breeder
+      doc.line(leftColW, row3Y + infoBoxH, w, row3Y + infoBoxH);
       
-      html += '</table>';
-      html += '</td>';
+      // Breeder box (white, no extra borders needed)
+      var infoBox2Y = row3Y + infoBoxH;
       
-      html += '</tr>';
-      
-      html += '</table>';
-      
-      tagDiv.innerHTML = html;
-      container.appendChild(tagDiv);
-      
-      // Update status
-      setStatus("Rendering " + (currentIndex + 1) + " of " + totalAnimals + "...");
-      
-      // Wait for images to load, then render to canvas with 3x scale for quality
-      setTimeout(function() {
-        html2canvas(tagDiv, {
-          scale: 3,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff'
-        }).then(function(canvas) {
-          // Add new page if not first
-          if (currentIndex > 0) {
-            doc.addPage([cardHeightPt, cardWidthPt], 'landscape');
-          }
-          
-          // Add canvas as image to PDF
-          var imgData = canvas.toDataURL('image/png');
-          doc.addImage(imgData, 'PNG', 0, 0, cardWidthPt, cardHeightPt);
-          
-          // Remove this tag from container
-          container.removeChild(tagDiv);
-          
-          // Process next animal
-          currentIndex++;
-          processNextAnimal();
-        }).catch(function(err) {
-          console.error("Error rendering bin tag:", err);
-          container.removeChild(tagDiv);
-          currentIndex++;
-          processNextAnimal();
-        });
-      }, 300);
-    }
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(5);
+      doc.setFont('helvetica', 'bold');
+      doc.text("BREEDER:", infoBoxX + (infoBoxW / 2), infoBox2Y + 10, { align: 'center' });
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'bold');
+      var breederText = (breederSource || "--").toUpperCase();
+      var breederLines = doc.splitTextToSize(breederText, infoBoxW - 8);
+      if (breederLines.length > 2) breederLines = breederLines.slice(0, 2);
+      var breederStartY = infoBox2Y + infoBoxH - 4 - ((breederLines.length - 1) * 7);
+      breederLines.forEach(function(line, i) {
+        doc.text(line, infoBoxX + (infoBoxW / 2), breederStartY + (i * 7), { align: 'center' });
+      });
+    });
     
-    // Start processing
-    processNextAnimal();
-  }
-  
-  // Preload logo if URL exists, then start PDF generation
-  if (logoUrl && !logoUrl.startsWith('data:')) {
-    setStatus("Loading logo...");
-    var logoImg = new Image();
-    logoImg.crossOrigin = "Anonymous";
-    logoImg.onload = function() {
-      try {
-        var canvas = document.createElement('canvas');
-        canvas.width = logoImg.naturalWidth;
-        canvas.height = logoImg.naturalHeight;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(logoImg, 0, 0);
-        logoBase64 = canvas.toDataURL('image/png');
-      } catch (e) {
-        console.error("Could not convert logo to base64:", e);
-        logoBase64 = null;
-      }
-      startPDFGeneration();
-    };
-    logoImg.onerror = function() {
-      console.error("Could not load logo image");
-      logoBase64 = null;
-      startPDFGeneration();
-    };
-    logoImg.src = logoUrl;
-  } else {
-    // Logo is already base64 or not set
-    if (logoUrl && logoUrl.startsWith('data:')) {
-      logoBase64 = logoUrl;
+    // Save the PDF
+    var filename = "bin-tags-" + new Date().toISOString().split('T')[0] + ".pdf";
+    doc.save(filename);
+    
+    if (btn) {
+      btn.textContent = "Download PDF";
+      btn.disabled = false;
     }
-    startPDFGeneration();
-  }
+    setStatus("PDF downloaded: " + filename);
+  });
 }
 
