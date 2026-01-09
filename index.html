@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.35
+  Version: 2.11.37
   Last Updated: 2026-01-09
   
   Changelog:
-  - 2.11.35: Added debug console logging for clutch save to diagnose egg count issue
+  - 2.11.37: Removed debug logging that was breaking site startup
+  - 2.11.36: Bin Tag proportions updated per user specs:
+             Row 1: Logo 22% | Sex+ID 53% | QR 25%
+             Row 2: Name 75% | INFO 25%
+             Row 3: Genetics 75% | Year+Breeder 25%
   - 2.11.34: Bin Tag design fixes:
              - Name row now 75% width with INFO header (25%) next to it
              - Logo box shows logo image OR business name (not both)
@@ -824,7 +828,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.35";
+    var VERSION = "2.11.37";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -4371,12 +4375,6 @@
       
       var cleanData = {};
       
-      // DEBUG: Log what we're about to save
-      console.log("=== SAVE DEBUG ===");
-      console.log("Tab:", sheetName);
-      console.log("Mode:", isAdd ? "ADD" : "UPDATE");
-      console.log("state.formData:", JSON.stringify(state.formData));
-      
       for (var key in state.formData) {
         // Skip formula columns entirely - check both exact and uppercase
         var isFormula = false;
@@ -4387,13 +4385,11 @@
           }
         }
         if (isFormula) {
-          console.log("Skipping formula column:", key);
           continue;
         }
         
         // Skip columns that look like Sheet IDs (long alphanumeric, 20+ chars)
         if (key.length > 20 && /^[A-Za-z0-9_\-]+$/.test(key)) {
-          console.log("Skipping long ID column:", key);
           continue;
         }
         
@@ -4402,9 +4398,6 @@
         
         cleanData[key] = val;
       }
-      
-      console.log("cleanData being sent:", JSON.stringify(cleanData));
-      console.log("=== END SAVE DEBUG ===");
       }
       
       var savedFormData = Object.assign({}, cleanData);
@@ -5903,7 +5896,7 @@
         
         html += '<div class="bin-tag">';
         
-        // ROW 1: Logo | Sex+ID | QR (47% height)
+        // ROW 1: Logo (22%) | Sex+ID (53%) | QR (25%) - 47% height
         html += '<div style="display: flex; height: 47%; border-bottom: 2px solid #000;">';
         
         // Left: Logo (black bg, 22%)
@@ -5915,20 +5908,20 @@
         }
         html += '</div>';
         
-        // Center: Sex + ID (white bg, 48%)
-        html += '<div style="width: 48%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 2px solid #000; border-right: 2px solid #000;">';
+        // Center: Sex + ID (white bg, 53%)
+        html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 2px solid #000; border-right: 2px solid #000;">';
         html += '<div style="font-size: 18px; font-weight: 900; color: #000; letter-spacing: 1px;">' + escapeHtml(sexDisplay) + '</div>';
         html += '<div style="font-size: 9px; font-weight: 700; color: #000; margin-top: 2px;">' + escapeHtml(id) + '</div>';
         html += '</div>';
         
-        // Right: QR (white bg, 30%)
-        html += '<div style="width: 30%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 3px;">';
+        // Right: QR (white bg, 25%)
+        html += '<div style="width: 25%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 3px;">';
         html += '<img src="' + qrUrl + '" style="width: 90%; height: 90%; object-fit: contain;" alt="QR">';
         html += '</div>';
         
         html += '</div>';
         
-        // ROW 2: Animal Name (~75%) | INFO header (~25%) - 15% height
+        // ROW 2: Animal Name (75%) | INFO header (25%) - 15% height
         html += '<div style="display: flex; height: 15%; border-bottom: 2px solid #000;">';
         html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 2px solid #000;">';
         html += '<div style="font-size: 18px; font-weight: 900; color: #000; letter-spacing: -0.5px;">' + escapeHtml(name || "UNNAMED") + '</div>';
@@ -5938,16 +5931,16 @@
         html += '</div>';
         html += '</div>';
         
-        // ROW 3: Genetics (~55%) | Year Born + Breeder (~45%) - 38% height
+        // ROW 3: Genetics (75%) | Year Born + Breeder (25%) - 38% height
         html += '<div style="display: flex; height: 38%;">';
         
-        // Left: Genetics
-        html += '<div style="width: 55%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 2px solid #000;">';
+        // Left: Genetics (75%)
+        html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 2px solid #000;">';
         html += '<div style="font-size: 9px; font-weight: 500; line-height: 1.2; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
         html += '</div>';
         
-        // Right: Info boxes
-        html += '<div style="width: 45%; background: #000; display: flex; flex-direction: column; padding: 3px; gap: 2px;">';
+        // Right: Info boxes (25%)
+        html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 3px; gap: 2px;">';
         
         // Year Born box
         html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
