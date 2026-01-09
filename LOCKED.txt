@@ -1,0 +1,12 @@
+=== v2.12.39 LOCKED ===
+Bin Tag HTML Print - FINAL
+Card: 3.38in x 2.13in
+Tag: 3.18in x 1.93in
+Bleed: 0.10in
+Rows: 0.90in / 0.30in / 0.70in
+Locked: 2026-01-09
+
+=== v2.12.40 ===
+Removed all PDF bin tag code
+HTML print only
+Function renamed: printBinTags()

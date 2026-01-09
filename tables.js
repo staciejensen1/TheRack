@@ -1,9 +1,10 @@
 /*
  * THE RACK - Tables & Filters
- * Version: 2.12.0
+ * Version: 2.12.41
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
  * - 2.12.0: Split from monolithic index.html
  */
 
@@ -95,6 +96,8 @@ function renderTable() {
     var tr = document.createElement("tr");
     tr.className = "hover:bg-slate-50";
     
+    console.log("Creating row for:", row["UNIQUE ID"] || row["CLUTCH ID"] || "unknown");
+    
     // Check if this clutch is overdue (for Clutches view)
     var isOverdue = false;
     if (state.activeTab === "clutches") {
@@ -118,7 +121,12 @@ function renderTable() {
     var editBtn = document.createElement("button");
     editBtn.className = "px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs hover:bg-slate-200 mr-1";
     editBtn.textContent = "Edit";
-    editBtn.onclick = function() { openEditModal(row); };
+    editBtn.onclick = (function(r) {
+      return function() {
+        console.log("Edit button clicked for row:", r["UNIQUE ID"] || r["CLUTCH ID"]);
+        openEditModal(r);
+      };
+    })(row);
     actionTd.appendChild(editBtn);
 
     // + Activity button for collection, clutches, hatchlings (not activity tab itself)
@@ -136,7 +144,12 @@ function renderTable() {
       var hatchBtn = document.createElement("button");
       hatchBtn.className = "px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 mr-1";
       hatchBtn.textContent = "Hatch";
-      hatchBtn.onclick = function() { openHatchModal(row); };
+      hatchBtn.onclick = (function(r) {
+        return function() {
+          console.log("Hatch button clicked for:", r["CLUTCH ID"]);
+          openHatchModal(r);
+        };
+      })(row);
       actionTd.appendChild(hatchBtn);
     }
 
@@ -144,13 +157,23 @@ function renderTable() {
       var saleBtn = document.createElement("button");
       saleBtn.className = "px-2 py-1 bg-gray-300 text-gray-800 rounded text-xs hover:bg-gray-400 mr-1";
       saleBtn.textContent = "Sell";
-      saleBtn.onclick = function() { openSaleModal(row); };
+      saleBtn.onclick = (function(r) {
+        return function() {
+          console.log("Sell button clicked for:", r["UNIQUE ID"]);
+          openSaleModal(r);
+        };
+      })(row);
       actionTd.appendChild(saleBtn);
       
       var holdbackBtn = document.createElement("button");
       holdbackBtn.className = "px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 mr-1";
       holdbackBtn.textContent = "+ Holdback";
-      holdbackBtn.onclick = function() { markAsHoldback(row); };
+      holdbackBtn.onclick = (function(r) {
+        return function() {
+          console.log("Holdback button clicked for:", r["UNIQUE ID"]);
+          markAsHoldback(r);
+        };
+      })(row);
       actionTd.appendChild(holdbackBtn);
     }
 

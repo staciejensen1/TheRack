@@ -1,14 +1,15 @@
 /*
  * THE RACK - Configuration
- * Version: 2.12.2
+ * Version: 2.12.41
  * Last Updated: 2026-01-09
  * 
  * Changelog:
- * - 2.12.2: Updated version for bin tag PDF download feature
+ * - 2.12.41: Fixed button closures in tables.js, removed duplicate init() call
+ * - 2.12.40: Removed bin tag PDF code, HTML print only
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "2.12.39";
+var VERSION = "2.12.41";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {

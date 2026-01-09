@@ -698,6 +698,3 @@ function downloadInvoicePDF() {
   // Save
   doc.save('Invoice_' + inv.number + '.pdf');
 }
-
-// ============ START ============
-init();

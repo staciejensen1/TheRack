@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Function Test Page
-  Version: 2.12.2
+  Version: 2.12.40
   Last Updated: 2026-01-09
   
   Changelog:
-  - 2.12.2: Added downloadBinTagsPDFFile test
-  - 2.12.1: Fixed test to check correct function names (selectHatchlingClutch, filterHatchlingClutches, clearHatchlingClutch)
+  - 2.12.40: Removed PDF bin tag tests
+  - 2.12.1: Fixed test to check correct function names
   - 2.12.0: Initial test page for modular split
   
   This file tests that all functions are properly accessible after the split.
@@ -209,10 +209,8 @@
     testFunction('updateBinTagSelectedCount', 'bintags.js');
     testFunction('updateBinTagPreview', 'bintags.js');
     testFunction('renderBinTagPreview', 'bintags.js');
-    testFunction('downloadBinTagsPDF', 'bintags.js');
-    testFunction('downloadBinTagsPDFFile', 'bintags.js');
-    testFunction('printSingleBinTag', 'bintags.js');
     testFunction('printBinTags', 'bintags.js');
+    testFunction('printSingleBinTag', 'bintags.js');
     
     // import.js
     testFunction('openImportModal', 'import.js');

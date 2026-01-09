@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.12.15
+  Version: 2.12.40
   Last Updated: 2026-01-09
   
   Changelog:
-  - 2.12.15: PDF bin tags - TABLE layout instead of flexbox for reliable rendering
-  - 2.12.14: PDF bin tags - Row 2 matches preview exactly (simple flexbox)
+  - 2.12.40: Removed PDF bin tag code, HTML print only
+  - 2.12.39: Bin tag print - 3.18x1.93in tag, 0.10in bleed, locked
   - 2.12.4: Fixed Norwester font import (was missing from head section)
   - 2.12.3: Fixed bin tag layout to match final approved design
             Row 1: Logo 25% | Sex+ID 45% | QR 30%
             Row 2: Name 70% | INFO 30%
             Row 3: Genetics 70% | Year+Breeder 30%
-            Right column aligned at 30%, no black bg on info boxes
-  - 2.12.2: Added bin tag modal with PDF download, added QR modal to HTML
+  - 2.12.2: Added bin tag modal, added QR modal to HTML
   - 2.12.0: MAJOR REFACTOR - Split monolithic file into modular JS files
             - config.js: Configuration, constants, state
             - api.js: API calls, login, data loading
@@ -41,7 +40,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen">
@@ -389,11 +387,8 @@
                 <option value="hatchlings">Hatchlings Only</option>
               </select>
             </div>
-            <button onclick="downloadBinTagsPDFFile()" id="binTagPdfBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
-              Download PDF
-            </button>
-            <button onclick="downloadBinTagsPDF()" id="binTagDownloadBtn" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 text-sm">
-              Print (HTML)
+            <button onclick="printBinTags()" id="binTagDownloadBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+              Print
             </button>
           </div>
           

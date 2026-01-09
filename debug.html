@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Debug Button Test</title>
+</head>
+<body>
+  <h1>Button Test</h1>
+  <div id="test"></div>
+  
+  <script>
+    // Simple test
+    var testDiv = document.getElementById('test');
+    
+    // Test 1: Simple onclick
+    var btn1 = document.createElement('button');
+    btn1.textContent = 'Test 1 - Simple';
+    btn1.onclick = function() { alert('Button 1 clicked!'); };
+    testDiv.appendChild(btn1);
+    
+    // Test 2: Closure in forEach
+    var items = ['A', 'B', 'C'];
+    items.forEach(function(item) {
+      var btn = document.createElement('button');
+      btn.textContent = 'Test ' + item;
+      btn.onclick = function() { alert('Button ' + item + ' clicked!'); };
+      testDiv.appendChild(btn);
+    });
+    
+    console.log('Test page loaded');
+  </script>
+</body>
+</html>
