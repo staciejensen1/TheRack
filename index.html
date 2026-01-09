@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.43
+  Version: 2.11.44
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.44: CRITICAL FIX - Clutch egg counts being wiped on edit
+             - Root cause: Empty strings were being sent to API for # LAID, # SLUGS, # FERTILE
+             - Fix: For UPDATE operations, skip sending empty/undefined values
+             - This preserves existing data in the sheet
   - 2.11.43: DEBUG VERSION - Extensive logging to trace clutch egg count bug
              - Console logs: formData before/after, cleanData, API response
              - Console logs: headers from sheet vs what form uses
@@ -846,7 +850,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.43";
+    var VERSION = "2.11.44";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -4447,6 +4451,14 @@
         
         // Get the value - pass through as-is, NO parsing or formatting
         var val = state.formData[key];
+        
+        // CRITICAL FIX: For UPDATE operations, skip empty/undefined values
+        // This prevents wiping out existing data in the sheet
+        // For ADD operations, we still want to include empty strings to create all columns
+        if (!isAdd && (val === "" || val === undefined || val === null)) {
+          skippedKeys.push(key + " (empty - preserving existing)");
+          continue;
+        }
         
         cleanData[key] = val;
       }
