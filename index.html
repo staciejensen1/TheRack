@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.12.2
+  Version: 2.12.4
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.12.4: Fixed Norwester font import (was missing from head section)
+  - 2.12.3: Fixed bin tag layout to match final approved design
+            Row 1: Logo 25% | Sex+ID 45% | QR 30%
+            Row 2: Name 70% | INFO 30%
+            Row 3: Genetics 70% | Year+Breeder 30%
+            Right column aligned at 30%, no black bg on info boxes
   - 2.12.2: Added bin tag modal with PDF download, added QR modal to HTML
   - 2.12.0: MAJOR REFACTOR - Split monolithic file into modular JS files
             - config.js: Configuration, constants, state
@@ -29,6 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

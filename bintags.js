@@ -1,9 +1,16 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.2
+ * Version: 2.12.4
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.4: Fixed Norwester font import in index.html (was missing)
+ * - 2.12.3: Fixed bin tag layout to match final approved design:
+ *           Row 1 (47%): Logo 25% | Sex+ID 45% | QR 30%
+ *           Row 2 (15%): Name 70% | INFO 30%
+ *           Row 3 (38%): Genetics 70% | Year+Breeder 30%
+ *           Right column all 30% for vertical alignment
+ *           Info boxes have NO black background, just thin 1px borders
  * - 2.12.2: Added downloadBinTagsPDFFile() for proper PDF generation at card stock size (3.38" x 2.13")
  * - 2.12.0: Split from monolithic index.html
  */
@@ -266,11 +273,11 @@ function renderBinTagPreview(animal, dims, businessName, logoUrl) {
   // Using Norwester font for headlines, Inter for body
   var html = '<div class="bin-tag-preview" style="width:' + dims.w + 'px; height:' + dims.h + 'px; font-family: Inter, system-ui, sans-serif; border: 1px solid #000; box-sizing: border-box; overflow: hidden; background: #fff;">';
   
-  // ROW 1: Logo (22%) | Sex+ID (53%) | QR (25%) - 47% height
+  // ROW 1: Logo (25%) | Sex+ID (45%) | QR (30%) - 47% height
   html += '<div style="display: flex; height: 47%; border-bottom: 1px solid #000;">';
   
-  // Left: Logo section (black background, 22% width)
-  html += '<div style="width: 22%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px;">';
+  // Left: Logo section (black background, 25% width)
+  html += '<div style="width: 25%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px;">';
   if (logoUrl) {
     html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
   } else {
@@ -278,48 +285,48 @@ function renderBinTagPreview(animal, dims, businessName, logoUrl) {
   }
   html += '</div>';
   
-  // Center: Sex + ID (white background, 53% width)
-  html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 1px solid #000; border-right: 1px solid #000;">';
+  // Center: Sex + ID (white background, 45% width)
+  html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 1px solid #000; border-right: 1px solid #000;">';
   html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 24px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
   html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 12px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
-  // Right: QR code (white background, 25% width)
-  html += '<div style="width: 25%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px;">';
+  // Right: QR code (white background, 30% width)
+  html += '<div style="width: 30%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px;">';
   html += '<img src="' + qrUrl + '" style="width: 90%; height: 90%; object-fit: contain;" alt="QR">';
   html += '</div>';
   
   html += '</div>';
   
-  // ROW 2: Animal Name (75%) | INFO header (25%) - 15% height
+  // ROW 2: Animal Name (70%) | INFO header (30%) - 15% height
   html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
-  html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
+  html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
   html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 22px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED") + '</div>';
   html += '</div>';
-  html += '<div style="width: 25%; background: #000; display: flex; justify-content: center; align-items: center;">';
+  html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center;">';
   html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 12px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
   html += '</div>';
   html += '</div>';
   
-  // ROW 3: Genetics (75%) | Year Born + Breeder boxes (25%) - 38% height
+  // ROW 3: Genetics (70%) | Year Born + Breeder boxes (30%) - 38% height
   html += '<div style="display: flex; height: 38%;">';
   
-  // Left: Genetics (white background, 75%)
-  html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 1px solid #000;">';
+  // Left: Genetics (white background, 70%)
+  html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 1px solid #000;">';
   html += '<div style="font-size: 11px; font-weight: 500; line-height: 1.25; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
   html += '</div>';
   
-  // Right: Info boxes (black background with white boxes, 25%)
-  html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 3px; gap: 2px;">';
+  // Right: Info boxes (white background, 30% - thin 1px borders only, NO black background)
+  html += '<div style="width: 30%; background: #fff; display: flex; flex-direction: column;">';
   
-  // Year Born box (white)
-  html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
+  // Year Born box (thin 1px border on bottom only)
+  html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-bottom: 1px solid #000;">';
   html += '<div style="font-size: 7px; font-weight: 700; color: #000; letter-spacing: 0.5px;">YEAR BORN:</div>';
   html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 16px; font-weight: 400; color: #000;">' + (yearBorn || "--") + '</div>';
   html += '</div>';
   
-  // Breeder box (white)
-  html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
+  // Breeder box (no extra borders needed)
+  html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
   html += '<div style="font-size: 7px; font-weight: 700; color: #000; letter-spacing: 0.5px;">BREEDER:</div>';
   html += '<div style="font-size: 8px; font-weight: 600; color: #000; line-height: 1.1; overflow: hidden;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
   html += '</div>';
@@ -413,11 +420,11 @@ function printBinTags(animals, businessName, logoUrl) {
     
     html += '<div class="bin-tag">';
     
-    // ROW 1: Logo (22%) | Sex+ID (53%) | QR (25%) - 47% height
+    // ROW 1: Logo (25%) | Sex+ID (45%) | QR (30%) - 47% height
     html += '<div style="display: flex; height: 47%; border-bottom: 1px solid #000;">';
     
-    // Left: Logo (black bg, 22%)
-    html += '<div style="width: 22%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px;">';
+    // Left: Logo (black bg, 25%)
+    html += '<div style="width: 25%; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px;">';
     if (logoUrl) {
       html += '<img src="' + escapeHtml(logoUrl) + '" style="max-width: 90%; max-height: 90%; object-fit: contain;" alt="Logo">';
     } else {
@@ -425,48 +432,48 @@ function printBinTags(animals, businessName, logoUrl) {
     }
     html += '</div>';
     
-    // Center: Sex + ID (white bg, 53%)
-    html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 1px solid #000; border-right: 1px solid #000;">';
+    // Center: Sex + ID (white bg, 45%)
+    html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3px; border-left: 1px solid #000; border-right: 1px solid #000;">';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 20px; font-weight: 400; color: #000; letter-spacing: 2px;">' + escapeHtml(sexDisplay) + '</div>';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #000; margin-top: 2px; letter-spacing: 1px;">' + escapeHtml(id) + '</div>';
     html += '</div>';
     
-    // Right: QR (white bg, 25%)
-    html += '<div style="width: 25%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 3px;">';
+    // Right: QR (white bg, 30%)
+    html += '<div style="width: 30%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 3px;">';
     html += '<img src="' + qrUrl + '" style="width: 90%; height: 90%; object-fit: contain;" alt="QR">';
     html += '</div>';
     
     html += '</div>';
     
-    // ROW 2: Animal Name (75%) | INFO header (25%) - 15% height
+    // ROW 2: Animal Name (70%) | INFO header (30%) - 15% height
     html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
-    html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
+    html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED") + '</div>';
     html += '</div>';
-    html += '<div style="width: 25%; background: #000; display: flex; justify-content: center; align-items: center;">';
+    html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center;">';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
     html += '</div>';
     html += '</div>';
     
-    // ROW 3: Genetics (75%) | Year Born + Breeder (25%) - 38% height
+    // ROW 3: Genetics (70%) | Year Born + Breeder (30%) - 38% height
     html += '<div style="display: flex; height: 38%;">';
     
-    // Left: Genetics (75%)
-    html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 1px solid #000;">';
+    // Left: Genetics (70%)
+    html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 1px solid #000;">';
     html += '<div style="font-size: 9px; font-weight: 500; line-height: 1.2; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
     html += '</div>';
     
-    // Right: Info boxes (25%)
-    html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 2px; gap: 2px;">';
+    // Right: Info boxes (30% - white background, thin 1px borders only)
+    html += '<div style="width: 30%; background: #fff; display: flex; flex-direction: column;">';
     
-    // Year Born box
-    html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
+    // Year Born box (thin 1px border on bottom only)
+    html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-bottom: 1px solid #000;">';
     html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">YEAR BORN:</div>';
     html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 14px; font-weight: 400; color: #000;">' + (yearBorn || "--") + '</div>';
     html += '</div>';
     
-    // Breeder box
-    html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid #000;">';
+    // Breeder box (no extra borders)
+    html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
     html += '<div style="font-size: 6px; font-weight: 700; color: #000; letter-spacing: 0.5px;">BREEDER:</div>';
     html += '<div style="font-size: 7px; font-weight: 600; color: #000; line-height: 1.1;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
     html += '</div>';
@@ -599,13 +606,13 @@ function downloadBinTagsPDFFile() {
       var row3H = h * 0.38;
       
       // Column widths for row 1
-      var col1W = w * 0.22;  // Logo
-      var col2W = w * 0.53;  // Sex + ID
-      var col3W = w * 0.25;  // QR
+      var col1W = w * 0.25;  // Logo
+      var col2W = w * 0.45;  // Sex + ID
+      var col3W = w * 0.30;  // QR
       
       // Column widths for rows 2 & 3
-      var leftColW = w * 0.75;
-      var rightColW = w * 0.25;
+      var leftColW = w * 0.70;
+      var rightColW = w * 0.30;
       
       // Draw border
       doc.setDrawColor(0);
@@ -696,49 +703,41 @@ function downloadBinTagsPDFFile() {
         doc.text(line, leftColW / 2, geneticsStartY + (i * 10), { align: 'center' });
       });
       
-      // Right info column (black background)
-      doc.setFillColor(0, 0, 0);
-      doc.rect(leftColW, row3Y, rightColW, row3H, 'F');
-      
-      // Vertical divider
+      // Right info column (white background, NO black - just thin borders)
+      // Vertical divider between genetics and info column
+      doc.setDrawColor(0);
       doc.line(leftColW, row3Y, leftColW, row3Y + row3H);
       
-      // Year Born box (white)
-      var infoBoxH = (row3H - 6) / 2;
-      var infoBoxW = rightColW - 4;
-      var infoBoxX = leftColW + 2;
-      var infoBox1Y = row3Y + 2;
-      
-      doc.setFillColor(255, 255, 255);
-      doc.rect(infoBoxX, infoBox1Y, infoBoxW, infoBoxH, 'F');
-      doc.setDrawColor(0);
-      doc.rect(infoBoxX, infoBox1Y, infoBoxW, infoBoxH, 'S');
+      // Year Born box (white with border on bottom only for divider)
+      var infoBoxH = row3H / 2;
+      var infoBoxW = rightColW;
+      var infoBoxX = leftColW;
+      var infoBox1Y = row3Y;
       
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(5);
       doc.setFont('helvetica', 'bold');
-      doc.text("YEAR BORN:", infoBoxX + (infoBoxW / 2), infoBox1Y + 8, { align: 'center' });
+      doc.text("YEAR BORN:", infoBoxX + (infoBoxW / 2), infoBox1Y + 10, { align: 'center' });
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text(yearBorn || "--", infoBoxX + (infoBoxW / 2), infoBox1Y + infoBoxH - 6, { align: 'center' });
+      doc.text(yearBorn || "--", infoBoxX + (infoBoxW / 2), infoBox1Y + infoBoxH - 4, { align: 'center' });
       
-      // Breeder box (white)
-      var infoBox2Y = infoBox1Y + infoBoxH + 2;
-      doc.setFillColor(255, 255, 255);
-      doc.rect(infoBoxX, infoBox2Y, infoBoxW, infoBoxH, 'F');
-      doc.setDrawColor(0);
-      doc.rect(infoBoxX, infoBox2Y, infoBoxW, infoBoxH, 'S');
+      // Horizontal divider between year born and breeder
+      doc.line(leftColW, row3Y + infoBoxH, w, row3Y + infoBoxH);
+      
+      // Breeder box (white, no extra borders needed)
+      var infoBox2Y = row3Y + infoBoxH;
       
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(5);
       doc.setFont('helvetica', 'bold');
-      doc.text("BREEDER:", infoBoxX + (infoBoxW / 2), infoBox2Y + 8, { align: 'center' });
+      doc.text("BREEDER:", infoBoxX + (infoBoxW / 2), infoBox2Y + 10, { align: 'center' });
       doc.setFontSize(6);
       doc.setFont('helvetica', 'bold');
       var breederText = (breederSource || "--").toUpperCase();
-      var breederLines = doc.splitTextToSize(breederText, infoBoxW - 4);
+      var breederLines = doc.splitTextToSize(breederText, infoBoxW - 8);
       if (breederLines.length > 2) breederLines = breederLines.slice(0, 2);
-      var breederStartY = infoBox2Y + infoBoxH - 6 - ((breederLines.length - 1) * 7);
+      var breederStartY = infoBox2Y + infoBoxH - 4 - ((breederLines.length - 1) * 7);
       breederLines.forEach(function(line, i) {
         doc.text(line, infoBoxX + (infoBoxW / 2), breederStartY + (i * 7), { align: 'center' });
       });
