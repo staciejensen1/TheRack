@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.45
+  Version: 2.11.46
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.46: REVERTED to simple saveRecord from working version
+             - Removed all cleanData filtering that was breaking saves
+             - Sends state.formData directly like working version did
+             - Removed custom clutch form - uses standard form rendering
   - 2.11.45: PROPER FIX - Edit mode only sends fields user actually changed
              - Added state.originalData to track original values when editing
              - Added state.modifiedFields Set to track which fields were touched
@@ -856,7 +860,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.45";
+    var VERSION = "2.11.46";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -3320,12 +3324,6 @@
         return;
       }
       
-      // Special rendering for Clutch form (both ADD and EDIT)
-      if (state.modalTab === "clutch") {
-        renderClutchForm();
-        return;
-      }
-      
       // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
       var skipFields = ["__rowIndex", "__raw", "QR CODE", "SHEET ID", "SHEET_ID"];
       if (state.modalTab !== "activity") {
@@ -3681,196 +3679,6 @@
       state.formData["DAM"] = "";
       state.formData["SIRE"] = "";
       renderModalForm("hatchling");
-    }
-
-    // Custom Clutch Add Form with searchable selectors
-    // Custom Clutch Form - used for both Add and Edit
-    function renderClutchForm() {
-      var html = '<div class="space-y-4">';
-      var today = state.formData["LAY DATE"] || new Date().toISOString().split("T")[0];
-      
-      // Show estimated hatch date preview
-      if (today) {
-        var estHatch = calculateEstHatchDate(today);
-        html += '<div class="bg-gray-100 border border-gray-300 rounded-xl px-4 py-3">';
-        html += '<div class="text-xs text-gray-600 uppercase font-semibold">Estimated Hatch Date (Lay Date + 59 days)</div>';
-        html += '<div class="font-bold text-gray-800 text-lg">' + estHatch + '</div>';
-        html += '</div>';
-      }
-      
-      // Get breeders for Sire/Dam selection
-      var males = state.data.collection.filter(function(r) {
-        var st = (r.STATUS || "").toLowerCase();
-        var sex = (r.SEX || "").toLowerCase();
-        return (st === "breeder" || st === "holdback" || st === "on loan") && sex.startsWith("m");
-      });
-      var females = state.data.collection.filter(function(r) {
-        var st = (r.STATUS || "").toLowerCase();
-        var sex = (r.SEX || "").toLowerCase();
-        return (st === "breeder" || st === "holdback" || st === "on loan") && sex.startsWith("f");
-      });
-      
-      // 1. SIRE - searchable chip selector
-      var sireVal = state.formData["SIRE"] || "";
-      html += '<div>';
-      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Sire (Male)</label>';
-      html += '<div class="relative">';
-      html += '<input type="text" id="clutchSireSearch" placeholder="Type to search males..." ';
-      html += 'oninput="filterClutchSires(this.value)" ';
-      html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
-      html += '<div id="clutchSireList" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white ' + (sireVal ? 'hidden' : '') + '">';
-      males.forEach(function(a) {
-        var name = a["ANIMAL NAME"] || "";
-        var id = a["UNIQUE ID"] || "";
-        var label = name ? name + " | " + id : id;
-        html += '<div onclick="selectClutchSire(\'' + escapeHtml(label).replace(/'/g, "\\'") + '\')" ';
-        html += 'class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-50 last:border-0">';
-        html += '<span class="font-medium">' + escapeHtml(name || id) + '</span>';
-        if (name && id) html += ' <span class="text-gray-400 text-xs">' + escapeHtml(id) + '</span>';
-        html += '</div>';
-      });
-      html += '</div>';
-      html += '</div>';
-      
-      // Show selected sire
-      if (sireVal) {
-        html += '<div class="mt-2 px-4 py-3 bg-gray-900 text-white rounded-xl flex items-center justify-between">';
-        html += '<span class="font-medium">' + escapeHtml(sireVal) + '</span>';
-        html += '<button type="button" onclick="clearClutchSire()" class="text-gray-400 hover:text-white text-lg">&times;</button>';
-        html += '</div>';
-      }
-      html += '</div>';
-      
-      // 2. DAM - searchable chip selector
-      var damVal = state.formData["DAM"] || "";
-      html += '<div>';
-      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Dam (Female)</label>';
-      html += '<div class="relative">';
-      html += '<input type="text" id="clutchDamSearch" placeholder="Type to search females..." ';
-      html += 'oninput="filterClutchDams(this.value)" ';
-      html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
-      html += '<div id="clutchDamList" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white ' + (damVal ? 'hidden' : '') + '">';
-      females.forEach(function(a) {
-        var name = a["ANIMAL NAME"] || "";
-        var id = a["UNIQUE ID"] || "";
-        var label = name ? name + " | " + id : id;
-        html += '<div onclick="selectClutchDam(\'' + escapeHtml(label).replace(/'/g, "\\'") + '\')" ';
-        html += 'class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-50 last:border-0">';
-        html += '<span class="font-medium">' + escapeHtml(name || id) + '</span>';
-        if (name && id) html += ' <span class="text-gray-400 text-xs">' + escapeHtml(id) + '</span>';
-        html += '</div>';
-      });
-      html += '</div>';
-      html += '</div>';
-      
-      // Show selected dam
-      if (damVal) {
-        html += '<div class="mt-2 px-4 py-3 bg-gray-900 text-white rounded-xl flex items-center justify-between">';
-        html += '<span class="font-medium">' + escapeHtml(damVal) + '</span>';
-        html += '<button type="button" onclick="clearClutchDam()" class="text-gray-400 hover:text-white text-lg">&times;</button>';
-        html += '</div>';
-      }
-      html += '</div>';
-      
-      // 3. LAY DATE
-      html += '<div>';
-      html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Lay Date</label>';
-      html += '<input type="date" id="clutchLayDate" value="' + today + '" ';
-      html += 'onchange="updateClutchLayDate(this.value)" ';
-      html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
-      html += '</div>';
-      
-      // 4. Egg counts row - # LAID (F), # SLUGS (G), # FERTILE (H)
-      var laidVal = state.formData["# LAID"] || "";
-      var slugsVal = state.formData["# SLUGS"] || "";
-      var fertileVal = state.formData["# FERTILE"] || "";
-      html += '<div class="grid grid-cols-3 gap-4">';
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1"># Laid</label>';
-      html += '<input type="number" id="clutchLaid" value="' + laidVal + '" oninput="updateFormField(\'# LAID\', this.value)" onchange="updateFormField(\'# LAID\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
-      html += '</div>';
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1"># Slugs</label>';
-      html += '<input type="number" id="clutchSlugs" value="' + slugsVal + '" oninput="updateFormField(\'# SLUGS\', this.value)" onchange="updateFormField(\'# SLUGS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
-      html += '</div>';
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1"># Fertile</label>';
-      html += '<input type="number" id="clutchFertile" value="' + fertileVal + '" oninput="updateFormField(\'# FERTILE\', this.value)" onchange="updateFormField(\'# FERTILE\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
-      html += '</div>';
-      html += '</div>';
-      
-      // 5. STATUS
-      var statusVal = state.formData["STATUS"] || "Incubating";
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Status</label>';
-      html += '<select onchange="updateFormField(\'STATUS\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm">';
-      ["Incubating", "Hatched", "Failed"].forEach(function(o) {
-        var sel = (statusVal === o) ? " selected" : "";
-        html += '<option value="' + o + '"' + sel + '>' + o + '</option>';
-      });
-      html += '</select>';
-      html += '</div>';
-      
-      // 6. NOTES
-      var notesVal = state.formData["NOTES"] || "";
-      html += '<div>';
-      html += '<label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Notes</label>';
-      html += '<textarea onchange="updateFormField(\'NOTES\', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm" rows="2">' + escapeHtml(notesVal) + '</textarea>';
-      html += '</div>';
-      
-      html += '</div>';
-      document.getElementById("modalBody").innerHTML = html;
-    }
-    
-    function filterClutchSires(search) {
-      var list = document.getElementById("clutchSireList");
-      if (!list) return;
-      var items = list.getElementsByTagName("div");
-      var searchLower = search.toLowerCase();
-      
-      for (var i = 0; i < items.length; i++) {
-        var text = items[i].textContent.toLowerCase();
-        items[i].style.display = (text.indexOf(searchLower) >= 0) ? "" : "none";
-      }
-      list.classList.remove("hidden");
-    }
-    
-    function filterClutchDams(search) {
-      var list = document.getElementById("clutchDamList");
-      if (!list) return;
-      var items = list.getElementsByTagName("div");
-      var searchLower = search.toLowerCase();
-      
-      for (var i = 0; i < items.length; i++) {
-        var text = items[i].textContent.toLowerCase();
-        items[i].style.display = (text.indexOf(searchLower) >= 0) ? "" : "none";
-      }
-      list.classList.remove("hidden");
-    }
-    
-    function selectClutchSire(label) {
-      state.formData["SIRE"] = label;
-      renderClutchForm();
-    }
-    
-    function selectClutchDam(label) {
-      state.formData["DAM"] = label;
-      renderClutchForm();
-    }
-    
-    function clearClutchSire() {
-      state.formData["SIRE"] = "";
-      renderClutchForm();
-    }
-    
-    function clearClutchDam() {
-      state.formData["DAM"] = "";
-      renderClutchForm();
-    }
-    
-    function updateClutchLayDate(value) {
-      state.formData["LAY DATE"] = value;
-      renderClutchForm();
     }
 
     // Custom Activity Add Form - cleaner design
@@ -4372,56 +4180,6 @@
       var headers = state.headers[state.modalTab] || [];
       if (!headers.length) { document.getElementById("modalError").textContent = "No headers"; return; }
 
-      console.log("=== SAVE RECORD DEBUG ===");
-      console.log("1. modalTab:", state.modalTab);
-      console.log("2. modalMode:", state.modalMode);
-      console.log("3. Sheet headers from API:", headers);
-      console.log("4. state.formData BEFORE egg grab:", JSON.stringify(state.formData, null, 2));
-
-      // SAFEGUARD: For clutch form, grab egg count values directly from inputs
-      // This ensures we capture values even if onchange/oninput didn't fire
-      // Also mark them as modified if the input has a value
-      if (state.modalTab === "clutch") {
-        var laidInput = document.getElementById("clutchLaid");
-        var slugsInput = document.getElementById("clutchSlugs");
-        var fertileInput = document.getElementById("clutchFertile");
-        console.log("5. Egg input elements found:", {
-          laidInput: laidInput ? laidInput.value : "NOT FOUND",
-          slugsInput: slugsInput ? slugsInput.value : "NOT FOUND",
-          fertileInput: fertileInput ? fertileInput.value : "NOT FOUND"
-        });
-        // Only grab and mark as modified if the input has a value AND it differs from original
-        if (laidInput && laidInput.value) {
-          var origLaid = state.originalData ? state.originalData["# LAID"] : "";
-          if (laidInput.value !== String(origLaid || "")) {
-            state.formData["# LAID"] = laidInput.value;
-            if (state.modifiedFields) state.modifiedFields.add("# LAID");
-          }
-        }
-        if (slugsInput && slugsInput.value) {
-          var origSlugs = state.originalData ? state.originalData["# SLUGS"] : "";
-          if (slugsInput.value !== String(origSlugs || "")) {
-            state.formData["# SLUGS"] = slugsInput.value;
-            if (state.modifiedFields) state.modifiedFields.add("# SLUGS");
-          }
-        }
-        if (fertileInput && fertileInput.value) {
-          var origFertile = state.originalData ? state.originalData["# FERTILE"] : "";
-          if (fertileInput.value !== String(origFertile || "")) {
-            state.formData["# FERTILE"] = fertileInput.value;
-            if (state.modifiedFields) state.modifiedFields.add("# FERTILE");
-          }
-        }
-        console.log("6. state.formData AFTER egg grab:", JSON.stringify(state.formData, null, 2));
-        
-        // Check if headers match what we're sending
-        console.log("7. Checking header match for egg columns:");
-        console.log("   - Headers includes '# LAID'?", headers.indexOf("# LAID") >= 0);
-        console.log("   - Headers includes '# SLUGS'?", headers.indexOf("# SLUGS") >= 0);
-        console.log("   - Headers includes '# SLUGS'?", headers.indexOf("# SLUGS") >= 0);
-        console.log("   - Headers includes '# FERTILE'?", headers.indexOf("# FERTILE") >= 0);
-      }
-
       // Auto-calculate EST. HATCH DATE for clutches
       if (state.modalTab === "clutch" && state.formData["LAY DATE"]) {
         var estHatchIdx = -1;
@@ -4439,82 +4197,8 @@
 
       var sheetName = SHEET_TABS[state.modalTab];
       var savedTab = state.modalTab;
+      var savedFormData = Object.assign({}, state.formData);
       var isAdd = state.modalMode === "add";
-      
-      // CRITICAL: List ALL columns that have formulas - NEVER send data to these
-      // These are generated/calculated by formulas in the Google Sheet
-      // NOTE: Activity tab uses UNIQUE ID as a reference field (not a formula), so allow it there
-      var formulaColumns = [
-        // Collection sheet formula columns
-        "QR CODE",          // Column Q - formula generates QR
-        "(RESERVED)",       // Column M - reserved
-        // Clutch sheet formula columns  
-        "DAYS TILL HATCH",  // Column I - formula calculates
-        "DAYS TIL HATCH",   // Alternate spelling
-        "DAYS TO HATCH",    // Alternate spelling
-        // Internal fields
-        "__rowIndex",
-        "__raw",
-        // Display-only fields (used for UI, not saved to sheet)
-        "__SIRE_DISPLAY",
-        "__DAM_DISPLAY",
-        "__CLUTCH_DISPLAY"
-      ];
-      
-      // UNIQUE ID and CLUTCH ID are formulas in Collection/Clutch sheets, but NOT in Activity
-      if (state.modalTab !== "activity") {
-        formulaColumns.push("UNIQUE ID");
-        formulaColumns.push("CLUTCH ID");
-      }
-      
-      var cleanData = {};
-      var skippedKeys = [];
-      
-      // For UPDATE: only send fields that were actually modified by the user
-      // For ADD: send all fields
-      var fieldsToInclude = state.modifiedFields; // null for ADD, Set for EDIT
-      
-      console.log("7a. isAdd:", isAdd);
-      console.log("7b. modifiedFields:", fieldsToInclude ? Array.from(fieldsToInclude) : "null (sending all)");
-      
-      for (var key in state.formData) {
-        // Skip formula columns entirely - check both exact and uppercase
-        var isFormula = false;
-        for (var f = 0; f < formulaColumns.length; f++) {
-          if (key === formulaColumns[f] || key.toUpperCase() === formulaColumns[f].toUpperCase()) {
-            isFormula = true;
-            break;
-          }
-        }
-        if (isFormula) {
-          skippedKeys.push(key + " (formula)");
-          continue;
-        }
-        
-        // Skip columns that look like Sheet IDs (long alphanumeric, 20+ chars)
-        if (key.length > 20 && /^[A-Za-z0-9_\-]+$/.test(key)) {
-          skippedKeys.push(key + " (looks like sheet ID)");
-          continue;
-        }
-        
-        // CRITICAL: For UPDATE operations, ONLY send fields that user actually modified
-        // This prevents overwriting ANY data the user didn't touch
-        if (!isAdd && fieldsToInclude && !fieldsToInclude.has(key)) {
-          skippedKeys.push(key + " (not modified by user)");
-          continue;
-        }
-        
-        // Get the value - pass through as-is, NO parsing or formatting
-        var val = state.formData[key];
-        
-        cleanData[key] = val;
-      }
-      
-      console.log("8. Keys SKIPPED:", skippedKeys);
-      console.log("9. cleanData being sent to API:", JSON.stringify(cleanData, null, 2));
-      console.log("10. Fields actually being sent:", Object.keys(cleanData));
-      
-      var savedFormData = Object.assign({}, cleanData);
 
       document.getElementById("saveBtn").textContent = "Saving...";
       document.getElementById("saveBtn").disabled = true;
@@ -4523,20 +4207,18 @@
       if (isAdd) {
         promise = apiCall('saveRecord', {
           tab: sheetName,
-          data: cleanData
+          data: state.formData
         });
       } else {
         promise = apiCall('updateRecord', {
           tab: sheetName,
           rowIndex: state.editRowIndex,
-          data: cleanData
+          data: state.formData
         });
       }
 
       promise.then(function(response) {
-        console.log("11. API Response:", response);
         if (response.success) {
-          console.log("12. Save successful! About to call loadDataQuietly...");
           // Optimistic UI: Add to local data immediately
           if (isAdd) {
             var newRow = Object.assign({ __rowIndex: state.data[savedTab].length }, savedFormData);
@@ -4550,11 +4232,9 @@
           // Then refresh from server in background
           loadDataQuietly();
         } else {
-          console.log("12. Save FAILED:", response.error);
           document.getElementById("modalError").textContent = response.error || "Save failed";
         }
       }).catch(function(e) {
-        console.log("12. Save ERROR:", e);
         document.getElementById("modalError").textContent = e.message || "Save failed";
       }).finally(function() {
         document.getElementById("saveBtn").textContent = "Save";
@@ -4564,25 +4244,10 @@
     
     // Silent data refresh (no loading message)
     function loadDataQuietly() {
-      console.log("=== LOAD DATA QUIETLY ===");
       apiCall('getData', {})
         .then(function(response) {
           if (response.success) {
             var data = response.data;
-            console.log("13. Data reloaded from server");
-            console.log("14. Clutch headers from server:", data.clutch ? data.clutch.headers : "NO CLUTCH DATA");
-            console.log("15. First clutch row from server:", data.clutch && data.clutch.rows && data.clutch.rows[0] ? JSON.stringify(data.clutch.rows[0]) : "NO ROWS");
-            if (data.clutch && data.clutch.rows) {
-              data.clutch.rows.forEach(function(row, idx) {
-                if (row["# LAID"] || row["# FERTILE"] || row["# SLUGS"]) {
-                  console.log("16. Clutch row " + idx + " egg data:", {
-                    "# LAID": row["# LAID"],
-                    "# SLUGS": row["# SLUGS"],
-                    "# FERTILE": row["# FERTILE"]
-                  });
-                }
-              });
-            }
             state.headers = {
               collection: data.collection ? data.collection.headers : [],
               clutch: data.clutch ? data.clutch.headers : [],
