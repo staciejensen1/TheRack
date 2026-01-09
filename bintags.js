@@ -1,9 +1,10 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.19
+ * Version: 2.12.20
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.20: Fixed PDF Row 2 centering - correct padding calc for 18px name and 11px INFO
  * - 2.12.19: Increased Sex+ID top padding - PDF to 37px, HTML to 33px for card cutout clearance
  * - 2.12.18: PDF Row 2 uses explicit padding for vertical centering (html2canvas fix), HTML print centers on page
  * - 2.12.17: PDF now uses colgroup for consistent column widths, removed redundant inline widths
@@ -666,18 +667,20 @@ function downloadBinTagsPDFFile() {
       html += '</tr>';
       
       // ROW 2: Name (70%) | INFO (30%)
-      // row2Height is ~31px, font is 18px, so pad top ~6px to center
-      var row2Pad = Math.max(0, Math.floor((row2Height - 20) / 2));
+      // row2Height is ~31px, need to center text vertically
+      // For 18px font with line-height 1, center it in the row
+      var row2Pad = Math.max(0, Math.floor((row2Height - 18) / 2));
       html += '<tr style="height: ' + row2Height + 'px;">';
       
       // Name cell - spans first 2 columns
-      html += '<td colspan="2" style="background: #fff; text-align: center; border-bottom: 1px solid #000; border-right: 1px solid #000; padding-top: ' + row2Pad + 'px;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px; line-height: 1;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
+      html += '<td colspan="2" style="background: #fff; text-align: center; border-bottom: 1px solid #000; border-right: 1px solid #000; padding-top: ' + row2Pad + 'px; padding-bottom: 0;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px; line-height: 1; margin: 0;">' + escapeHtml(name || "UNNAMED").toUpperCase() + '</div>';
       html += '</td>';
       
-      // INFO cell
-      html += '<td style="background: #000; text-align: center; border-bottom: 1px solid #000; padding-top: ' + row2Pad + 'px;">';
-      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px; line-height: 1;">INFO</div>';
+      // INFO cell - 11px font needs different padding
+      var infoPad = Math.max(0, Math.floor((row2Height - 11) / 2));
+      html += '<td style="background: #000; text-align: center; border-bottom: 1px solid #000; padding-top: ' + infoPad + 'px; padding-bottom: 0;">';
+      html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 11px; font-weight: 400; color: #fff; letter-spacing: 2px; line-height: 1; margin: 0;">INFO</div>';
       html += '</td>';
       
       html += '</tr>';
