@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.16
+  Version: 2.11.18
   Last Updated: 2026-01-09
   
   Changelog:
-  - 2.11.16: Added Balance Due alert on Dashboard
-             - New alert shows count of On Hold/Sold animals where TOTAL PAID < SOLD PRICE
-             - All alert cards already link to their respective tables (verified)
-  - 2.11.15: Added Pairings view and updated Dashboard activity section
+  - 2.11.18: Sales table improvements
+             - Added TOTAL PAID column to Sales table
+             - Balance Due alert now filters Sales to show only items with balance due
+             - Shows "Balance Due Only" filter badge when active with X to clear
+  - 2.11.17: Enhanced Activity form and Pairings table
              - Activity table: Feedings, Refusals, Sheds, Ovulations (this month)
              - Dashboard: Took Meal, Refused Meal, Paired, Locked, Ovulation, Laid (season totals)
   - 2.11.12: Quick Activity save button now shows "Saving..." while saving
@@ -394,6 +395,10 @@
               <option value="On Hold">On Hold</option>
               <option value="Sold">Sold</option>
             </select>
+            <span id="balanceDueFilterDisplay" class="hidden px-3 py-1 bg-red-100 border border-red-300 rounded-full text-sm flex items-center gap-2 text-red-700">
+              <span>Balance Due Only</span>
+              <button onclick="clearBalanceDueFilter()" class="text-red-500 hover:text-red-700 font-bold">&times;</button>
+            </span>
           </div>
 
           <!-- Data table -->
@@ -699,7 +704,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.16";
+    var VERSION = "2.11.18";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1192,7 +1197,18 @@
       if (isClutch) {
         quickActivities = ["Hatched", "Clutch Went Bad", "Note"];
       } else {
-        quickActivities = ["Took Meal", "Refused Meal", "Shed", "Weight", "Note", "Health Hold"];
+        // Row 1: Feeding
+        quickActivities = [
+          "Took Meal", "Refused Meal",
+          // Row 2: General
+          "Shed", "Weight",
+          // Row 3: Breeding
+          "Paired", "Lock",
+          // Row 4: Female specific
+          "Ovulation", "Pre Lay Shed",
+          // Row 5: Other
+          "Note", "Health Hold"
+        ];
       }
       
       quickActivities.forEach(function(act) {
@@ -1204,10 +1220,36 @@
       html += '</div>';
       
       // Value field (for weight, notes, etc)
-      var showValueField = state.formData["ACTIVITY"] === "Weight" || state.formData["ACTIVITY"] === "Note" || state.formData["ACTIVITY"] === "Hatched" || state.formData["ACTIVITY"] === "Clutch Went Bad";
+      var showValueField = state.formData["ACTIVITY"] === "Weight" || 
+                           state.formData["ACTIVITY"] === "Note" || 
+                           state.formData["ACTIVITY"] === "Hatched" || 
+                           state.formData["ACTIVITY"] === "Clutch Went Bad" ||
+                           state.formData["ACTIVITY"] === "Health Hold" ||
+                           state.formData["ACTIVITY"] === "Ovulation";
       html += '<div id="qrValueField" class="' + (showValueField ? "" : "hidden") + '">';
       html += '<label class="block text-sm font-medium text-gray-700 mb-1" id="qrValueLabel">Value</label>';
       html += '<input type="text" id="field_VALUE" value="' + (state.formData["VALUE"] || "") + '" class="w-full px-3 py-2 border border-gray-300 rounded-xl" placeholder="Enter value...">';
+      html += '</div>';
+      
+      // Paired With field (for Paired/Lock activities)
+      var showPairedField = state.formData["ACTIVITY"] === "Paired" || state.formData["ACTIVITY"] === "Lock";
+      html += '<div id="qrPairedField" class="' + (showPairedField ? "" : "hidden") + '">';
+      html += '<label class="block text-sm font-medium text-gray-700 mb-1">Paired With</label>';
+      html += '<select id="field_PAIRED_WITH" class="w-full px-3 py-2 border border-gray-300 rounded-xl">';
+      html += '<option value="">Select animal...</option>';
+      // Get list of breeders
+      var breeders = state.data.collection.filter(function(r) {
+        var st = (r.STATUS || "").toLowerCase();
+        return st === "breeder" || st === "holdback" || st === "on loan";
+      });
+      breeders.forEach(function(b) {
+        var bName = b["ANIMAL NAME"] || "";
+        var bId = b["UNIQUE ID"] || "";
+        var label = bName ? bName + " | " + bId : bId;
+        var selected = (state.formData["PAIRED_WITH"] === label) ? " selected" : "";
+        html += '<option value="' + escapeHtml(label) + '"' + selected + '>' + escapeHtml(label) + '</option>';
+      });
+      html += '</select>';
       html += '</div>';
       
       html += '</div>';
@@ -1233,6 +1275,11 @@
       // Show/hide value field
       var valueField = document.getElementById('qrValueField');
       var valueLabel = document.getElementById('qrValueLabel');
+      var pairedField = document.getElementById('qrPairedField');
+      
+      // Hide paired field by default
+      if (pairedField) pairedField.classList.add('hidden');
+      
       if (activity === "Weight") {
         valueField.classList.remove('hidden');
         valueLabel.textContent = "Weight (g)";
@@ -1245,6 +1292,12 @@
       } else if (activity === "Clutch Went Bad") {
         valueField.classList.remove('hidden');
         valueLabel.textContent = "Reason (optional)";
+      } else if (activity === "Ovulation") {
+        valueField.classList.remove('hidden');
+        valueLabel.textContent = "Follicle Size (mm)";
+      } else if (activity === "Paired" || activity === "Lock") {
+        valueField.classList.add('hidden');
+        if (pairedField) pairedField.classList.remove('hidden');
       } else {
         valueField.classList.add('hidden');
       }
@@ -1254,10 +1307,16 @@
       var date = document.getElementById("field_DATE").value;
       var activity = state.formData["ACTIVITY"];
       var value = document.getElementById("field_VALUE") ? document.getElementById("field_VALUE").value : "";
+      var pairedWith = document.getElementById("field_PAIRED_WITH") ? document.getElementById("field_PAIRED_WITH").value : "";
       
       if (!activity) {
         setStatus("Please select an activity", true);
         return;
+      }
+      
+      // For Paired/Lock, use the paired animal as the value
+      if ((activity === "Paired" || activity === "Lock") && pairedWith) {
+        value = pairedWith;
       }
       
       var record = {
@@ -1466,7 +1525,7 @@
         
         // Balance Due (MEDIUM) - Sold Price > Total Paid
         if (stats.unpaidBalance > 0) {
-          html += '<div onclick="navigateTo(\'sales\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+          html += '<div onclick="filterByBalanceDue();" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
           html += '<div class="flex items-center justify-between">';
           html += '<div>';
           html += '<div class="text-xs uppercase tracking-wider text-gray-700">Balance Due</div>';
@@ -1900,6 +1959,18 @@
       return isNaN(d.getTime()) ? null : d;
     }
 
+    // Get animal name by UNIQUE ID
+    function getAnimalNameById(uniqueId) {
+      if (!uniqueId) return "";
+      var rows = state.data.collection || [];
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i]["UNIQUE ID"] === uniqueId) {
+          return rows[i]["ANIMAL NAME"] || "";
+        }
+      }
+      return "";
+    }
+
     // ============ TABLE ============
     function renderTable() {
       var columns = getColumns();
@@ -1929,6 +2000,15 @@
         // Sync search input
         var salesSearchInput = document.getElementById("salesSearchInput");
         if (salesSearchInput) salesSearchInput.value = state.filters.search || "";
+        // Show/hide balance due filter indicator
+        var balanceDueDisplay = document.getElementById("balanceDueFilterDisplay");
+        if (balanceDueDisplay) {
+          if (state.filters.balanceDue) {
+            balanceDueDisplay.classList.remove("hidden");
+          } else {
+            balanceDueDisplay.classList.add("hidden");
+          }
+        }
       } else if (state.activeTab === "clutches" || state.activeTab === "activity") {
         // Show just search for clutches and activity
         filterBar.classList.remove("hidden");
@@ -2105,7 +2185,19 @@
           // Add warning icon to first data column if overdue
           else if (colIdx === 0 && isOverdue) {
             td.innerHTML = '<span class="text-red-600 font-bold mr-1" title="Overdue - past estimated hatch date">!</span>' + escapeHtml(row[col] || "--");
-          } 
+          }
+          // Special handling for Pairings view - SIRE maps to UNIQUE ID, DAM maps to VALUE
+          else if (state.activeTab === "pairings" && col === "SIRE") {
+            // Get the animal name for the UNIQUE ID
+            var sireId = row["UNIQUE ID"] || "";
+            var sireName = getAnimalNameById(sireId);
+            td.textContent = sireName ? sireName + " | " + sireId : sireId || "--";
+          }
+          else if (state.activeTab === "pairings" && col === "DAM") {
+            // VALUE contains the paired animal (could be "Name | ID" format already)
+            var damValue = row["VALUE"] || "";
+            td.textContent = damValue || "--";
+          }
           // Format date columns nicely
           else if (col.toUpperCase().includes("DATE") && row[col]) {
             var dateVal = parseDate(row[col]);
@@ -2322,8 +2414,22 @@
       renderTable();
     }
     
+    function filterByBalanceDue() {
+      state.filters.balanceDue = true;
+      navigateTo('sales');
+      updateClearFiltersVisibility();
+    }
+    
+    function clearBalanceDueFilter() {
+      state.filters.balanceDue = false;
+      var balanceDueDisplay = document.getElementById("balanceDueFilterDisplay");
+      if (balanceDueDisplay) balanceDueDisplay.classList.add("hidden");
+      updateClearFiltersVisibility();
+      renderTable();
+    }
+    
     function clearAllFilters() {
-      state.filters = { sex: "", status: "", species: "", gene: "", salesYear: "", salesStatus: "", search: "" };
+      state.filters = { sex: "", status: "", species: "", gene: "", salesYear: "", salesStatus: "", search: "", balanceDue: false };
       document.getElementById("filterSex").value = "";
       document.getElementById("filterStatus").value = "";
       document.getElementById("filterSpecies").value = "";
@@ -2337,11 +2443,14 @@
       if (salesStatusSelect) salesStatusSelect.value = "";
       document.getElementById("geneFilterDisplay").classList.add("hidden");
       document.getElementById("clearFiltersBtn").classList.add("hidden");
+      // Hide balance due filter display if exists
+      var balanceDueDisplay = document.getElementById("balanceDueFilterDisplay");
+      if (balanceDueDisplay) balanceDueDisplay.classList.add("hidden");
       renderTable();
     }
     
     function updateClearFiltersVisibility() {
-      var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene || state.filters.salesYear || state.filters.salesStatus || state.filters.search;
+      var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene || state.filters.salesYear || state.filters.salesStatus || state.filters.search || state.filters.balanceDue;
       document.getElementById("clearFiltersBtn").classList.toggle("hidden", !hasFilters);
     }
     
@@ -2558,9 +2667,9 @@
       var prefs = {
         collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
         clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
-        pairings: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"],
+        pairings: ["DATE", "SIRE", "DAM", "ACTIVITY"],
         hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
-        sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "DATE SOLD", "BUYER NAME"],
+        sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "TOTAL PAID", "DATE SOLD", "BUYER NAME"],
         activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
       };
       var h = state.headers[getSheetKey(state.activeTab)] || [];
@@ -2657,6 +2766,14 @@
           // First filter by sales status
           if (!(st === "on hold" || st === "hold" || st === "sold")) {
             return false;
+          }
+          // Apply balance due filter if set
+          if (state.filters.balanceDue) {
+            var soldPrice = parseFloat(r["SOLD PRICE"]) || 0;
+            var totalPaid = parseFloat(r["TOTAL PAID"]) || 0;
+            if (!(soldPrice > 0 && totalPaid < soldPrice)) {
+              return false;
+            }
           }
           // Apply year filter if set
           if (state.filters.salesYear) {
