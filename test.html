@@ -1,1 +1,296 @@
+<!DOCTYPE html>
+<!--
+  THE RACK - Function Test Page
+  Version: 2.12.40
+  Last Updated: 2026-01-09
+  
+  Changelog:
+  - 2.12.40: Removed PDF bin tag tests
+  - 2.12.1: Fixed test to check correct function names
+  - 2.12.0: Initial test page for modular split
+  
+  This file tests that all functions are properly accessible after the split.
+  Open in browser and check the console for results.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Rack - Function Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 40px; background: #f5f5f5; }
+    h1 { margin-bottom: 20px; }
+    .test-results { background: white; border-radius: 8px; padding: 20px; max-width: 800px; }
+    .pass { color: #16a34a; }
+    .fail { color: #dc2626; }
+    .section { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; }
+    .section h3 { margin: 0 0 10px 0; font-size: 14px; color: #666; text-transform: uppercase; }
+    .result { padding: 4px 0; font-family: monospace; font-size: 13px; }
+    #summary { font-size: 18px; font-weight: bold; margin-bottom: 20px; padding: 15px; border-radius: 8px; }
+    #summary.all-pass { background: #dcfce7; color: #16a34a; }
+    #summary.has-fails { background: #fee2e2; color: #dc2626; }
+  </style>
+</head>
+<body>
+  <h1>The Rack v2.12.0 - Function Test</h1>
+  
+  <div id="summary">Running tests...</div>
+  
+  <div class="test-results" id="results">
+    <!-- Results will be inserted here -->
+  </div>
 
+  <!-- Load all JS files in order -->
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="tables.js"></script>
+  <script src="modals.js"></script>
+  <script src="hatch-sale.js"></script>
+  <script src="tools.js"></script>
+  <script src="archive.js"></script>
+  <script src="bintags.js"></script>
+  <script src="import.js"></script>
+  <script src="invoice.js"></script>
+  <script src="qr-activity.js"></script>
+  
+  <script>
+    // Test runner
+    var testResults = [];
+    var passCount = 0;
+    var failCount = 0;
+    
+    function testFunction(name, file) {
+      var exists = typeof window[name] === 'function';
+      testResults.push({ name: name, file: file, pass: exists });
+      if (exists) passCount++; else failCount++;
+      return exists;
+    }
+    
+    function testVariable(name, file) {
+      var exists = typeof window[name] !== 'undefined';
+      testResults.push({ name: name + ' (var)', file: file, pass: exists });
+      if (exists) passCount++; else failCount++;
+      return exists;
+    }
+    
+    // config.js
+    testVariable('VERSION', 'config.js');
+    testVariable('API_URL', 'config.js');
+    testVariable('SHEET_TABS', 'config.js');
+    testVariable('FIELD_OPTIONS', 'config.js');
+    testVariable('state', 'config.js');
+    
+    // api.js
+    testFunction('apiCall', 'api.js');
+    testFunction('handleLogin', 'api.js');
+    testFunction('handleMobileLogin', 'api.js');
+    testFunction('handleSignOut', 'api.js');
+    testFunction('updateUI', 'api.js');
+    testFunction('loadData', 'api.js');
+    testFunction('loadDataQuietly', 'api.js');
+    testFunction('updateUIWithSettings', 'api.js');
+    testFunction('setStatus', 'api.js');
+    
+    // app.js
+    testFunction('init', 'app.js');
+    testFunction('toggleMobileMenu', 'app.js');
+    testFunction('renderNavTabs', 'app.js');
+    testFunction('navigateTo', 'app.js');
+    testFunction('goBack', 'app.js');
+    testFunction('renderCurrentView', 'app.js');
+    testFunction('escapeHtml', 'app.js');
+    testFunction('parseDate', 'app.js');
+    testFunction('getYearFromDate', 'app.js');
+    testFunction('formatDateForInput', 'app.js');
+    testFunction('formatDateDisplay', 'app.js');
+    testFunction('colLetter', 'app.js');
+    testFunction('getAnimalNameById', 'app.js');
+    testFunction('getSheetKey', 'app.js');
+    testFunction('openAddForCurrentTab', 'app.js');
+    
+    // dashboard.js
+    testFunction('renderDashboard', 'dashboard.js');
+    testFunction('statCard', 'dashboard.js');
+    testFunction('calculateStats', 'dashboard.js');
+    testFunction('countSex', 'dashboard.js');
+    testFunction('calculateSalesStatsForYear', 'dashboard.js');
+    testFunction('calculateActivityStats', 'dashboard.js');
+    
+    // tables.js
+    testFunction('renderTable', 'tables.js');
+    testFunction('handleEdit', 'tables.js');
+    testFunction('handleHatch', 'tables.js');
+    testFunction('handleSell', 'tables.js');
+    testFunction('handleHoldback', 'tables.js');
+    testFunction('handleDelete', 'tables.js');
+    testFunction('calculateMaturity', 'tables.js');
+    testFunction('renderGeneTags', 'tables.js');
+    testFunction('filterByGene', 'tables.js');
+    testFunction('clearGeneFilter', 'tables.js');
+    testFunction('applyFilter', 'tables.js');
+    testFunction('filterByAlert', 'tables.js');
+    testFunction('clearAlertFilter', 'tables.js');
+    testFunction('clearAllFilters', 'tables.js');
+    testFunction('updateClearFiltersVisibility', 'tables.js');
+    testFunction('populateSpeciesFilter', 'tables.js');
+    testFunction('populateSalesYearFilter', 'tables.js');
+    testFunction('renderTableStats', 'tables.js');
+    testFunction('getColumns', 'tables.js');
+    testFunction('getFilteredRows', 'tables.js');
+    
+    // modals.js
+    testFunction('openAddModal', 'modals.js');
+    testFunction('openEditModal', 'modals.js');
+    testFunction('closeModal', 'modals.js');
+    testFunction('renderModalForm', 'modals.js');
+    testFunction('calculateEstHatchDate', 'modals.js');
+    testFunction('renderHatchlingForm', 'modals.js');
+    testFunction('selectHatchlingClutch', 'modals.js');
+    testFunction('filterHatchlingClutches', 'modals.js');
+    testFunction('clearHatchlingClutch', 'modals.js');
+    testFunction('getFieldOptions', 'modals.js');
+    testFunction('getAllAnimalOptions', 'modals.js');
+    testFunction('getBreederOptions', 'modals.js');
+    testFunction('getClutchOptions', 'modals.js');
+    testFunction('updateFormField', 'modals.js');
+    testFunction('generateHatchlingId', 'modals.js');
+    testFunction('generateBreederId', 'modals.js');
+    testFunction('generateActivityId', 'modals.js');
+    testFunction('generateClutchId', 'modals.js');
+    testFunction('saveRecord', 'modals.js');
+    
+    // hatch-sale.js
+    testFunction('openHatchModal', 'hatch-sale.js');
+    testFunction('closeHatchModal', 'hatch-sale.js');
+    testFunction('markHatchedOnly', 'hatch-sale.js');
+    testFunction('hatchAndCreateHatchlings', 'hatch-sale.js');
+    testFunction('renderHatchlingForms', 'hatch-sale.js');
+    testFunction('updateHatchDraft', 'hatch-sale.js');
+    testFunction('removeHatchDraft', 'hatch-sale.js');
+    testFunction('addAnotherHatchDraft', 'hatch-sale.js');
+    testFunction('saveAllHatchlings', 'hatch-sale.js');
+    testFunction('getMaxHatchlingNum', 'hatch-sale.js');
+    testFunction('openSaleModal', 'hatch-sale.js');
+    testFunction('formField', 'hatch-sale.js');
+    testFunction('formSelect', 'hatch-sale.js');
+    testFunction('closeSaleModal', 'hatch-sale.js');
+    testFunction('saveSale', 'hatch-sale.js');
+    testFunction('markAsHoldback', 'hatch-sale.js');
+    
+    // tools.js
+    testFunction('exportCSV', 'tools.js');
+    testFunction('showDataHealth', 'tools.js');
+    testFunction('openChangelogModal', 'tools.js');
+    testFunction('closeChangelogModal', 'tools.js');
+    testFunction('openSettingsModal', 'tools.js');
+    testFunction('closeSettingsModal', 'tools.js');
+    testFunction('saveSettings', 'tools.js');
+    
+    // archive.js
+    testFunction('renderArchiveView', 'archive.js');
+    testFunction('emptyArchive', 'archive.js');
+    testFunction('archiveRecord', 'archive.js');
+    testFunction('deleteActivityRecord', 'archive.js');
+    testFunction('restoreFromArchive', 'archive.js');
+    
+    // bintags.js
+    testFunction('openQRGenerator', 'bintags.js');
+    testFunction('closeQRModal', 'bintags.js');
+    testFunction('updateQRPreview', 'bintags.js');
+    testFunction('printQRCodes', 'bintags.js');
+    testFunction('openBinTagGenerator', 'bintags.js');
+    testFunction('closeBinTagModal', 'bintags.js');
+    testFunction('updateBinTagAnimalList', 'bintags.js');
+    testFunction('toggleBinTagAnimal', 'bintags.js');
+    testFunction('selectAllBinTagAnimals', 'bintags.js');
+    testFunction('deselectAllBinTagAnimals', 'bintags.js');
+    testFunction('updateBinTagSelectedCount', 'bintags.js');
+    testFunction('updateBinTagPreview', 'bintags.js');
+    testFunction('renderBinTagPreview', 'bintags.js');
+    testFunction('printBinTags', 'bintags.js');
+    testFunction('printSingleBinTag', 'bintags.js');
+    
+    // import.js
+    testFunction('openImportModal', 'import.js');
+    testFunction('closeImportModal', 'import.js');
+    testFunction('resetImport', 'import.js');
+    testFunction('handleImportFile', 'import.js');
+    testFunction('parseImportCSV', 'import.js');
+    testFunction('parseCSVLine', 'import.js');
+    testFunction('showImportPreview', 'import.js');
+    testFunction('getStatusColor', 'import.js');
+    testFunction('executeImport', 'import.js');
+    
+    // invoice.js
+    testFunction('openInvoiceModal', 'invoice.js');
+    testFunction('closeInvoiceModal', 'invoice.js');
+    testFunction('renderInvoiceModal', 'invoice.js');
+    testFunction('showAddAnimalDropdown', 'invoice.js');
+    testFunction('hideAddAnimalDropdown', 'invoice.js');
+    testFunction('addSelectedAnimal', 'invoice.js');
+    testFunction('removeInvoiceAnimal', 'invoice.js');
+    testFunction('updateInvoiceShipping', 'invoice.js');
+    testFunction('updateInvoiceTaxRate', 'invoice.js');
+    testFunction('updateInvoiceDeposit', 'invoice.js');
+    testFunction('generateInvoiceHTML', 'invoice.js');
+    testFunction('previewInvoice', 'invoice.js');
+    testFunction('closeInvoicePreview', 'invoice.js');
+    testFunction('printInvoice', 'invoice.js');
+    testFunction('printInvoiceFromPreview', 'invoice.js');
+    testFunction('downloadInvoicePDF', 'invoice.js');
+    
+    // qr-activity.js
+    testFunction('handleQRScan', 'qr-activity.js');
+    testFunction('openActivityForAnimal', 'qr-activity.js');
+    testFunction('openQuickActivityModal', 'qr-activity.js');
+    testFunction('renderActivityModalForQR', 'qr-activity.js');
+    testFunction('selectQRActivity', 'qr-activity.js');
+    testFunction('filterQRPairedAnimals', 'qr-activity.js');
+    testFunction('selectQRPairedAnimal', 'qr-activity.js');
+    testFunction('clearQRPairedAnimal', 'qr-activity.js');
+    testFunction('saveQRActivity', 'qr-activity.js');
+    
+    // Render results
+    function renderResults() {
+      var html = '';
+      var currentFile = '';
+      
+      testResults.forEach(function(r) {
+        if (r.file !== currentFile) {
+          if (currentFile) html += '</div>';
+          currentFile = r.file;
+          html += '<div class="section"><h3>' + r.file + '</h3>';
+        }
+        var status = r.pass ? '<span class="pass">PASS</span>' : '<span class="fail">FAIL</span>';
+        html += '<div class="result">' + status + ' - ' + r.name + '</div>';
+      });
+      html += '</div>';
+      
+      document.getElementById('results').innerHTML = html;
+      
+      var summary = document.getElementById('summary');
+      if (failCount === 0) {
+        summary.textContent = 'ALL TESTS PASSED (' + passCount + '/' + passCount + ')';
+        summary.className = 'all-pass';
+      } else {
+        summary.textContent = 'TESTS FAILED: ' + failCount + ' failed, ' + passCount + ' passed';
+        summary.className = 'has-fails';
+      }
+      
+      console.log('=== TEST RESULTS ===');
+      console.log('Passed: ' + passCount);
+      console.log('Failed: ' + failCount);
+      if (failCount > 0) {
+        console.log('Failed functions:');
+        testResults.filter(function(r) { return !r.pass; }).forEach(function(r) {
+          console.log('  - ' + r.name + ' (' + r.file + ')');
+        });
+      }
+    }
+    
+    renderResults();
+  </script>
+</body>
+</html>

@@ -277,11 +277,11 @@ function renderModalForm(tab) {
       }
     }
     
-    // Skip hatch-related fields on clutch ADD form
-    if (state.modalTab === "clutch" && state.modalMode === "add") {
+    // Skip hatch-related fields on clutch form (both ADD and EDIT)
+    if (state.modalTab === "clutch") {
       var hUpper = h.toUpperCase();
       for (var i = 0; i < clutchHatchFields.length; i++) {
-        if (hUpper === clutchHatchFields[i] || hUpper.includes(clutchHatchFields[i])) return;
+        if (hUpper === clutchHatchFields[i] || hUpper.includes(clutchHatchFields[i]) || clutchHatchFields[i].includes(hUpper)) return;
       }
     }
     
@@ -574,8 +574,9 @@ function renderActivityAddForm() {
   animals.forEach(function(a) {
     var name = a["ANIMAL NAME"] || "";
     var id = a["UNIQUE ID"] || "";
-    var label = name ? name + " | " + id : id;
-    html += '<div onclick="selectActivityAnimal(\'' + escapeHtml(id).replace(/'/g, "\\'") + '\', \'' + escapeHtml(label).replace(/'/g, "\\'") + '\')" ';
+    var selectId = id || name; // Use name as fallback if no ID
+    var label = name ? (id ? name + " | " + id : name) : id;
+    html += '<div onclick="selectActivityAnimal(\'' + escapeHtml(selectId).replace(/'/g, "\\'") + '\', \'' + escapeHtml(label).replace(/'/g, "\\'") + '\')" ';
     html += 'class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-50 last:border-0">';
     html += '<span class="font-medium">' + escapeHtml(name || id) + '</span>';
     if (name && id) html += ' <span class="text-gray-400 text-xs">' + escapeHtml(id) + '</span>';
@@ -1048,6 +1049,22 @@ function generateClutchId(layDate) {
 function saveRecord() {
   var headers = state.headers[state.modalTab] || [];
   if (!headers.length) { document.getElementById("modalError").textContent = "No headers"; return; }
+
+  // Auto-generate UNIQUE ID for new collection records (breeders/hatchlings)
+  if (state.modalMode === "add" && state.modalTab === "collection") {
+    var generatedId = document.getElementById("modalIdValue") ? document.getElementById("modalIdValue").textContent : "";
+    if (generatedId && !state.formData["UNIQUE ID"]) {
+      state.formData["UNIQUE ID"] = generatedId;
+    }
+  }
+  
+  // Auto-generate CLUTCH ID for new clutch records
+  if (state.modalMode === "add" && state.modalTab === "clutch") {
+    var generatedId = document.getElementById("modalIdValue") ? document.getElementById("modalIdValue").textContent : "";
+    if (generatedId && !state.formData["CLUTCH ID"]) {
+      state.formData["CLUTCH ID"] = generatedId;
+    }
+  }
 
   // Auto-calculate EST. HATCH DATE for clutches
   if (state.modalTab === "clutch" && state.formData["LAY DATE"]) {
