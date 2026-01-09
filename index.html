@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.42
+  Version: 2.11.43
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.43: DEBUG VERSION - Extensive logging to trace clutch egg count bug
+             - Console logs: formData before/after, cleanData, API response
+             - Console logs: headers from sheet vs what form uses
   - 2.11.42: Bin Tag improvements:
              - Fixed thick border on Row 3 - now consistent 1px borders throughout
              - Added Norwester font via CDN (condensed geometric sans serif)
@@ -843,7 +846,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.42";
+    var VERSION = "2.11.43";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -4344,15 +4347,34 @@
       var headers = state.headers[state.modalTab] || [];
       if (!headers.length) { document.getElementById("modalError").textContent = "No headers"; return; }
 
+      console.log("=== SAVE RECORD DEBUG ===");
+      console.log("1. modalTab:", state.modalTab);
+      console.log("2. modalMode:", state.modalMode);
+      console.log("3. Sheet headers from API:", headers);
+      console.log("4. state.formData BEFORE egg grab:", JSON.stringify(state.formData, null, 2));
+
       // SAFEGUARD: For clutch form, grab egg count values directly from inputs
       // This ensures we capture values even if onchange/oninput didn't fire
       if (state.modalTab === "clutch") {
         var laidInput = document.getElementById("clutchLaid");
         var slugsInput = document.getElementById("clutchSlugs");
         var fertileInput = document.getElementById("clutchFertile");
+        console.log("5. Egg input elements found:", {
+          laidInput: laidInput ? laidInput.value : "NOT FOUND",
+          slugsInput: slugsInput ? slugsInput.value : "NOT FOUND",
+          fertileInput: fertileInput ? fertileInput.value : "NOT FOUND"
+        });
         if (laidInput && laidInput.value) state.formData["# LAID"] = laidInput.value;
         if (slugsInput && slugsInput.value) state.formData["# SLUGS"] = slugsInput.value;
         if (fertileInput && fertileInput.value) state.formData["# FERTILE"] = fertileInput.value;
+        console.log("6. state.formData AFTER egg grab:", JSON.stringify(state.formData, null, 2));
+        
+        // Check if headers match what we're sending
+        console.log("7. Checking header match for egg columns:");
+        console.log("   - Headers includes '# LAID'?", headers.indexOf("# LAID") >= 0);
+        console.log("   - Headers includes '# EGGS'?", headers.indexOf("# EGGS") >= 0);
+        console.log("   - Headers includes '# SLUGS'?", headers.indexOf("# SLUGS") >= 0);
+        console.log("   - Headers includes '# FERTILE'?", headers.indexOf("# FERTILE") >= 0);
       }
 
       // Auto-calculate EST. HATCH DATE for clutches
@@ -4401,6 +4423,7 @@
       }
       
       var cleanData = {};
+      var skippedKeys = [];
       
       for (var key in state.formData) {
         // Skip formula columns entirely - check both exact and uppercase
@@ -4412,11 +4435,13 @@
           }
         }
         if (isFormula) {
+          skippedKeys.push(key + " (formula)");
           continue;
         }
         
         // Skip columns that look like Sheet IDs (long alphanumeric, 20+ chars)
         if (key.length > 20 && /^[A-Za-z0-9_\-]+$/.test(key)) {
+          skippedKeys.push(key + " (looks like sheet ID)");
           continue;
         }
         
@@ -4425,6 +4450,15 @@
         
         cleanData[key] = val;
       }
+      
+      console.log("8. Keys SKIPPED:", skippedKeys);
+      console.log("9. cleanData being sent to API:", JSON.stringify(cleanData, null, 2));
+      console.log("10. Specifically egg counts in cleanData:", {
+        "# LAID": cleanData["# LAID"],
+        "# EGGS": cleanData["# EGGS"],
+        "# SLUGS": cleanData["# SLUGS"],
+        "# FERTILE": cleanData["# FERTILE"]
+      });
       
       var savedFormData = Object.assign({}, cleanData);
 
@@ -4446,7 +4480,9 @@
       }
 
       promise.then(function(response) {
+        console.log("11. API Response:", response);
         if (response.success) {
+          console.log("12. Save successful! About to call loadDataQuietly...");
           // Optimistic UI: Add to local data immediately
           if (isAdd) {
             var newRow = Object.assign({ __rowIndex: state.data[savedTab].length }, savedFormData);
@@ -4460,9 +4496,11 @@
           // Then refresh from server in background
           loadDataQuietly();
         } else {
+          console.log("12. Save FAILED:", response.error);
           document.getElementById("modalError").textContent = response.error || "Save failed";
         }
       }).catch(function(e) {
+        console.log("12. Save ERROR:", e);
         document.getElementById("modalError").textContent = e.message || "Save failed";
       }).finally(function() {
         document.getElementById("saveBtn").textContent = "Save";
@@ -4472,10 +4510,26 @@
     
     // Silent data refresh (no loading message)
     function loadDataQuietly() {
+      console.log("=== LOAD DATA QUIETLY ===");
       apiCall('getData', {})
         .then(function(response) {
           if (response.success) {
             var data = response.data;
+            console.log("13. Data reloaded from server");
+            console.log("14. Clutch headers from server:", data.clutch ? data.clutch.headers : "NO CLUTCH DATA");
+            console.log("15. First clutch row from server:", data.clutch && data.clutch.rows && data.clutch.rows[0] ? JSON.stringify(data.clutch.rows[0]) : "NO ROWS");
+            if (data.clutch && data.clutch.rows) {
+              data.clutch.rows.forEach(function(row, idx) {
+                if (row["# LAID"] || row["# EGGS"] || row["# FERTILE"] || row["# SLUGS"]) {
+                  console.log("16. Clutch row " + idx + " egg data:", {
+                    "# LAID": row["# LAID"],
+                    "# EGGS": row["# EGGS"],
+                    "# SLUGS": row["# SLUGS"],
+                    "# FERTILE": row["# FERTILE"]
+                  });
+                }
+              });
+            }
             state.headers = {
               collection: data.collection ? data.collection.headers : [],
               clutch: data.clutch ? data.clutch.headers : [],
