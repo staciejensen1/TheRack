@@ -1,14 +1,14 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.36
+ * Version: 2.12.37
  * Last Updated: 2026-01-09
  * 
  * Changelog:
- * - 2.12.36: Changed align-items to flex-start with padding-top to prevent bottom clipping
- * - 2.12.35: Print CSS fixes - !important margins, overflow:visible
- * - 2.12.34: Reduced inner tag height to 1.80in
- * - 2.12.33: Increased genetics font from 7pt to 9pt in HTML print
- * - 2.12.23: Complete rewrite - Norwester font preload, uppercase name
+ * - 2.12.37: Absolute positioning, reduced tag to 1.75in height
+ * - 2.12.36: Changed align-items to flex-start
+ * - 2.12.35: Print CSS fixes
+ * - 2.12.33: Increased genetics font to 9pt
+ * - 2.12.23: Complete rewrite - Norwester font
  */
 
 
@@ -509,14 +509,14 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
   
-  // Outer wrapper - align to top to prevent bottom clipping
-  var html = '<div style="width:3.38in; height:2.13in; display:flex; justify-content:center; align-items:flex-start; padding-top:0.15in; box-sizing:border-box;">';
+  // Outer wrapper - use absolute positioning to ensure tag fits
+  var html = '<div style="width:3.38in; height:2.13in; position:relative; box-sizing:border-box;">';
   
-  // Actual tag: 3.08in x 1.80in (with bleed margin)
-  html += '<div style="width:3.08in; height:1.80in; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; box-sizing:border-box;">';
+  // Actual tag: 3.08in x 1.75in positioned with explicit margins
+  html += '<div style="position:absolute; left:0.15in; top:0.15in; width:3.08in; height:1.75in; border:1px solid #000; background:#fff; font-family:Inter,sans-serif; box-sizing:border-box;">';
   
-  // ROW 1: 47% of 1.80in = 0.846in
-  html += '<div style="display:flex; height:0.85in; border-bottom:1px solid #000; box-sizing:border-box;">';
+  // ROW 1: 47% of 1.75in = 0.82in
+  html += '<div style="display:flex; height:0.82in; border-bottom:1px solid #000; box-sizing:border-box;">';
   
   // Logo (25% = 0.77in)
   html += '<div style="width:0.77in; background:#000; display:flex; justify-content:center; align-items:center; box-sizing:border-box;">';
@@ -555,8 +555,8 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   
   html += '</div>';
   
-  // ROW 3: 38% of 1.80in = 0.68in
-  html += '<div style="display:flex; height:0.68in; box-sizing:border-box;">';
+  // ROW 3: 38% of 1.75in = 0.665in
+  html += '<div style="display:flex; height:0.66in; box-sizing:border-box;">';
   
   // Genetics (70% = 2.156in)
   html += '<div style="width:2.156in; background:#fff; border-right:1px solid #000; display:flex; justify-content:center; align-items:center; padding:4pt; text-align:center; box-sizing:border-box;">';
