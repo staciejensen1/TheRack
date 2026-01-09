@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.8
+  Version: 2.11.11
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.11: Added Delete button to Activity table (direct delete, no archive)
+  - 2.11.10: Fixed Activity not capturing UNIQUE ID
+             - UNIQUE ID and CLUTCH ID are now allowed for Activity tab (not formulas there)
+             - Still protected on Collection and Clutch tabs where they ARE formulas
+  - 2.11.9: Removed "Log another activity?" confirmation dialog after saving
   - 2.11.8: Fixed Save button not working on Edit/Add forms
             - Save button onclick was being overwritten by quick Activity modal
             - Now resets onclick to saveRecord() when opening Add/Edit modals
@@ -687,7 +692,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.8";
+    var VERSION = "2.11.11";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1268,18 +1273,6 @@
             
             setStatus("Activity logged for " + state.formData["UNIQUE ID"]);
             closeModal();
-            
-            // Ask if they want to log another
-            setTimeout(function() {
-              if (confirm("Activity saved! Log another activity for this animal?")) {
-                state.formData["ACTIVITY"] = "";
-                state.formData["VALUE"] = "";
-                var animal = state.data.collection.find(function(r) {
-                  return r["UNIQUE ID"] === state.formData["UNIQUE ID"];
-                });
-                if (animal) openActivityForAnimal(animal);
-              }
-            }, 300);
           } else {
             setStatus(response.error || "Failed to save", true);
           }
@@ -1936,6 +1929,17 @@
             return function() { archiveRecord(rowIndex, tab); };
           })(row.__rowIndex, archiveTab);
           actionTd.appendChild(archiveBtn);
+        }
+
+        // Delete button for activity table (direct delete, no archive)
+        if (state.activeTab === "activity") {
+          var deleteBtn = document.createElement("button");
+          deleteBtn.className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200";
+          deleteBtn.textContent = "Delete";
+          deleteBtn.onclick = (function(rowIndex) {
+            return function() { deleteActivityRecord(rowIndex); };
+          })(row.__rowIndex);
+          actionTd.appendChild(deleteBtn);
         }
 
         // Invoice button for Sales view
@@ -3257,13 +3261,12 @@
       
       // CRITICAL: List ALL columns that have formulas - NEVER send data to these
       // These are generated/calculated by formulas in the Google Sheet
+      // NOTE: Activity tab uses UNIQUE ID as a reference field (not a formula), so allow it there
       var formulaColumns = [
         // Collection sheet formula columns
-        "UNIQUE ID",        // Column A - formula generates ID
         "QR CODE",          // Column Q - formula generates QR
         "(RESERVED)",       // Column M - reserved
         // Clutch sheet formula columns  
-        "CLUTCH ID",        // Column A - formula generates ID
         "DAYS TILL HATCH",  // Column I - formula calculates
         "DAYS TIL HATCH",   // Alternate spelling
         "DAYS TO HATCH",    // Alternate spelling
@@ -3271,6 +3274,12 @@
         "__rowIndex",
         "__raw"
       ];
+      
+      // UNIQUE ID and CLUTCH ID are formulas in Collection/Clutch sheets, but NOT in Activity
+      if (state.modalTab !== "activity") {
+        formulaColumns.push("UNIQUE ID");
+        formulaColumns.push("CLUTCH ID");
+      }
       
       var cleanData = {};
       
@@ -4262,6 +4271,43 @@
             loadData();
           } else {
             throw new Error(response.error || "Failed to delete original");
+          }
+        })
+        .catch(function(error) {
+          setStatus("Error: " + error.message, true);
+        });
+    }
+
+    function deleteActivityRecord(rowIndex) {
+      // Find the record
+      var record = null;
+      for (var i = 0; i < state.data.activity.length; i++) {
+        if (state.data.activity[i].__rowIndex === rowIndex) {
+          record = state.data.activity[i];
+          break;
+        }
+      }
+      
+      if (!record) {
+        setStatus("Record not found", true);
+        return;
+      }
+      
+      var recordDesc = (record["DATE"] || "") + " - " + (record["ACTIVITY"] || "") + " for " + (record["UNIQUE ID"] || "unknown");
+      
+      if (!confirm("Delete this activity?\n\n" + recordDesc + "\n\nThis cannot be undone.")) {
+        return;
+      }
+      
+      setStatus("Deleting...");
+      
+      apiCall('deleteRecord', { tab: 'Activity', rowIndex: rowIndex })
+        .then(function(response) {
+          if (response.success) {
+            setStatus("Activity deleted");
+            loadData();
+          } else {
+            throw new Error(response.error || "Failed to delete");
           }
         })
         .catch(function(error) {
