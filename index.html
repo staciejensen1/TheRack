@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.34
+  Version: 2.11.35
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.35: Added debug console logging for clutch save to diagnose egg count issue
   - 2.11.34: Bin Tag design fixes:
              - Name row now 75% width with INFO header (25%) next to it
              - Logo box shows logo image OR business name (not both)
@@ -823,7 +824,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.34";
+    var VERSION = "2.11.35";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -4370,6 +4371,12 @@
       
       var cleanData = {};
       
+      // DEBUG: Log what we're about to save
+      console.log("=== SAVE DEBUG ===");
+      console.log("Tab:", sheetName);
+      console.log("Mode:", isAdd ? "ADD" : "UPDATE");
+      console.log("state.formData:", JSON.stringify(state.formData));
+      
       for (var key in state.formData) {
         // Skip formula columns entirely - check both exact and uppercase
         var isFormula = false;
@@ -4379,15 +4386,25 @@
             break;
           }
         }
-        if (isFormula) continue;
+        if (isFormula) {
+          console.log("Skipping formula column:", key);
+          continue;
+        }
         
         // Skip columns that look like Sheet IDs (long alphanumeric, 20+ chars)
-        if (key.length > 20 && /^[A-Za-z0-9_\-]+$/.test(key)) continue;
+        if (key.length > 20 && /^[A-Za-z0-9_\-]+$/.test(key)) {
+          console.log("Skipping long ID column:", key);
+          continue;
+        }
         
         // Get the value - pass through as-is, NO parsing or formatting
         var val = state.formData[key];
         
         cleanData[key] = val;
+      }
+      
+      console.log("cleanData being sent:", JSON.stringify(cleanData));
+      console.log("=== END SAVE DEBUG ===");
       }
       
       var savedFormData = Object.assign({}, cleanData);
@@ -5740,7 +5757,7 @@
       // Card dimensions: 3.38" x 2.13" = 324.48px x 204.48px at 96dpi
       var html = '<div class="bin-tag-preview" style="width:' + dims.w + 'px; height:' + dims.h + 'px; font-family: Inter, system-ui, sans-serif; border: 3px solid #000; box-sizing: border-box; overflow: hidden; background: #fff;">';
       
-      // ROW 1: Logo | Sex+ID | QR (about 47% of height)
+      // ROW 1: Logo (22%) | Sex+ID (53%) | QR (25%) - 47% height
       html += '<div style="display: flex; height: 47%; border-bottom: 3px solid #000;">';
       
       // Left: Logo section (black background, 22% width)
@@ -5752,20 +5769,20 @@
       }
       html += '</div>';
       
-      // Center: Sex + ID (white background, 48% width)
-      html += '<div style="width: 48%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 3px solid #000; border-right: 3px solid #000;">';
+      // Center: Sex + ID (white background, 53% width)
+      html += '<div style="width: 53%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px; border-left: 3px solid #000; border-right: 3px solid #000;">';
       html += '<div style="font-size: 22px; font-weight: 900; color: #000; letter-spacing: 1px;">' + escapeHtml(sexDisplay) + '</div>';
       html += '<div style="font-size: 11px; font-weight: 700; color: #000; margin-top: 2px;">' + escapeHtml(id) + '</div>';
       html += '</div>';
       
-      // Right: QR code (white background, 30% width)
-      html += '<div style="width: 30%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px;">';
+      // Right: QR code (white background, 25% width)
+      html += '<div style="width: 25%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px;">';
       html += '<img src="' + qrUrl + '" style="width: 90%; height: 90%; object-fit: contain;" alt="QR">';
       html += '</div>';
       
       html += '</div>';
       
-      // ROW 2: Animal Name (white, ~75%) | INFO header (black, ~25%) - about 15% height
+      // ROW 2: Animal Name (75%) | INFO header (25%) - 15% height
       html += '<div style="display: flex; height: 15%; border-bottom: 3px solid #000;">';
       html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 3px solid #000;">';
       html += '<div style="font-size: 22px; font-weight: 900; color: #000; letter-spacing: -0.5px;">' + escapeHtml(name || "UNNAMED") + '</div>';
@@ -5775,16 +5792,16 @@
       html += '</div>';
       html += '</div>';
       
-      // ROW 3: Genetics (left ~55%) | Year Born + Breeder boxes (right ~45%) - remaining 38% height
+      // ROW 3: Genetics (75%) | Year Born + Breeder boxes (25%) - 38% height
       html += '<div style="display: flex; height: 38%;">';
       
-      // Left: Genetics (white background)
-      html += '<div style="width: 55%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 3px solid #000;">';
+      // Left: Genetics (white background, 75%)
+      html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 3px solid #000;">';
       html += '<div style="font-size: 11px; font-weight: 500; line-height: 1.25; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
       html += '</div>';
       
-      // Right: Info boxes (black background with white boxes)
-      html += '<div style="width: 45%; background: #000; display: flex; flex-direction: column; padding: 4px; gap: 3px;">';
+      // Right: Info boxes (black background with white boxes, 25%)
+      html += '<div style="width: 25%; background: #000; display: flex; flex-direction: column; padding: 4px; gap: 3px;">';
       
       // Year Born box (white)
       html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
@@ -5792,7 +5809,7 @@
       html += '<div style="font-size: 16px; font-weight: 700; color: #000;">' + (yearBorn || "--") + '</div>';
       html += '</div>';
       
-      // Breeder box (white) - only show if breeder source exists
+      // Breeder box (white)
       html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">';
       html += '<div style="font-size: 8px; font-weight: 800; color: #000;">BREEDER:</div>';
       html += '<div style="font-size: 9px; font-weight: 600; color: #000; line-height: 1.1; overflow: hidden;">' + escapeHtml(breederSource || "--").toUpperCase() + '</div>';
