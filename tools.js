@@ -1,9 +1,10 @@
 /*
  * THE RACK - Tools (Export, Data Health, Settings, Changelog)
- * Version: 2.12.0
+ * Version: 2.12.7
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.7: Logo upload with base64 storage instead of external URL
  * - 2.12.0: Split from monolithic index.html
  */
 
@@ -230,11 +231,40 @@ function openSettingsModal() {
   html += '<button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>';
   html += '</div>';
   
+  // Logo upload section
+  var currentLogo = state.settings["LOGO DATA"] || state.settings["LOGO URL"] || "";
+  var hasLogo = currentLogo && currentLogo.length > 0;
+  
+  html += '<div class="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">';
+  html += '<label class="block text-sm font-medium text-gray-700 mb-2">Business Logo</label>';
+  html += '<div class="flex items-center gap-4">';
+  
+  // Logo preview
+  html += '<div id="logoPreviewContainer" class="w-20 h-20 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">';
+  if (hasLogo) {
+    html += '<img id="logoPreview" src="' + escapeHtml(currentLogo) + '" class="max-w-full max-h-full object-contain">';
+  } else {
+    html += '<span id="logoPlaceholder" class="text-gray-400 text-xs text-center">No logo</span>';
+  }
+  html += '</div>';
+  
+  // Upload controls
+  html += '<div class="flex-1">';
+  html += '<input type="file" id="logoFileInput" accept="image/*" onchange="handleLogoUpload(event)" class="hidden">';
+  html += '<button type="button" onclick="document.getElementById(\'logoFileInput\').click()" class="px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-black">Upload Logo</button>';
+  if (hasLogo) {
+    html += ' <button type="button" onclick="removeLogo()" class="px-3 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-lg hover:bg-red-200 ml-2">Remove</button>';
+  }
+  html += '<div class="text-xs text-gray-500 mt-2">Square image recommended. Max 500KB.</div>';
+  html += '</div>';
+  
+  html += '</div>';
+  html += '</div>';
+  
   // Settings fields with optional helper text
   var settingsFields = [
     { key: "BUSINESS NAME", label: "Business Name", placeholder: "Your breeding business name", helper: "" },
     { key: "OWNER NAME", label: "Owner Name", placeholder: "Your name", helper: "" },
-    { key: "LOGO URL", label: "Logo URL", placeholder: "https://...", helper: "Use a square logo for best results on bin tags and invoices" },
     { key: "EMAIL", label: "Email", placeholder: "contact@yourbusiness.com", helper: "" },
     { key: "PHONE", label: "Phone", placeholder: "(555) 123-4567", helper: "" },
     { key: "CITY, STATE, ZIP", label: "Location", placeholder: "City, State ZIP", helper: "" },
@@ -272,6 +302,45 @@ function openSettingsModal() {
   document.body.appendChild(modal);
 }
 
+// Temporary storage for uploaded logo
+var pendingLogoData = null;
+
+function handleLogoUpload(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  
+  // Check file size (500KB max)
+  if (file.size > 500 * 1024) {
+    alert("Logo file is too large. Please use an image under 500KB.");
+    return;
+  }
+  
+  // Check file type
+  if (!file.type.startsWith('image/')) {
+    alert("Please select an image file.");
+    return;
+  }
+  
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    
+    // Update preview
+    var container = document.getElementById('logoPreviewContainer');
+    container.innerHTML = '<img id="logoPreview" src="' + dataUrl + '" class="max-w-full max-h-full object-contain">';
+    
+    // Store for saving
+    pendingLogoData = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeLogo() {
+  pendingLogoData = "";  // Empty string signals removal
+  var container = document.getElementById('logoPreviewContainer');
+  container.innerHTML = '<span id="logoPlaceholder" class="text-gray-400 text-xs text-center">No logo</span>';
+}
+
 function closeSettingsModal() {
   var modal = document.getElementById('settingsModal');
   if (modal) modal.remove();
@@ -279,7 +348,7 @@ function closeSettingsModal() {
 
 function saveSettings() {
   var settingsFields = [
-    "BUSINESS NAME", "OWNER NAME", "LOGO URL", "EMAIL", "PHONE", 
+    "BUSINESS NAME", "OWNER NAME", "EMAIL", "PHONE", 
     "CITY, STATE, ZIP", "WEBSITE", "INSTAGRAM", "DEFAULT SPECIES", "INCUBATION DAYS",
     "DEFAULT TAX RATE", "INVOICE TERMS"
   ];
@@ -297,6 +366,18 @@ function saveSettings() {
       }
     }
   });
+  
+  // Handle logo upload
+  if (pendingLogoData !== null) {
+    updates.push({ field: "LOGO DATA", value: pendingLogoData });
+    state.settings["LOGO DATA"] = pendingLogoData;
+    // Clear old LOGO URL if we're using uploaded data
+    if (pendingLogoData && state.settings["LOGO URL"]) {
+      updates.push({ field: "LOGO URL", value: "" });
+      state.settings["LOGO URL"] = "";
+    }
+    pendingLogoData = null;
+  }
   
   if (updates.length === 0) {
     closeSettingsModal();
