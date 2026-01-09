@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.22
+  Version: 2.11.24
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.24: Simplified Archive view to show only Unique ID and Restore button
+  - 2.11.23: Pairings view now shows SIRE and DAM columns with Name | ID format
   - 2.11.22: Filter bar fixes
              - Fixed bug: Clutch search was showing on all tabs (now ONLY on Clutches)
              - Moved Archive from Navigation to Tools section
@@ -728,7 +730,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.22";
+    var VERSION = "2.11.24";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -2728,8 +2730,12 @@
       var h = state.headers[getSheetKey(state.activeTab)] || [];
       var hUpper = h.map(function(x) { return (x || "").toUpperCase(); });
       var wanted = prefs[state.activeTab] || [];
-      // QR and MATURITY are virtual columns, don't filter them out
+      // QR, MATURITY are virtual columns for collection/hatchlings
+      // SIRE, DAM are virtual columns for pairings (mapped from UNIQUE ID and VALUE)
       var virtualCols = ["QR", "MATURITY"];
+      if (state.activeTab === "pairings") {
+        virtualCols.push("SIRE", "DAM");
+      }
       var result = wanted.filter(function(w) { 
         return virtualCols.indexOf(w) >= 0 || hUpper.indexOf(w.toUpperCase()) >= 0; 
       });
@@ -4757,19 +4763,15 @@
     // ============ ARCHIVE ============
     function renderArchiveView() {
       var archiveData = state.data.archive || [];
-      console.log("Archive data:", archiveData);
-      console.log("Archive data length:", archiveData.length);
-      console.log("Archive headers:", state.headers.archive);
       var html = '';
       
       if (archiveData.length === 0) {
         html = '<div class="text-center py-12 text-gray-500">';
-        html += '<div class="text-4xl mb-4"></div>';
         html += '<p>No archived records yet.</p>';
         html += '<p class="text-sm mt-2">When you delete animals or clutches, they will appear here.</p>';
         html += '</div>';
       } else {
-        // Filter into animals and clutches - check for both exact match and case-insensitive
+        // Filter into animals and clutches
         var archivedAnimals = archiveData.filter(function(r) { 
           var archiveType = (r["ARCHIVE TYPE"] || "").toLowerCase().trim();
           return archiveType === "collection" || archiveType === ""; 
@@ -4791,19 +4793,16 @@
           html += '<div class="border border-gray-200 rounded-xl overflow-hidden">';
           html += '<table class="min-w-full text-sm">';
           html += '<thead class="bg-gray-50"><tr>';
-          html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Name</th>';
-          html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">ID</th>';
-          html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Archived</th>';
-          html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Action</th>';
+          html += '<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Unique ID</th>';
+          html += '<th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Action</th>';
           html += '</tr></thead>';
           html += '<tbody class="divide-y divide-gray-100">';
           
           archivedAnimals.forEach(function(animal, index) {
+            var displayId = animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "Unknown";
             html += '<tr class="' + (index % 2 === 0 ? 'bg-white' : 'bg-gray-50') + '">';
-            html += '<td class="px-3 py-2 font-medium">' + escapeHtml(animal["ANIMAL NAME"] || "Unnamed") + '</td>';
-            html += '<td class="px-3 py-2 mono text-xs">' + escapeHtml(animal["UNIQUE ID"] || animal["MANUAL OVERRIDE"] || "") + '</td>';
-            html += '<td class="px-3 py-2 text-gray-500 text-xs">' + (animal["DATE ARCHIVED"] || "") + '</td>';
-            html += '<td class="px-3 py-2"><button onclick="restoreFromArchive(' + animal.__rowIndex + ', \'Collection\')" class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">Restore</button></td>';
+            html += '<td class="px-4 py-3 font-medium mono">' + escapeHtml(displayId) + '</td>';
+            html += '<td class="px-4 py-3 text-right"><button onclick="restoreFromArchive(' + animal.__rowIndex + ', \'Collection\')" class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">Restore</button></td>';
             html += '</tr>';
           });
           
@@ -4817,19 +4816,16 @@
           html += '<div class="border border-gray-200 rounded-xl overflow-hidden">';
           html += '<table class="min-w-full text-sm">';
           html += '<thead class="bg-gray-50"><tr>';
-          html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Clutch ID</th>';
-          html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Pairing</th>';
-          html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Archived</th>';
-          html += '<th class="px-3 py-2 text-left text-xs font-semibold text-gray-600">Action</th>';
+          html += '<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Clutch ID</th>';
+          html += '<th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Action</th>';
           html += '</tr></thead>';
           html += '<tbody class="divide-y divide-gray-100">';
           
           archivedClutches.forEach(function(clutch, index) {
+            var displayId = clutch["CLUTCH ID"] || "Unknown";
             html += '<tr class="' + (index % 2 === 0 ? 'bg-white' : 'bg-gray-50') + '">';
-            html += '<td class="px-3 py-2 mono text-xs font-medium">' + escapeHtml(clutch["CLUTCH ID"] || "") + '</td>';
-            html += '<td class="px-3 py-2">' + escapeHtml((clutch["SIRE"] || "") + " x " + (clutch["DAM"] || "")) + '</td>';
-            html += '<td class="px-3 py-2 text-gray-500 text-xs">' + (clutch["DATE ARCHIVED"] || "") + '</td>';
-            html += '<td class="px-3 py-2"><button onclick="restoreFromArchive(' + clutch.__rowIndex + ', \'Clutch\')" class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">Restore</button></td>';
+            html += '<td class="px-4 py-3 font-medium mono">' + escapeHtml(displayId) + '</td>';
+            html += '<td class="px-4 py-3 text-right"><button onclick="restoreFromArchive(' + clutch.__rowIndex + ', \'Clutch\')" class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200">Restore</button></td>';
             html += '</tr>';
           });
           
