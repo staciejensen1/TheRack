@@ -5,12 +5,12 @@
   Last Updated: 2026-01-09
   
   Changelog:
-  - 2.11.47: Bin Tag layout fixes per user specs:
+  - 2.11.47: Bin Tag layout fixes - RIGHT COLUMN ALIGNED:
              Row 1: Logo 25% | Sex+ID 45% | QR 30%
-             Row 3: Genetics 55% | Year+Breeder 45%
-             Row 3 info boxes: REMOVED black background completely
-             Now uses white background with thin 1px border between boxes only
-             Border thickness now matches all other lines on tag
+             Row 2: Name 70% | INFO 30%
+             Row 3: Genetics 70% | Year+Breeder 30%
+             Right column (QR/INFO/Year+Breeder) all 30% - now aligned
+             Row 3 info boxes: white background with thin 1px border only
   - 2.11.46: REVERTED to simple saveRecord from working version
              - Removed all cleanData filtering that was breaking saves
              - Sends state.formData directly like working version did
@@ -866,7 +866,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.46";
+    var VERSION = "2.11.47";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -5580,26 +5580,26 @@
       
       html += '</div>';
       
-      // ROW 2: Animal Name (75%) | INFO header (25%) - 15% height
+      // ROW 2: Animal Name (70%) | INFO header (30%) - 15% height
       html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
-      html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
+      html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 22px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED") + '</div>';
       html += '</div>';
-      html += '<div style="width: 25%; background: #000; display: flex; justify-content: center; align-items: center;">';
+      html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center;">';
       html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 12px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
       html += '</div>';
       html += '</div>';
       
-      // ROW 3: Genetics (55%) | Year Born + Breeder boxes (45%) - 38% height
+      // ROW 3: Genetics (70%) | Year Born + Breeder boxes (30%) - 38% height
       html += '<div style="display: flex; height: 38%;">';
       
-      // Left: Genetics (white background, 55%)
-      html += '<div style="width: 55%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 1px solid #000;">';
+      // Left: Genetics (white background, 70%)
+      html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 6px; text-align: center; border-right: 1px solid #000;">';
       html += '<div style="font-size: 11px; font-weight: 500; line-height: 1.25; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
       html += '</div>';
       
-      // Right: Info boxes (white background, 45% - thin 1px borders only, NO black background)
-      html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column;">';
+      // Right: Info boxes (white background, 30% - thin 1px borders only, NO black background)
+      html += '<div style="width: 30%; background: #fff; display: flex; flex-direction: column;">';
       
       // Year Born box (thin 1px border on bottom only)
       html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-bottom: 1px solid #000;">';
@@ -5727,26 +5727,26 @@
         
         html += '</div>';
         
-        // ROW 2: Animal Name (75%) | INFO header (25%) - 15% height
+        // ROW 2: Animal Name (70%) | INFO header (30%) - 15% height
         html += '<div style="display: flex; height: 15%; border-bottom: 1px solid #000;">';
-        html += '<div style="width: 75%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
+        html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; border-right: 1px solid #000;">';
         html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 18px; font-weight: 400; color: #000; letter-spacing: 1px;">' + escapeHtml(name || "UNNAMED") + '</div>';
         html += '</div>';
-        html += '<div style="width: 25%; background: #000; display: flex; justify-content: center; align-items: center;">';
+        html += '<div style="width: 30%; background: #000; display: flex; justify-content: center; align-items: center;">';
         html += '<div style="font-family: Norwester, Inter, sans-serif; font-size: 10px; font-weight: 400; color: #fff; letter-spacing: 2px;">INFO</div>';
         html += '</div>';
         html += '</div>';
         
-        // ROW 3: Genetics (55%) | Year Born + Breeder (45%) - 38% height
+        // ROW 3: Genetics (70%) | Year Born + Breeder (30%) - 38% height
         html += '<div style="display: flex; height: 38%;">';
         
-        // Left: Genetics (55%)
-        html += '<div style="width: 55%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 1px solid #000;">';
+        // Left: Genetics (70%)
+        html += '<div style="width: 70%; background: #fff; display: flex; justify-content: center; align-items: center; padding: 4px; text-align: center; border-right: 1px solid #000;">';
         html += '<div style="font-size: 9px; font-weight: 500; line-height: 1.2; color: #000;">' + escapeHtml(genetics || "No genetics listed") + '</div>';
         html += '</div>';
         
-        // Right: Info boxes (45% - white background, thin 1px borders only)
-        html += '<div style="width: 45%; background: #fff; display: flex; flex-direction: column;">';
+        // Right: Info boxes (30% - white background, thin 1px borders only)
+        html += '<div style="width: 30%; background: #fff; display: flex; flex-direction: column;">';
         
         // Year Born box (thin 1px border on bottom only)
         html += '<div style="flex: 1; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-bottom: 1px solid #000;">';
