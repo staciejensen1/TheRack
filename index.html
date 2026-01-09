@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.24
+  Version: 2.11.25
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.25: Paired With field now uses searchable chip selector matching Select Animal style
   - 2.11.24: Simplified Archive view to show only Unique ID and Restore button
   - 2.11.23: Pairings view now shows SIRE and DAM columns with Name | ID format
   - 2.11.22: Filter bar fixes
@@ -730,7 +731,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.24";
+    var VERSION = "2.11.25";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -1259,23 +1260,39 @@
       
       // Paired With field (for Paired/Lock activities)
       var showPairedField = state.formData["ACTIVITY"] === "Paired" || state.formData["ACTIVITY"] === "Lock";
+      var qrPairedValue = state.formData["PAIRED_WITH"] || "";
       html += '<div id="qrPairedField" class="' + (showPairedField ? "" : "hidden") + '">';
-      html += '<label class="block text-sm font-medium text-gray-700 mb-1">Paired With</label>';
-      html += '<select id="field_PAIRED_WITH" class="w-full px-3 py-2 border border-gray-300 rounded-xl">';
-      html += '<option value="">Select animal...</option>';
+      html += '<label class="block text-sm font-medium text-gray-700 mb-2">Paired With</label>';
+      html += '<div class="relative">';
+      html += '<input type="text" id="qrPairedSearch" placeholder="Type to search..." ';
+      html += 'oninput="filterQRPairedAnimals(this.value)" ';
+      html += 'class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:border-gray-400 focus:outline-none">';
       // Get list of breeders
       var breeders = state.data.collection.filter(function(r) {
         var st = (r.STATUS || "").toLowerCase();
         return st === "breeder" || st === "holdback" || st === "on loan";
       });
+      html += '<div id="qrPairedList" class="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-xl bg-white ' + (qrPairedValue ? 'hidden' : '') + '">';
       breeders.forEach(function(b) {
         var bName = b["ANIMAL NAME"] || "";
         var bId = b["UNIQUE ID"] || "";
         var label = bName ? bName + " | " + bId : bId;
-        var selected = (state.formData["PAIRED_WITH"] === label) ? " selected" : "";
-        html += '<option value="' + escapeHtml(label) + '"' + selected + '>' + escapeHtml(label) + '</option>';
+        html += '<div onclick="selectQRPairedAnimal(\'' + escapeHtml(label).replace(/'/g, "\\'") + '\')" ';
+        html += 'class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-50 last:border-0">';
+        html += '<span class="font-medium">' + escapeHtml(bName || bId) + '</span>';
+        if (bName && bId) html += ' <span class="text-gray-400 text-xs">' + escapeHtml(bId) + '</span>';
+        html += '</div>';
       });
-      html += '</select>';
+      html += '</div>';
+      html += '</div>';
+      
+      // Show selected paired animal
+      if (qrPairedValue) {
+        html += '<div id="qrSelectedPairedDisplay" class="mt-2 px-3 py-2 bg-gray-900 text-white rounded-xl flex items-center justify-between text-sm">';
+        html += '<span class="font-medium">' + escapeHtml(qrPairedValue) + '</span>';
+        html += '<button type="button" onclick="clearQRPairedAnimal()" class="text-gray-400 hover:text-white text-lg">&times;</button>';
+        html += '</div>';
+      }
       html += '</div>';
       
       html += '</div>';
@@ -1328,12 +1345,53 @@
         valueField.classList.add('hidden');
       }
     }
+    
+    function filterQRPairedAnimals(search) {
+      var list = document.getElementById("qrPairedList");
+      if (!list) return;
+      var items = list.getElementsByTagName("div");
+      var searchLower = search.toLowerCase();
+      var anyVisible = false;
+      
+      for (var i = 0; i < items.length; i++) {
+        var text = items[i].textContent.toLowerCase();
+        if (text.indexOf(searchLower) >= 0) {
+          items[i].style.display = "";
+          anyVisible = true;
+        } else {
+          items[i].style.display = "none";
+        }
+      }
+      
+      list.classList.toggle("hidden", !anyVisible && !search);
+    }
+    
+    function selectQRPairedAnimal(label) {
+      state.formData["PAIRED_WITH"] = label;
+      // Re-render the form to show the selected chip
+      var animal = state.data.collection.find(function(r) {
+        return r["UNIQUE ID"] === state.formData["UNIQUE ID"];
+      });
+      if (animal) {
+        renderActivityModalForQR(animal, false);
+      }
+    }
+    
+    function clearQRPairedAnimal() {
+      state.formData["PAIRED_WITH"] = "";
+      var animal = state.data.collection.find(function(r) {
+        return r["UNIQUE ID"] === state.formData["UNIQUE ID"];
+      });
+      if (animal) {
+        renderActivityModalForQR(animal, false);
+      }
+    }
 
     function saveQRActivity() {
       var date = document.getElementById("field_DATE").value;
       var activity = state.formData["ACTIVITY"];
       var value = document.getElementById("field_VALUE") ? document.getElementById("field_VALUE").value : "";
-      var pairedWith = document.getElementById("field_PAIRED_WITH") ? document.getElementById("field_PAIRED_WITH").value : "";
+      var pairedWith = state.formData["PAIRED_WITH"] || "";
       
       if (!activity) {
         setStatus("Please select an activity", true);
@@ -3539,19 +3597,34 @@
       }
       
       if (showPairedWith) {
+        var pairedValue = state.formData["VALUE"] || "";
         html += '<div class="mb-5">';
         html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Paired With</label>';
-        html += '<select id="activityPairedWith" onchange="state.formData[\'VALUE\']=this.value" ';
+        html += '<div class="relative">';
+        html += '<input type="text" id="pairedWithSearch" placeholder="Type to search..." ';
+        html += 'oninput="filterPairedWithAnimals(this.value)" ';
         html += 'class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-gray-400 focus:outline-none">';
-        html += '<option value="">Select animal...</option>';
+        html += '<div id="pairedWithList" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white ' + (pairedValue ? 'hidden' : '') + '">';
         animals.forEach(function(a) {
           var name = a["ANIMAL NAME"] || "";
           var id = a["UNIQUE ID"] || "";
           var label = name ? name + " | " + id : id;
-          var sel = (state.formData["VALUE"] === label) ? " selected" : "";
-          html += '<option value="' + escapeHtml(label) + '"' + sel + '>' + escapeHtml(label) + '</option>';
+          html += '<div onclick="selectPairedWithAnimal(\'' + escapeHtml(label).replace(/'/g, "\\'") + '\')" ';
+          html += 'class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-50 last:border-0">';
+          html += '<span class="font-medium">' + escapeHtml(name || id) + '</span>';
+          if (name && id) html += ' <span class="text-gray-400 text-xs">' + escapeHtml(id) + '</span>';
+          html += '</div>';
         });
-        html += '</select>';
+        html += '</div>';
+        html += '</div>';
+        
+        // Show selected paired animal
+        if (pairedValue) {
+          html += '<div id="selectedPairedDisplay" class="mt-2 px-4 py-3 bg-gray-900 text-white rounded-xl flex items-center justify-between">';
+          html += '<span class="font-medium">' + escapeHtml(pairedValue) + '</span>';
+          html += '<button type="button" onclick="clearPairedWithAnimal()" class="text-gray-400 hover:text-white text-lg">&times;</button>';
+          html += '</div>';
+        }
         html += '</div>';
       }
       
@@ -3600,6 +3673,36 @@
     function selectActivityType(activity) {
       state.formData["ACTIVITY"] = activity;
       state.formData["VALUE"] = ""; // Clear value when changing activity type
+      renderActivityAddForm();
+    }
+    
+    function filterPairedWithAnimals(search) {
+      var list = document.getElementById("pairedWithList");
+      if (!list) return;
+      var items = list.getElementsByTagName("div");
+      var searchLower = search.toLowerCase();
+      var anyVisible = false;
+      
+      for (var i = 0; i < items.length; i++) {
+        var text = items[i].textContent.toLowerCase();
+        if (text.indexOf(searchLower) >= 0) {
+          items[i].style.display = "";
+          anyVisible = true;
+        } else {
+          items[i].style.display = "none";
+        }
+      }
+      
+      list.classList.toggle("hidden", !anyVisible && !search);
+    }
+    
+    function selectPairedWithAnimal(label) {
+      state.formData["VALUE"] = label;
+      renderActivityAddForm();
+    }
+    
+    function clearPairedWithAnimal() {
+      state.formData["VALUE"] = "";
       renderActivityAddForm();
     }
     
