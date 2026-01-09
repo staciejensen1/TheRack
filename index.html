@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 2.11.44
+  Version: 2.11.45
   Last Updated: 2026-01-09
   
   Changelog:
+  - 2.11.45: PROPER FIX - Edit mode only sends fields user actually changed
+             - Added state.originalData to track original values when editing
+             - Added state.modifiedFields Set to track which fields were touched
+             - updateFormField now marks fields as modified
+             - saveRecord only sends modified fields for UPDATE operations
+             - Removed # EGGS references (never used)
   - 2.11.44: CRITICAL FIX - Clutch egg counts being wiped on edit
              - Root cause: Empty strings were being sent to API for # LAID, # SLUGS, # FERTILE
              - Fix: For UPDATE operations, skip sending empty/undefined values
@@ -850,7 +856,7 @@
 
   <script>
     // ============ CONFIGURATION ============
-    var VERSION = "2.11.44";
+    var VERSION = "2.11.45";
     var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
     
     var SHEET_TABS = {
@@ -884,6 +890,8 @@
       modalTab: null,
       editRowIndex: null,
       formData: {},
+      originalData: {},      // Store original values when editing
+      modifiedFields: null,  // Set of field names that user actually changed
       hatchClutchRow: null,
       hatchDate: "",
       hatchCount: 1,
@@ -3140,6 +3148,8 @@
       state.modalTab = sheetKey;
       state.editRowIndex = null;
       state.formData = {};
+      state.originalData = {};     // Clear original data
+      state.modifiedFields = null; // null means send all fields (ADD mode)
       
       // Defaults
       var today = new Date().toISOString().split("T")[0];
@@ -3209,8 +3219,12 @@
       state.modalMode = "edit";
       state.modalTab = sheetKey;
       
+      // Initialize modified fields tracker - ONLY fields in this Set will be sent to API
+      state.modifiedFields = new Set();
+      
       // Copy row data, normalizing any Date objects to YYYY-MM-DD strings
       state.formData = {};
+      state.originalData = {}; // Store original for comparison
       for (var key in row) {
         var val = row[key];
         // If it's a Date object, convert to YYYY-MM-DD
@@ -3222,6 +3236,8 @@
         } else {
           state.formData[key] = val;
         }
+        // Store original value for comparison
+        state.originalData[key] = state.formData[key];
       }
       
       state.formType = null; // Clear formType for edit mode
@@ -3295,7 +3311,7 @@
       
       // Fallback headers for clutch if none loaded
       if (state.modalTab === "clutch" && headers.length === 0) {
-        headers = ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# EGGS", "# FERTILE", "# SLUGS", "STATUS", "MANUAL OVERRIDE", "NOTES"];
+        headers = ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# LAID", "# FERTILE", "# SLUGS", "STATUS", "MANUAL OVERRIDE", "NOTES"];
       }
       
       // Special rendering for Activity ADD form
@@ -4216,6 +4232,11 @@
     function updateFormField(field, value) {
       state.formData[field] = value;
       
+      // Track that this field was modified by the user (for edit mode)
+      if (state.modifiedFields) {
+        state.modifiedFields.add(field);
+      }
+      
       // Re-render if STATUS changed (to show/hide sale fields)
       if (field === "STATUS") {
         renderModalForm(state.activeTab);
@@ -4359,6 +4380,7 @@
 
       // SAFEGUARD: For clutch form, grab egg count values directly from inputs
       // This ensures we capture values even if onchange/oninput didn't fire
+      // Also mark them as modified if the input has a value
       if (state.modalTab === "clutch") {
         var laidInput = document.getElementById("clutchLaid");
         var slugsInput = document.getElementById("clutchSlugs");
@@ -4368,15 +4390,34 @@
           slugsInput: slugsInput ? slugsInput.value : "NOT FOUND",
           fertileInput: fertileInput ? fertileInput.value : "NOT FOUND"
         });
-        if (laidInput && laidInput.value) state.formData["# LAID"] = laidInput.value;
-        if (slugsInput && slugsInput.value) state.formData["# SLUGS"] = slugsInput.value;
-        if (fertileInput && fertileInput.value) state.formData["# FERTILE"] = fertileInput.value;
+        // Only grab and mark as modified if the input has a value AND it differs from original
+        if (laidInput && laidInput.value) {
+          var origLaid = state.originalData ? state.originalData["# LAID"] : "";
+          if (laidInput.value !== String(origLaid || "")) {
+            state.formData["# LAID"] = laidInput.value;
+            if (state.modifiedFields) state.modifiedFields.add("# LAID");
+          }
+        }
+        if (slugsInput && slugsInput.value) {
+          var origSlugs = state.originalData ? state.originalData["# SLUGS"] : "";
+          if (slugsInput.value !== String(origSlugs || "")) {
+            state.formData["# SLUGS"] = slugsInput.value;
+            if (state.modifiedFields) state.modifiedFields.add("# SLUGS");
+          }
+        }
+        if (fertileInput && fertileInput.value) {
+          var origFertile = state.originalData ? state.originalData["# FERTILE"] : "";
+          if (fertileInput.value !== String(origFertile || "")) {
+            state.formData["# FERTILE"] = fertileInput.value;
+            if (state.modifiedFields) state.modifiedFields.add("# FERTILE");
+          }
+        }
         console.log("6. state.formData AFTER egg grab:", JSON.stringify(state.formData, null, 2));
         
         // Check if headers match what we're sending
         console.log("7. Checking header match for egg columns:");
         console.log("   - Headers includes '# LAID'?", headers.indexOf("# LAID") >= 0);
-        console.log("   - Headers includes '# EGGS'?", headers.indexOf("# EGGS") >= 0);
+        console.log("   - Headers includes '# SLUGS'?", headers.indexOf("# SLUGS") >= 0);
         console.log("   - Headers includes '# SLUGS'?", headers.indexOf("# SLUGS") >= 0);
         console.log("   - Headers includes '# FERTILE'?", headers.indexOf("# FERTILE") >= 0);
       }
@@ -4429,6 +4470,13 @@
       var cleanData = {};
       var skippedKeys = [];
       
+      // For UPDATE: only send fields that were actually modified by the user
+      // For ADD: send all fields
+      var fieldsToInclude = state.modifiedFields; // null for ADD, Set for EDIT
+      
+      console.log("7a. isAdd:", isAdd);
+      console.log("7b. modifiedFields:", fieldsToInclude ? Array.from(fieldsToInclude) : "null (sending all)");
+      
       for (var key in state.formData) {
         // Skip formula columns entirely - check both exact and uppercase
         var isFormula = false;
@@ -4449,28 +4497,22 @@
           continue;
         }
         
-        // Get the value - pass through as-is, NO parsing or formatting
-        var val = state.formData[key];
-        
-        // CRITICAL FIX: For UPDATE operations, skip empty/undefined values
-        // This prevents wiping out existing data in the sheet
-        // For ADD operations, we still want to include empty strings to create all columns
-        if (!isAdd && (val === "" || val === undefined || val === null)) {
-          skippedKeys.push(key + " (empty - preserving existing)");
+        // CRITICAL: For UPDATE operations, ONLY send fields that user actually modified
+        // This prevents overwriting ANY data the user didn't touch
+        if (!isAdd && fieldsToInclude && !fieldsToInclude.has(key)) {
+          skippedKeys.push(key + " (not modified by user)");
           continue;
         }
+        
+        // Get the value - pass through as-is, NO parsing or formatting
+        var val = state.formData[key];
         
         cleanData[key] = val;
       }
       
       console.log("8. Keys SKIPPED:", skippedKeys);
       console.log("9. cleanData being sent to API:", JSON.stringify(cleanData, null, 2));
-      console.log("10. Specifically egg counts in cleanData:", {
-        "# LAID": cleanData["# LAID"],
-        "# EGGS": cleanData["# EGGS"],
-        "# SLUGS": cleanData["# SLUGS"],
-        "# FERTILE": cleanData["# FERTILE"]
-      });
+      console.log("10. Fields actually being sent:", Object.keys(cleanData));
       
       var savedFormData = Object.assign({}, cleanData);
 
@@ -4532,10 +4574,9 @@
             console.log("15. First clutch row from server:", data.clutch && data.clutch.rows && data.clutch.rows[0] ? JSON.stringify(data.clutch.rows[0]) : "NO ROWS");
             if (data.clutch && data.clutch.rows) {
               data.clutch.rows.forEach(function(row, idx) {
-                if (row["# LAID"] || row["# EGGS"] || row["# FERTILE"] || row["# SLUGS"]) {
+                if (row["# LAID"] || row["# FERTILE"] || row["# SLUGS"]) {
                   console.log("16. Clutch row " + idx + " egg data:", {
                     "# LAID": row["# LAID"],
-                    "# EGGS": row["# EGGS"],
                     "# SLUGS": row["# SLUGS"],
                     "# FERTILE": row["# FERTILE"]
                   });
