@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<!--
+  THE RACK - Help Guide
+  Version: 2.12.53
+  Last Updated: 2026-01-09
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Rack - Help Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .prose h2 { scroll-margin-top: 80px; }
+    .prose h3 { scroll-margin-top: 80px; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen">
+  
+  <div class="max-w-5xl mx-auto p-4 md:p-8">
+    <!-- Header -->
+    <header class="bg-white rounded-2xl p-6 shadow-sm mb-6 border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <a href="index.html" class="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 text-sm">
+            &larr; Back to App
+          </a>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Help Guide</h1>
+            <p class="text-sm text-gray-500">Version 2.12.53</p>
+          </div>
+        </div>
+        <svg viewBox="0 0 120 60" class="h-10" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(30, 25)">
+            <path d="M-16 -14 L-8 -14 L0 -6 L-8 2 L0 10 L-8 18 L-16 18" 
+                  stroke="#000" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 -14 L8 -14 L0 -6 L8 2 L0 10 L8 18 L16 18" 
+                  stroke="#000" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="-16" cy="-14" r="2" fill="#000"/>
+            <circle cx="16" cy="-14" r="2" fill="#000"/>
+          </g>
+          <text x="62" y="32" fill="#000" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="18" letter-spacing="-0.5">THE RACK</text>
+        </svg>
+      </div>
+    </header>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- Table of Contents Sidebar -->
+      <nav class="lg:w-64 shrink-0">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 lg:sticky lg:top-6">
+          <h2 class="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wider">Contents</h2>
+          <ul class="space-y-1 text-sm">
+            <li><a href="#getting-started" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Getting Started</a></li>
+            <li><a href="#dashboard" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Dashboard</a></li>
+            <li><a href="#collection" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Collection</a></li>
+            <li><a href="#clutches" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Clutches</a></li>
+            <li><a href="#hatchlings" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Hatchlings</a></li>
+            <li><a href="#pairings" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Pairings</a></li>
+            <li><a href="#sales" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Sales</a></li>
+            <li><a href="#activity" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Activity Log</a></li>
+            <li><a href="#archive" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Archive</a></li>
+            <li><a href="#import" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">MorphMarket Import</a></li>
+            <li><a href="#export" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Exporting Data</a></li>
+            <li><a href="#qr-codes" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">QR Codes</a></li>
+            <li><a href="#bin-tags" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Bin Tags & Invoices</a></li>
+            <li><a href="#settings" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Settings</a></li>
+            <li><a href="#mobile" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Mobile Usage</a></li>
+            <li><a href="#tips" class="block px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Tips & Best Practices</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="flex-1 min-w-0">
+        <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-200 prose max-w-none">
+          
+          <!-- Getting Started -->
+          <section id="getting-started" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Getting Started</h2>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Logging In</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Open the app at <strong>app.therackapp.io</strong></li>
+              <li>Enter the <strong>email address</strong> you used when purchasing</li>
+              <li>Enter your <strong>Access Code</strong> (sent to you via email after purchase)</li>
+              <li>Click <strong>Log In</strong></li>
+            </ol>
+            <p class="text-gray-600 mt-3">Your credentials are saved automatically, so you will be logged in on future visits.</p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">First-Time Setup</h3>
+            <p class="text-gray-700 mb-2">After logging in for the first time:</p>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>Settings</strong> in the sidebar</li>
+              <li>Enter your business information (Business Name, Owner Name, Contact Info)</li>
+              <li>Set your default species (e.g., "Ball Python")</li>
+              <li>Click <strong>Save Settings</strong></li>
+            </ol>
+          </section>
+
+          <!-- Dashboard -->
+          <section id="dashboard" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Dashboard Overview</h2>
+            <p class="text-gray-700 mb-4">The Dashboard is your home base. It shows everything important at a glance.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Alerts Section</h3>
+            <p class="text-gray-700 mb-3">Alerts appear at the top when action is needed. They are color-coded by urgency (darker = more urgent):</p>
+            
+            <div class="overflow-x-auto">
+              <table class="min-w-full border border-gray-200 rounded-lg text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-semibold text-gray-700 border-b">Alert</th>
+                    <th class="px-4 py-2 text-left font-semibold text-gray-700 border-b">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr><td class="px-4 py-2 font-medium">Overdue Clutches</td><td class="px-4 py-2 text-gray-600">Clutches past their estimated hatch date</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Due Within 7 Days</td><td class="px-4 py-2 text-gray-600">Clutches approaching hatch date</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Unshipped Sales</td><td class="px-4 py-2 text-gray-600">Sold animals that need to be shipped</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Shipping Soon</td><td class="px-4 py-2 text-gray-600">Animals shipping within 3 days</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Unpaid Deposits</td><td class="px-4 py-2 text-gray-600">Sales with deposit status but not fully paid</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Balance Due</td><td class="px-4 py-2 text-gray-600">Sales where Amount Paid is less than Sold Price</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Needs Sexing</td><td class="px-4 py-2 text-gray-600">Unlisted hatchlings with unknown sex</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Ready to List</td><td class="px-4 py-2 text-gray-600">Unlisted hatchlings over 30 days old</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="text-gray-600 mt-3">Click any alert card to jump directly to the filtered view.</p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Stats Sections</h3>
+            <ul class="space-y-2 text-gray-700 ml-4">
+              <li><strong>Breeders</strong> - Total count, males, females, and holdbacks</li>
+              <li><strong>Incubator</strong> - Incubating clutches, hatched this year, average days to hatch, average fertile eggs</li>
+              <li><strong>Hatchlings</strong> - Listed, unlisted, male/female counts</li>
+              <li><strong>Sales (This Year)</strong> - Sold count, revenue, on hold, unshipped</li>
+              <li><strong>Sales (Last Year)</strong> - Previous year comparison</li>
+            </ul>
+          </section>
+
+          <!-- Collection -->
+          <section id="collection" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Managing Your Collection</h2>
+            <p class="text-gray-700 mb-4">The Collection tab shows all your breeding animals.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Adding a Breeder</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>+ Breeder</strong> in the sidebar or quick add bar</li>
+              <li>Fill in the required fields:
+                <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                  <li><strong>Animal Name</strong> - Your name for this animal</li>
+                  <li><strong>Sex</strong> - Female, Male, or Unknown</li>
+                  <li><strong>Date of Birth</strong> - Required for maturity calculation</li>
+                  <li><strong>Species</strong> - Defaults to your setting</li>
+                  <li><strong>Genetic Summary</strong> - List genetics (e.g., "Pastel Het Clown")</li>
+                  <li><strong>Status</strong> - Defaults to "Breeder"</li>
+                </ul>
+              </li>
+              <li>Click <strong>Save</strong></li>
+            </ol>
+            <p class="text-gray-600 mt-3">A unique ID is automatically generated (e.g., B-2026-0001).</p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Status Options</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-full border border-gray-200 rounded-lg text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-semibold text-gray-700 border-b">Status</th>
+                    <th class="px-4 py-2 text-left font-semibold text-gray-700 border-b">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr><td class="px-4 py-2 font-medium">Breeder</td><td class="px-4 py-2 text-gray-600">Active breeding animal</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Holdback</td><td class="px-4 py-2 text-gray-600">Kept from a clutch for future breeding</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">On Loan</td><td class="px-4 py-2 text-gray-600">Temporarily with another breeder</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Listed</td><td class="px-4 py-2 text-gray-600">For sale</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Unlisted</td><td class="px-4 py-2 text-gray-600">Not yet listed for sale</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">On Hold</td><td class="px-4 py-2 text-gray-600">Reserved by a buyer</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Sold</td><td class="px-4 py-2 text-gray-600">Sold and shipped</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Deceased</td><td class="px-4 py-2 text-gray-600">No longer alive</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Retired</td><td class="px-4 py-2 text-gray-600">No longer breeding</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Filtering and Searching</h3>
+            <p class="text-gray-700 mb-2">Use the filter bar above the table to narrow your view:</p>
+            <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+              <li><strong>Search</strong> - Type a name or ID</li>
+              <li><strong>Sex</strong> - Filter by Female, Male, or Unknown</li>
+              <li><strong>Status</strong> - Filter by any status</li>
+              <li><strong>Species</strong> - Filter by species</li>
+              <li><strong>Gene Tags</strong> - Click any gene tag in the table to filter by that gene</li>
+            </ul>
+            <p class="text-gray-600 mt-2">Click <strong>Clear Filters</strong> to reset.</p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Maturity Calculation</h3>
+            <p class="text-gray-700 mb-2">The app automatically calculates maturity based on Date of Birth:</p>
+            <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+              <li><strong>HTCH</strong> - Hatchling (under 6 months)</li>
+              <li><strong>SUB</strong> - Sub-adult (6-18 months)</li>
+              <li><strong>ADULT</strong> - Adult (over 18 months)</li>
+            </ul>
+          </section>
+
+          <!-- Clutches -->
+          <section id="clutches" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Tracking Clutches</h2>
+            <p class="text-gray-700 mb-4">The Clutches tab tracks all your breeding clutches from lay to hatch.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Adding a Clutch</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>+ Clutch</strong> in the sidebar</li>
+              <li>Fill in the fields:
+                <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                  <li><strong>Sire</strong> - Select from your male breeders</li>
+                  <li><strong>Dam</strong> - Select from your female breeders</li>
+                  <li><strong>Lay Date</strong> - When eggs were laid</li>
+                  <li><strong>Number of Eggs</strong> - Total eggs</li>
+                  <li><strong>Number Fertile</strong> - Fertile eggs</li>
+                  <li><strong>Number Slugs</strong> - Infertile eggs</li>
+                </ul>
+              </li>
+              <li>Click <strong>Save</strong></li>
+            </ol>
+            <p class="text-gray-600 mt-3">A clutch ID is automatically generated (e.g., CL-2026-0001). The <strong>Estimated Hatch Date</strong> is automatically calculated (Lay Date + 59 days).</p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Hatching a Clutch</h3>
+            <p class="text-gray-700 mb-2">When your clutch hatches:</p>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Find the clutch in the table</li>
+              <li>Click the <strong>Hatch</strong> button</li>
+              <li>Enter the <strong>Hatch Date</strong></li>
+              <li>Enter the <strong>Number of Hatchlings</strong></li>
+              <li>Choose an option:
+                <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                  <li><strong>Mark Hatched Only</strong> - Just updates the clutch status</li>
+                  <li><strong>Hatch and Create Hatchlings</strong> - Creates individual hatchling records</li>
+                </ul>
+              </li>
+            </ol>
+            <p class="text-gray-600 mt-3">If you choose to create hatchlings, a form appears for each one where you can set Sex, Name, Status, and Genetic Summary. The Sire and Dam are inherited from the clutch.</p>
+          </section>
+
+          <!-- Hatchlings -->
+          <section id="hatchlings" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Managing Hatchlings</h2>
+            <p class="text-gray-700 mb-4">The Hatchlings tab shows all animals with Listed, Unlisted, or For Sale status.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Adding a Hatchling Manually</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>+ Hatchling</strong> in the sidebar</li>
+              <li>Select the <strong>Clutch ID</strong> (required) - this links to the clutch and auto-fills Sire/Dam</li>
+              <li>Enter <strong>Hatch Date</strong></li>
+              <li>Set <strong>Sex</strong>, <strong>Status</strong>, and <strong>Genetic Summary</strong></li>
+              <li>Optional: Add <strong>Hatch Weight</strong></li>
+              <li>Click <strong>Save</strong></li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Quick Actions</h3>
+            <p class="text-gray-700 mb-2">Each hatchling row has action buttons:</p>
+            <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+              <li><strong>Edit</strong> - Modify any field</li>
+              <li><strong>Sell</strong> - Open the sale form</li>
+              <li><strong>+ Holdback</strong> - Change status to Holdback</li>
+              <li><strong>Delete</strong> - Move to Archive</li>
+            </ul>
+          </section>
+
+          <!-- Pairings -->
+          <section id="pairings" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Recording Pairings</h2>
+            <p class="text-gray-700 mb-4">The Pairings tab shows all breeding activity (Paired and Lock records).</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Recording a Pairing</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>+ Activity</strong> in the sidebar</li>
+              <li>Select the <strong>Animal</strong> (the female being paired)</li>
+              <li>Set <strong>Activity</strong> to "Paired" or "Lock"</li>
+              <li>In the <strong>Paired With</strong> field, select the male</li>
+              <li>Enter the <strong>Date</strong></li>
+              <li>Click <strong>Save</strong></li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Pairings View</h3>
+            <p class="text-gray-700 mb-2">The Pairings table shows:</p>
+            <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+              <li><strong>Date</strong> - When the pairing occurred</li>
+              <li><strong>Sire</strong> - The male</li>
+              <li><strong>Dam</strong> - The female</li>
+              <li><strong>Activity</strong> - Paired or Lock</li>
+            </ul>
+            <p class="text-gray-600 mt-2">Use the search bar to find specific animals.</p>
+          </section>
+
+          <!-- Sales -->
+          <section id="sales" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Sales Management</h2>
+            <p class="text-gray-700 mb-4">The Sales tab shows all On Hold and Sold animals.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Recording a Sale</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Find the animal in the Hatchlings tab</li>
+              <li>Click the <strong>Sell</strong> button</li>
+              <li>Fill in the sale form:
+                <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                  <li><strong>Sold Date</strong> - Date of sale</li>
+                  <li><strong>Sold Price</strong> - Sale price</li>
+                  <li><strong>Amount Paid</strong> - How much the buyer has paid</li>
+                  <li><strong>Shipping Fee</strong> - Shipping cost</li>
+                  <li><strong>Buyer Name</strong> - Customer name</li>
+                  <li><strong>Buyer Email</strong> - Customer email</li>
+                  <li><strong>Sale Source</strong> - MorphMarket, Instagram, Facebook, etc.</li>
+                  <li><strong>Payment Status</strong> - Deposit, Paid, or Refunded</li>
+                  <li><strong>Ship Date</strong> - When it will ship</li>
+                </ul>
+              </li>
+              <li>Click <strong>Save Sale</strong></li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Tracking Partial Payments</h3>
+            <p class="text-gray-700 mb-2">If a buyer pays a deposit:</p>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Set <strong>Payment Status</strong> to "Deposit"</li>
+              <li>Enter the deposit amount in <strong>Amount Paid</strong></li>
+              <li>When fully paid, edit the record and update <strong>Amount Paid</strong> to the full amount</li>
+            </ol>
+            <p class="text-gray-600 mt-3">The <strong>Balance Due</strong> alert appears when Amount Paid is less than Sold Price.</p>
+          </section>
+
+          <!-- Activity -->
+          <section id="activity" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Activity Logging</h2>
+            <p class="text-gray-700 mb-4">The Activity tab tracks all events for your animals.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Activity Types</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Took Meal</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Refused Meal</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Weight</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Shed</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Note</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Health Hold</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Paired</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Lock</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Follicle Size</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Ovulation</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Pre Lay Shed</div>
+              <div class="px-3 py-2 bg-gray-50 rounded-lg">Laid</div>
+            </div>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Adding an Activity</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>+ Activity</strong> in the sidebar</li>
+              <li>Select the <strong>Animal</strong> from the dropdown</li>
+              <li>Choose the <strong>Activity</strong> type</li>
+              <li>Enter a <strong>Value</strong> if needed (weight, notes, etc.)</li>
+              <li>For Paired/Lock activities, select <strong>Paired With</strong></li>
+              <li>Set the <strong>Date</strong></li>
+              <li>Click <strong>Save</strong></li>
+            </ol>
+          </section>
+
+          <!-- Archive -->
+          <section id="archive" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Archive and Data Recovery</h2>
+            <p class="text-gray-700 mb-4">When you delete an animal or clutch, it moves to the Archive rather than being permanently deleted.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Viewing the Archive</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>Archive</strong> in the navigation</li>
+              <li>See all archived animals and clutches</li>
+              <li>View the date each item was archived</li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Restoring from Archive</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Find the item in the Archive</li>
+              <li>Click <strong>Restore</strong></li>
+              <li>The item returns to its original tab</li>
+            </ol>
+          </section>
+
+          <!-- Import -->
+          <section id="import" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Importing from MorphMarket</h2>
+            <p class="text-gray-700 mb-4">Import your existing MorphMarket inventory in seconds.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Exporting from MorphMarket</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Log in to MorphMarket</li>
+              <li>Go to <strong>My Store</strong> then <strong>Inventory</strong></li>
+              <li>Click <strong>Export</strong> to download a CSV file</li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Importing to The Rack</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>Import from MorphMarket</strong> in the sidebar</li>
+              <li>Click <strong>Choose File</strong> and select your CSV</li>
+              <li>Review the preview:
+                <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                  <li><strong>New</strong> - Animals not in your collection</li>
+                  <li><strong>Update</strong> - Animals that already exist (matched by Animal ID)</li>
+                </ul>
+              </li>
+              <li>Click <strong>Import All</strong></li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Field Mapping</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-full border border-gray-200 rounded-lg text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-semibold text-gray-700 border-b">MorphMarket Field</th>
+                    <th class="px-4 py-2 text-left font-semibold text-gray-700 border-b">The Rack Field</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr><td class="px-4 py-2">Title</td><td class="px-4 py-2">Animal Name</td></tr>
+                  <tr><td class="px-4 py-2">Animal_Id</td><td class="px-4 py-2">Manual Override</td></tr>
+                  <tr><td class="px-4 py-2">Category</td><td class="px-4 py-2">Species</td></tr>
+                  <tr><td class="px-4 py-2">Sex</td><td class="px-4 py-2">Sex</td></tr>
+                  <tr><td class="px-4 py-2">Dob</td><td class="px-4 py-2">Date of Birth</td></tr>
+                  <tr><td class="px-4 py-2">Traits</td><td class="px-4 py-2">Genetic Summary</td></tr>
+                  <tr><td class="px-4 py-2">State</td><td class="px-4 py-2">Status</td></tr>
+                  <tr><td class="px-4 py-2">Price</td><td class="px-4 py-2">Purchase/List/Sold Price</td></tr>
+                  <tr><td class="px-4 py-2">Origin</td><td class="px-4 py-2">Breeder Source</td></tr>
+                  <tr><td class="px-4 py-2">Sires/Dams</td><td class="px-4 py-2">Sire/Dam</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Export -->
+          <section id="export" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Exporting Your Data</h2>
+            <p class="text-gray-700 mb-4">Export your data anytime as a CSV file.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Exporting Collection</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>Export Collection</strong> in the sidebar</li>
+              <li>A CSV file downloads automatically</li>
+              <li>Open in Excel, Google Sheets, or any spreadsheet app</li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Exporting Clutches</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>Export Clutches</strong> in the sidebar</li>
+              <li>A CSV file downloads automatically</li>
+            </ol>
+          </section>
+
+          <!-- QR Codes -->
+          <section id="qr-codes" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">QR Code System</h2>
+            <p class="text-gray-700 mb-4">Every animal gets a unique QR code for quick access.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Printing QR Codes</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Click <strong>Print QR Codes</strong> in the sidebar</li>
+              <li>Choose which animals to print:
+                <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                  <li>All Animals</li>
+                  <li>Breeders Only</li>
+                  <li>Hatchlings Only</li>
+                </ul>
+              </li>
+              <li>Choose label size: Small (1"), Medium (1.5"), or Large (2")</li>
+              <li>Click <strong>Print</strong></li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Using QR Codes</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Print and attach labels to your tubs or racks</li>
+              <li>Scan a QR code with your phone camera</li>
+              <li>The app opens directly to that animal</li>
+              <li>Log activity immediately (feeding, shed, weight, etc.)</li>
+            </ol>
+            <p class="text-gray-600 mt-3">This is the fastest way to record daily husbandry.</p>
+          </section>
+
+          <!-- Bin Tags -->
+          <section id="bin-tags" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Bin Tags and Invoices</h2>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Printing Bin Tags</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Find the animal in the Collection or Hatchlings tab</li>
+              <li>Click <strong>Edit</strong> to open the record</li>
+              <li>Click <strong>Print Bin Tag</strong></li>
+              <li>A printable tag opens with: Animal ID, Name, Genetics, DOB, Sex, and QR Code</li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Generating Invoices</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Find a sold animal in the Sales tab</li>
+              <li>Click <strong>Edit</strong> to open the record</li>
+              <li>Click <strong>Generate Invoice</strong></li>
+              <li>A printable invoice opens with your business info, buyer info, animal details, and pricing breakdown</li>
+            </ol>
+          </section>
+
+          <!-- Settings -->
+          <section id="settings" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Settings and Customization</h2>
+            <p class="text-gray-700 mb-4">Access Settings from the sidebar.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Available Settings</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-full border border-gray-200 rounded-lg text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-semibold text-gray-700 border-b">Setting</th>
+                    <th class="px-4 py-2 text-left font-semibold text-gray-700 border-b">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr><td class="px-4 py-2 font-medium">Business Name</td><td class="px-4 py-2 text-gray-600">Your breeding business name</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Owner Name</td><td class="px-4 py-2 text-gray-600">Your name</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Email</td><td class="px-4 py-2 text-gray-600">Contact email</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Phone</td><td class="px-4 py-2 text-gray-600">Contact phone</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">City, State, ZIP</td><td class="px-4 py-2 text-gray-600">Your location</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Website</td><td class="px-4 py-2 text-gray-600">Your website URL</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Instagram</td><td class="px-4 py-2 text-gray-600">Your Instagram handle</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Logo URL</td><td class="px-4 py-2 text-gray-600">URL to your logo image</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Default Species</td><td class="px-4 py-2 text-gray-600">Pre-filled when adding animals</td></tr>
+                  <tr><td class="px-4 py-2 font-medium">Default Incubation Days</td><td class="px-4 py-2 text-gray-600">For estimated hatch date calculation</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="text-gray-600 mt-3">Click <strong>Save Settings</strong> after making changes.</p>
+          </section>
+
+          <!-- Mobile -->
+          <section id="mobile" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Mobile Usage</h2>
+            <p class="text-gray-700 mb-4">The Rack is fully mobile-friendly.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Mobile Menu</h3>
+            <p class="text-gray-700">Tap the hamburger menu (three lines) in the top left to access navigation, quick add buttons, tools, and settings.</p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Quick Add Bar</h3>
+            <p class="text-gray-700">On mobile, a quick add bar appears below the header for fast access to + Breeder, + Clutch, + Hatchling, and + Activity.</p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Sync Button</h3>
+            <p class="text-gray-700">Tap the sync icon in the header to refresh your data.</p>
+          </section>
+
+          <!-- Tips -->
+          <section id="tips" class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Tips and Best Practices</h2>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Daily Workflow</h3>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+              <li>Check the Dashboard for alerts</li>
+              <li>Address overdue items first</li>
+              <li>Log feeding and activities via QR codes</li>
+              <li>Update statuses as things change</li>
+            </ol>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Naming Conventions</h3>
+            <p class="text-gray-700 mb-2">Use consistent naming to make searching easier:</p>
+            <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+              <li><strong>Breeders</strong>: Descriptive names (e.g., "Pastel Clown Female 1")</li>
+              <li><strong>Hatchlings</strong>: Wait until they develop patterns or keep generic until sold</li>
+            </ul>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Genetic Summary Format</h3>
+            <p class="text-gray-700 mb-2">Be consistent with how you list genetics:</p>
+            <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+              <li>List visual genes first</li>
+              <li>Use "Het" for heterozygous genes</li>
+              <li>Use "Poss Het" for possible hets</li>
+              <li>Example: "Pastel Banana Het Clown Poss Het Pied"</li>
+            </ul>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Regular Syncing</h3>
+            <p class="text-gray-700">Click <strong>Sync</strong> regularly to ensure your data is current, especially if you use multiple devices.</p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Backup Your Data</h3>
+            <p class="text-gray-700">Export your collection and clutches periodically as a backup. Your data lives in Google Sheets, which is automatically backed up, but local copies are good practice.</p>
+
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Use the Archive</h3>
+            <p class="text-gray-700">Do not worry about deleting animals. Everything goes to Archive first, so you can always restore if needed.</p>
+          </section>
+
+          <!-- Getting Help -->
+          <section id="help" class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Getting Help</h2>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">Support</h3>
+            <p class="text-gray-700 mb-4">Click <strong>Submit Support Ticket</strong> in the sidebar to report issues or request features.</p>
+            
+            <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">What's New</h3>
+            <p class="text-gray-700">Click <strong>What's New</strong> in the sidebar to see the latest features and updates.</p>
+          </section>
+
+          <!-- Footer -->
+          <div class="mt-12 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
+            <p class="mb-2">Thank you for using The Rack. Happy breeding!</p>
+            <p><strong>The Rack App</strong> | DBA Soul Serpents, LLC</p>
+            <p>support@therackapp.io</p>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+</body>
+</html>
