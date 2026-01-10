@@ -1,7 +1,7 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.58
- * Last Updated: 2026-01-10
+ * Version: 2.12.40
+ * Last Updated: 2026-01-09
  * 
  * Changelog:
  * - 2.12.40: Removed all PDF code, HTML print only

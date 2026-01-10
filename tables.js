@@ -1,10 +1,10 @@
 /*
  * THE RACK - Tables & Filters
- * Version: 2.12.55
- * Last Updated: 2026-01-09
+ * Version: v30
+ * Last Updated: 2026-01-10
  * 
  * Changelog:
- * - 2.12.55: Enhanced Pairings table column rendering
+ * - v30: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly from Activity sheet
  * - 2.12.50: Added search and filter bar to Pairings tab
  * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
  * - 2.12.0: Split from monolithic index.html
@@ -263,18 +263,6 @@ function renderTable() {
       // Add warning icon to first data column if overdue
       else if (colIdx === 0 && isOverdue) {
         td.innerHTML = '<span class="text-red-600 font-bold mr-1" title="Overdue - past estimated hatch date">!</span>' + escapeHtml(row[col] || "--");
-      }
-      // Special handling for Pairings view - SIRE maps to UNIQUE ID, DAM maps to VALUE
-      if (state.activeTab === "pairings") { if (col === "SIRE") {
-        // Get the animal name for the UNIQUE ID
-        var sireId = row["UNIQUE ID"] || "";
-        var sireName = getAnimalNameById(sireId);
-        td.textContent = sireName ? sireName + " | " + sireId : sireId || "--";
-      }
-      } else if (col === "DAM") {
-        // Use Paired With field for the Dam column
-        var pairedWith = row["PAIRED WITH"] || row["VALUE"] || "";
-        td.textContent = pairedWith || "--";
       }
       // Format date columns nicely
       else if (col.toUpperCase().includes("DATE") && row[col]) {
@@ -770,7 +758,7 @@ function getColumns() {
   var prefs = {
     collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
     clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
-    pairings: ["DATE", "SIRE", "DAM", "ACTIVITY"],
+    pairings: ["DATE", "UNIQUE ID", "PAIRED WITH", "ACTIVITY"],
     hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
     sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "AMOUNT PAID", "DATE SOLD", "BUYER NAME"],
     activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
@@ -779,11 +767,7 @@ function getColumns() {
   var hUpper = h.map(function(x) { return (x || "").toUpperCase(); });
   var wanted = prefs[state.activeTab] || [];
   // QR, MATURITY are virtual columns for collection/hatchlings
-  // SIRE, DAM are virtual columns for pairings (mapped from UNIQUE ID and VALUE)
   var virtualCols = ["QR", "MATURITY"];
-  if (state.activeTab === "pairings") {
-    virtualCols.push("SIRE", "DAM");
-  }
   var result = wanted.filter(function(w) { 
     return virtualCols.indexOf(w) >= 0 || hUpper.indexOf(w.toUpperCase()) >= 0; 
   });

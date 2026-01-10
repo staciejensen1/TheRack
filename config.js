@@ -1,9 +1,10 @@
 /*
  * THE RACK - Configuration
- * Version: 2.12.47
- * Last Updated: 2026-01-09
+ * Version: v30
+ * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - v30: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly
  * - 2.12.47: App writes UNIQUE ID/CLUTCH ID to sheet, fix activity animal select, hide DAYS TILL HATCH
  * - 2.12.43: Fixed missing modal HTML - added all modals back to index.html
  * - 2.12.42: Added debug logging to trace script loading
@@ -12,7 +13,7 @@
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "2.12.55";
+var VERSION = "v30";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {

@@ -1,7 +1,7 @@
 /*
  * THE RACK - Main App
- * Version: 2.12.58
- * Last Updated: 2026-01-10
+ * Version: 2.12.49
+ * Last Updated: 2026-01-09
  * 
  * Changelog:
  * - 2.12.49: Hide all filter bars on Dashboard view
