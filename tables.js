@@ -771,7 +771,7 @@ function getColumns() {
     clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
     pairings: ["DATE", "SIRE", "DAM", "ACTIVITY"],
     hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
-    sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "TOTAL PAID", "DATE SOLD", "BUYER NAME"],
+    sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "AMOUNT PAID", "DATE SOLD", "BUYER NAME"],
     activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
   };
   var h = state.headers[getSheetKey(state.activeTab)] || [];
@@ -923,7 +923,7 @@ function getFilteredRows() {
       // Alert filters for sales
       if (alertFilter === "balanceDue") {
         var soldPrice = parseFloat(r["SOLD PRICE"]) || 0;
-        var totalPaid = parseFloat(r["TOTAL PAID"]) || 0;
+        var totalPaid = parseFloat(r["AMOUNT PAID"]) || 0;
         if (!(soldPrice > 0 && totalPaid < soldPrice)) return false;
         return true;
       }

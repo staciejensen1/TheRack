@@ -1,9 +1,10 @@
 /*
  * THE RACK - Modals (Add/Edit)
- * Version: 2.12.0
+ * Version: 2.12.51
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.51: Added AMOUNT PAID to breederSkipFields (not shown on Add Breeder form)
  * - 2.12.0: Split from monolithic index.html
  */
 
@@ -204,10 +205,10 @@ function renderModalForm(tab) {
   var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID", "QR CODE", "SHEET ID", "SHEET_ID"];
   
   // Fields to skip for breeder ADD form (hatchling/sale specific fields)
-  var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM", "QR CODE", "SHEET ID", "SHEET_ID"];
+  var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "AMOUNT PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM", "QR CODE", "SHEET ID", "SHEET_ID"];
   
   // Fields to skip for hatchling ADD form
-  var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "QR CODE", "SHEET ID", "SHEET_ID"];
+  var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "AMOUNT PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "QR CODE", "SHEET ID", "SHEET_ID"];
   
   // Fields to show at the end for hatchling form
   var hatchlingEndFields = ["MANUAL OVERRIDE", "NOTES"];
@@ -227,7 +228,7 @@ function renderModalForm(tab) {
   // Determine which fields to show based on STATUS
   var status = (state.formData.STATUS || "").toLowerCase();
   var showSaleFields = (status === "on hold" || status === "sold");
-  var saleFields = ["SOLD PRICE", "DATE SOLD", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "TOTAL PAID", "SHIPPING FEE"];
+  var saleFields = ["SOLD PRICE", "DATE SOLD", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "AMOUNT PAID", "SHIPPING FEE"];
   
   // Check if this is a hatchling form - ONLY for hatchling, not clutch or anything else
   var isHatchlingForm = (state.formType === "hatchling" && state.modalMode === "add" && state.modalTab === "collection");

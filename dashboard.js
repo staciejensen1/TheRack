@@ -295,7 +295,7 @@ function calculateStats() {
       if (shipDate && shipDate >= today && shipDate <= threeDaysOut) s.shippingSoon++;
       // Check for unpaid balance (sold price vs total paid)
       var soldPrice = parseFloat(r["SOLD PRICE"]) || 0;
-      var totalPaid = parseFloat(r["TOTAL PAID"]) || 0;
+      var totalPaid = parseFloat(r["AMOUNT PAID"]) || 0;
       if (soldPrice > 0 && totalPaid < soldPrice) {
         s.unpaidBalance++;
       }
@@ -320,7 +320,7 @@ function calculateStats() {
       // Check shipping soon for sold items too
       if (shipDate && shipDate >= today && shipDate <= threeDaysOut) s.shippingSoon++;
       // Check for unpaid balance (sold price vs total paid)
-      var totalPaid = parseFloat(r["TOTAL PAID"]) || 0;
+      var totalPaid = parseFloat(r["AMOUNT PAID"]) || 0;
       if (price > 0 && totalPaid < price) {
         s.unpaidBalance++;
       }

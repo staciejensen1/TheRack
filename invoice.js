@@ -33,7 +33,7 @@ function openInvoiceModal(row) {
     buyerAddress: row["BUYER ADDRESS"] || "",
     shipping: parseFloat(row["SHIPPING FEE"]) || 0,
     taxRate: parseFloat(state.settings["DEFAULT TAX RATE"]) || 0,
-    deposit: parseFloat(row["TOTAL PAID"]) || 0,
+    deposit: parseFloat(row["AMOUNT PAID"]) || 0,
     notes: ""
   };
   
