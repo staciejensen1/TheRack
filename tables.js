@@ -1,10 +1,11 @@
 /*
  * THE RACK - Tables & Filters
- * Version: v30
+ * Version: 3.1
  * Last Updated: 2026-01-10
  * 
  * Changelog:
- * - v30: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly from Activity sheet
+ * - 3.1: Added EST. HATCH DATE column to Clutches table
+ * - 3.0: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly from Activity sheet
  * - 2.12.50: Added search and filter bar to Pairings tab
  * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
  * - 2.12.0: Split from monolithic index.html
@@ -757,7 +758,7 @@ function renderTableStats() {
 function getColumns() {
   var prefs = {
     collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
-    clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
+    clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "EST. HATCH DATE", "# FERTILE", "STATUS"],
     pairings: ["DATE", "UNIQUE ID", "PAIRED WITH", "ACTIVITY"],
     hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
     sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "AMOUNT PAID", "DATE SOLD", "BUYER NAME"],
