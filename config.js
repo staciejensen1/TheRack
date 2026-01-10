@@ -1,7 +1,7 @@
 /*
  * THE RACK - Configuration
- * Version: 2.12.58
- * Last Updated: 2026-01-10
+ * Version: 2.12.47
+ * Last Updated: 2026-01-09
  * 
  * Changelog:
  * - 2.12.47: App writes UNIQUE ID/CLUTCH ID to sheet, fix activity animal select, hide DAYS TILL HATCH
