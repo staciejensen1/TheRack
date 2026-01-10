@@ -1,9 +1,10 @@
 /*
  * THE RACK - Main App
- * Version: 2.12.0
+ * Version: 2.12.49
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.49: Hide all filter bars on Dashboard view
  * - 2.12.0: Split from monolithic index.html
  */
 
@@ -137,6 +138,8 @@ function renderCurrentView() {
   
   if (isDash || isArchive) {
     document.getElementById("filterBar").classList.add("hidden");
+    document.getElementById("salesFilterBar").classList.add("hidden");
+    document.getElementById("alertFilterDisplay").classList.add("hidden");
     document.getElementById("tableStatsView").classList.add("hidden");
     document.getElementById("tableStatsView").innerHTML = '';
   }

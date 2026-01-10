@@ -1,9 +1,10 @@
 /*
  * THE RACK - Tables & Filters
- * Version: 2.12.41
+ * Version: 2.12.50
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.50: Added search and filter bar to Pairings tab
  * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
  * - 2.12.0: Split from monolithic index.html
  */
@@ -41,12 +42,12 @@ function renderTable() {
     var salesSearchInput = document.getElementById("salesSearchInput");
     if (salesSearchInput) salesSearchInput.value = state.filters.search || "";
   } else if (sheetKey === "collection") {
-    // Collection, Hatchlings, Pairings tabs
+    // Collection, Hatchlings tabs
     filterBar.classList.remove("hidden");
     populateSpeciesFilter();
     var searchInput = document.getElementById("searchInput");
     if (searchInput) searchInput.value = state.filters.search || "";
-  } else if (state.activeTab === "activity") {
+  } else if (state.activeTab === "activity" || state.activeTab === "pairings") {
     filterBar.classList.remove("hidden");
     var searchInput = document.getElementById("searchInput");
     if (searchInput) searchInput.value = state.filters.search || "";
@@ -811,11 +812,13 @@ function getFilteredRows() {
       var uniqueId = (r["UNIQUE ID"] || "").toLowerCase();
       var manualId = (r["MANUAL OVERRIDE"] || "").toLowerCase();
       var clutchId = (r["CLUTCH ID"] || "").toLowerCase();
+      var value = (r["VALUE"] || "").toLowerCase();
       
       var matchesSearch = name.indexOf(searchTerm) >= 0 ||
                           uniqueId.indexOf(searchTerm) >= 0 ||
                           manualId.indexOf(searchTerm) >= 0 ||
-                          clutchId.indexOf(searchTerm) >= 0;
+                          clutchId.indexOf(searchTerm) >= 0 ||
+                          value.indexOf(searchTerm) >= 0;
       
       if (!matchesSearch) return false;
     }
