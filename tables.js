@@ -1,12 +1,15 @@
 /*
  * THE RACK - Tables & Filters
- * Version: 2.12.57
+ * Version: 2.12.58
  * Last Updated: 2026-01-10
  * 
  * Changelog:
- * - 2.12.57: Added detailed console logging for handleEdit in Pairings view
+ * Changelog:
+ * - 2.12.58: Added detailed console logging for handleEdit in Pairings view
+ * - 2.12.57: Updated Pairings columns to use Unique ID and Paired With
  * - 2.12.50: Added search and filter bar to Pairings tab
  * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
+ * - 2.12.0: Split from monolithic index.html
  * - 2.12.0: Split from monolithic index.html
  */
 
