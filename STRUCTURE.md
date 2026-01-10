@@ -2,7 +2,6 @@
 # Version: 3.9
 # Last Updated: 2026-01-10
 
-This file documents where everything is located in THE RACK application.
 CLAUDE: UPDATE THIS FILE whenever you change file structure, rules, form fields, or table columns.
 
 ---
@@ -12,11 +11,11 @@ CLAUDE: UPDATE THIS FILE whenever you change file structure, rules, form fields,
 | File | Purpose |
 |------|---------|
 | index.html | Main HTML, modals, sidebar navigation |
-| config.js | VERSION variable, API URL, field options, app state |
+| config.js | VERSION variable, API URL, field options |
 | app.js | Init, navigation, utilities |
 | api.js | API calls to Google Apps Script backend |
-| tables.js | Table rendering, column definitions, filters |
-| modals.js | Add/Edit forms, ID generation functions |
+| tables.js | Table rendering, column definitions |
+| modals.js | Add/Edit forms, ID generation |
 | dashboard.js | Dashboard stats and alerts |
 | import.js | Import Collection from CSV |
 | invoice.js | Invoice generation |
@@ -25,21 +24,17 @@ CLAUDE: UPDATE THIS FILE whenever you change file structure, rules, form fields,
 | hatch-sale.js | Hatch and sale modals |
 | archive.js | Archive functionality |
 | tools.js | Export, settings, changelog |
-| help.html | Help guide page |
-| styles.css | Custom styles |
-| STRUCTURE.md | This file - documents structure and rules |
+| STRUCTURE.md | This file |
 
 ---
 
-## ADD FORMS (SHOW ONLY - no skip lists)
+## ADD FORMS - SHOW ONLY LISTS
 
 ### Add Breeder Form
-**File:** modals.js (breederFormFields array)
-**Method:** SHOW ONLY these fields
-**Special elements at top:**
-- UNIQUE ID preview (read-only, auto-generated)
+**File:** modals.js (breederFormFields array, line ~275)
+**Special elements:** UNIQUE ID preview at top
 
-**Fields shown:**
+**SHOW ONLY these fields:**
 1. ANIMAL NAME
 2. SEX
 3. DATE OF BIRTH
@@ -53,13 +48,10 @@ CLAUDE: UPDATE THIS FILE whenever you change file structure, rules, form fields,
 11. NOTES
 
 ### Add Clutch Form
-**File:** modals.js (clutchFormFields array)
-**Method:** SHOW ONLY these fields
-**Special elements at top:**
-- UNIQUE ID preview (read-only, auto-generated)
-- ESTIMATED HATCH DATE preview (read-only, calculated from LAY DATE + 59 days)
+**File:** modals.js (clutchFormFields array, line ~282)
+**Special elements:** UNIQUE ID preview at top, EST. HATCH DATE preview at top
 
-**Fields shown:**
+**SHOW ONLY these fields:**
 1. DAM
 2. SIRE
 3. LAY DATE
@@ -69,149 +61,61 @@ CLAUDE: UPDATE THIS FILE whenever you change file structure, rules, form fields,
 7. STATUS
 
 ### Add Hatchling Form
-**File:** modals.js (renderHatchlingForm function)
-**Method:** Custom render function with EXPLICIT field list
-**Special elements at top:**
-- UNIQUE ID preview (read-only, auto-generated)
-- Select Clutch (searchable dropdown)
+**File:** modals.js (renderHatchlingForm function, line ~368)
+**Special elements:** UNIQUE ID preview at top, Select Clutch dropdown
 
-**Fields shown:**
-1. DAM (read-only, from clutch)
-2. SIRE (read-only, from clutch)
-3. HATCH DATE
-4. SEX
-5. STATUS
-6. HATCH WEIGHT (G)
-7. SPECIES
-8. GENETIC SUMMARY
-9. BREEDER SOURCE
-10. MANUAL OVERRIDE
-11. NOTES
+**SHOW ONLY these fields:**
+1. Select Clutch (custom dropdown)
+2. DAM (read-only from clutch)
+3. SIRE (read-only from clutch)
+4. HATCH DATE
+5. SEX
+6. STATUS
+7. HATCH WEIGHT (G)
+8. SPECIES
+9. GENETIC SUMMARY
+10. BREEDER SOURCE
+11. MANUAL OVERRIDE
+12. NOTES
 
 ### Add Activity Form
 **File:** modals.js (renderActivityAddForm function)
-**Method:** Custom render function
-**Fields shown:**
+**SHOW ONLY these fields:**
 - DATE
 - UNIQUE ID (searchable dropdown)
 - ACTIVITY (dropdown)
 - VALUE
-- PAIRED WITH (only for Paired/Lock activities)
+- PAIRED WITH (only for Paired/Lock)
 
 ---
 
 ## TABLE COLUMNS
 
-### Collection Table
-**File:** tables.js (getColumns function, prefs.collection)
-**Columns:** QR, UNIQUE ID, ANIMAL NAME, SEX, MATURITY, GENETIC SUMMARY, STATUS
-
-### Clutches Table
-**File:** tables.js (getColumns function, prefs.clutches)
-**Columns:** CLUTCH ID, SIRE, DAM, LAY DATE, EST. HATCH DATE, # FERTILE, STATUS
-
-### Pairings Table
-**File:** tables.js (getColumns function, prefs.pairings)
-**Columns:** DATE, UNIQUE ID, PAIRED WITH, ACTIVITY
-
-### Hatchlings Table
-**File:** tables.js (getColumns function, prefs.hatchlings)
-**Columns:** QR, UNIQUE ID, CLUTCH ID, ANIMAL NAME, SEX, MATURITY, GENETIC SUMMARY, STATUS, LIST PRICE
-
-### Sales Table
-**File:** tables.js (getColumns function, prefs.sales)
-**Columns:** UNIQUE ID, ANIMAL NAME, STATUS, SOLD PRICE, AMOUNT PAID, DATE SOLD, BUYER NAME
-
-### Activity Table
-**File:** tables.js (getColumns function, prefs.activity)
-**Columns:** DATE, UNIQUE ID, ACTIVITY, VALUE
+### Collection: QR, UNIQUE ID, ANIMAL NAME, SEX, MATURITY, GENETIC SUMMARY, STATUS
+### Clutches: CLUTCH ID, SIRE, DAM, LAY DATE, EST. HATCH DATE, # FERTILE, STATUS
+### Pairings: DATE, UNIQUE ID, PAIRED WITH, ACTIVITY
+### Hatchlings: QR, UNIQUE ID, CLUTCH ID, ANIMAL NAME, SEX, MATURITY, GENETIC SUMMARY, STATUS, LIST PRICE
+### Sales: UNIQUE ID, ANIMAL NAME, STATUS, SOLD PRICE, AMOUNT PAID, DATE SOLD, BUYER NAME
+### Activity: DATE, UNIQUE ID, ACTIVITY, VALUE
 
 ---
 
-## ID GENERATION RULES
+## ID GENERATION
 
-### Breeder ID
-**File:** modals.js (generateBreederId function)
-**Format:** B-YYYY-XXXX (e.g., B-2026-0001)
-**Rule:** Checks all existing UNIQUE IDs, finds max number for current year, increments, verifies no duplicate exists
-
-### Hatchling ID
-**File:** modals.js (generateHatchlingId function)
-**Format:** H-YYYY-XXXX (e.g., H-2026-0001)
-**Rule:** Checks all existing UNIQUE IDs, finds max number for current year, increments, verifies no duplicate exists
-
-### Clutch ID
-**File:** modals.js (generateClutchId function)
-**Format:** CL-YYYY-XXXX (e.g., CL-2026-0001)
-**Rule:** Checks all existing CLUTCH IDs, finds max number for current year, increments, verifies no duplicate exists
-
-### Import IDs
-**File:** import.js (generateUniqueIdForImport function)
-**Format:** B-YYYY-XXXX
-**Rule:** Same as Breeder ID but also tracks IDs generated during current import session to prevent duplicates within batch
-
-### QR CODE Generation
-**File:** import.js (executeImport function)
-**Format:** https://app.therackapp.io?code={sheetId}&animal={uniqueId}
-**Rule:** Generated automatically when importing records
-
----
-
-## SIDEBAR LINKS
-
-**File:** index.html
-
-### Quick Add Section
-- + Breeder
-- + Clutch
-- + Hatchling
-- + Activity
-
-### Navigation Section
-- Dashboard
-- Collection
-- Clutches
-- Pairings
-- Hatchlings
-- Sales
-- Activity
-
-### Tools Section
-- Import Collection
-- Create Invoice
-- Print Bin Tags
-- Export Collection
-- Export Clutches
-- Print QR Codes
-- Data Health
-- Archive
-- Settings
-- Help Guide
-
-### Support Section
-- What's New
-- Submit Support Ticket
-
----
-
-## VERSION TRACKING
-
-**Files that need version updates:**
-1. config.js - VERSION variable (displays in header)
-2. config.js - Header comment changelog
-3. index.html - Header comment changelog
-4. Any modified .js file - Header comment changelog
+- Breeder: B-YYYY-XXXX (checks for duplicates)
+- Hatchling: H-YYYY-XXXX (checks for duplicates)
+- Clutch: CL-YYYY-XXXX (checks for duplicates)
+- Import: B-YYYY-XXXX + QR CODE auto-generated
 
 ---
 
 ## RULES FOR CLAUDE
 
-1. Always update version # in config.js VERSION variable and file headers when making changes
-2. Do not use emojis
-3. Confirm changes with summary before making them
-4. Give 9 PM daily summary (completed, tomorrow, issues, accomplishments)
-5. Use GitHub files for context before asking for details
-6. UPDATE THIS FILE (STRUCTURE.md) when changing structure, rules, form fields, or table columns
-7. Forms use SHOW ONLY logic - explicit list of fields to display, NOT skip lists
-8. All ID generators must check for duplicates before returning new ID
-9. Never change form fields without explicit permission from user
+1. Update version in config.js and file headers
+2. No emojis
+3. Confirm changes before making them
+4. 9 PM daily summary
+5. Update STRUCTURE.md when changing structure
+6. Forms use SHOW ONLY lists - NOT skip lists
+7. All ID generators check for duplicates
+8. Never change form fields without permission
