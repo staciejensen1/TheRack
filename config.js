@@ -1,9 +1,10 @@
 /*
  * THE RACK - Configuration
- * Version: 3.4
+ * Version: 3.5
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.5: Rewrote Import Collection to handle Collection CSV format with auto-generated UNIQUE IDs
  * - 3.4: Added Import Collection link to sidebar
  * - 3.3: Fixed Clutches table to show CLUTCH ID column (was incorrectly set to UNIQUE ID)
  * - 3.2: Changed Clutches table first column from CLUTCH ID to UNIQUE ID
@@ -17,7 +18,7 @@
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "3.4";
+var VERSION = "3.5";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {

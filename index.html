@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 3.4
+  Version: 3.5
   Last Updated: 2026-01-10
   
   Changelog:
+  - 3.5: Rewrote Import Collection to handle Collection CSV format with auto-generated UNIQUE IDs
   - 3.4: Added Import Collection link to sidebar
   - 3.3: Fixed Clutches table to show CLUTCH ID column (was incorrectly set to UNIQUE ID)
   - 3.2: Changed Clutches table first column from CLUTCH ID to UNIQUE ID
@@ -566,7 +567,7 @@
     <div class="min-h-screen flex items-start justify-center p-4">
       <div class="w-full max-w-4xl my-8 bg-white rounded-2xl shadow-2xl">
         <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
-          <h3 class="text-xl font-bold text-slate-900">Import from MorphMarket</h3>
+          <h3 class="text-xl font-bold text-slate-900">Import Collection</h3>
           <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
         </div>
         
@@ -574,7 +575,7 @@
           <!-- Step 1: Upload -->
           <div id="importStep1">
             <div class="mb-4">
-              <p class="text-gray-600 mb-4">Upload your MorphMarket CSV export file. Go to MorphMarket &gt; My Store &gt; Inventory &gt; Export to download your file.</p>
+              <p class="text-gray-600 mb-4">Upload a CSV file exported from your Collection sheet. The system will auto-generate UNIQUE IDs for each imported row.</p>
               <label class="block">
                 <span class="sr-only">Choose CSV file</span>
                 <input type="file" id="importFileInput" accept=".csv" onchange="handleImportFile(event)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-black cursor-pointer"/>
