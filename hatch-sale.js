@@ -1,7 +1,7 @@
 /*
  * THE RACK - Hatch & Sale Modals
- * Version: 2.12.48
- * Last Updated: 2026-01-09
+ * Version: 2.12.58
+ * Last Updated: 2026-01-10
  * 
  * Changelog:
  * - 2.12.48: Added Amount Paid field to Sale modal (writes to AMOUNT PAID column)

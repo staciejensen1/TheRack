@@ -1,6 +1,6 @@
 /*
  * THE RACK - Modals and Forms
- * Version: 2.12.57
+ * Version: 2.12.58
  * Last Updated: 2026-01-10
  * 
  * Changelog:

@@ -1,7 +1,7 @@
 /*
  * THE RACK - Invoice Functions
- * Version: 2.12.0
- * Last Updated: 2026-01-09
+ * Version: 2.12.58
+ * Last Updated: 2026-01-10
  * 
  * Changelog:
  * - 2.12.0: Split from monolithic index.html
