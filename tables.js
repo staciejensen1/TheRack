@@ -1,12 +1,17 @@
 /*
  * THE RACK - Tables & Filters
- * Version: 2.12.55
+ * Version: 2.12.56
  * Last Updated: 2026-01-09
  * 
  * Changelog:
- * - 2.12.55: Enhanced Pairings table column rendering
+ * Changelog:
+ * - 2.12.56: Updated Pairings columns to use Unique ID and Paired With
+ * - 2.12.55: Improved Pairings view rendering
  * - 2.12.50: Added search and filter bar to Pairings tab
  * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
+ * - 2.12.0: Split from monolithic index.html
+ * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
+ * - 2.12.0: Split from monolithic index.html
  * - 2.12.0: Split from monolithic index.html
  */
 
@@ -770,7 +775,7 @@ function getColumns() {
   var prefs = {
     collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
     clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
-    pairings: ["DATE", "SIRE", "DAM", "ACTIVITY"],
+    pairings: ["DATE", "UNIQUE ID", "PAIRED WITH", "ACTIVITY"],
     hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
     sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "AMOUNT PAID", "DATE SOLD", "BUYER NAME"],
     activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
