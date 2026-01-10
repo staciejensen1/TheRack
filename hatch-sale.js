@@ -1,9 +1,10 @@
 /*
  * THE RACK - Hatch & Sale Modals
- * Version: 2.12.0
+ * Version: 2.12.48
  * Last Updated: 2026-01-09
  * 
  * Changelog:
+ * - 2.12.48: Added Amount Paid field to Sale modal (writes to AMOUNT PAID column)
  * - 2.12.0: Split from monolithic index.html
  */
 
@@ -315,6 +316,7 @@ function openSaleModal(animalRow) {
   state.saleForm = {
     soldDate: today,
     soldPrice: "",
+    totalPaid: "",
     shippingFee: "",
     buyerName: "",
     buyerEmail: "",
@@ -329,6 +331,7 @@ function openSaleModal(animalRow) {
   var html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
   html += formField("Sold Date", "date", "soldDate", state.saleForm.soldDate);
   html += formField("Sold Price", "number", "soldPrice", "");
+  html += formField("Amount Paid", "number", "totalPaid", "");
   html += formField("Shipping Fee", "number", "shippingFee", "");
   html += formField("Buyer Name", "text", "buyerName", "");
   html += formField("Buyer Email", "email", "buyerEmail", "");
@@ -372,18 +375,15 @@ function saveSale() {
   if (!f.soldPrice) { document.getElementById("saleModalError").textContent = "Sold price required"; return; }
   if (!f.buyerName) { document.getElementById("saleModalError").textContent = "Buyer name required"; return; }
 
-  // Calculate TOTAL PAID
-  var total = (parseFloat(f.soldPrice) || 0) + (parseFloat(f.shippingFee) || 0);
-
   var updateData = {
     "STATUS": "Sold",
     "SOLD PRICE": f.soldPrice,
+    "AMOUNT PAID": f.totalPaid,
     "DATE SOLD": f.soldDate,
     "BUYER NAME": f.buyerName,
     "BUYER EMAIL": f.buyerEmail,
     "SHIPPING FEE": f.shippingFee,
-    "SHIP DATE": f.shipDate,
-    "TOTAL PAID": String(total)
+    "SHIP DATE": f.shipDate
   };
 
   document.getElementById("saveSaleBtn").textContent = "Saving...";
