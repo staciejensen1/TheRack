@@ -1,9 +1,10 @@
 /*
  * THE RACK - Modals (Add/Edit)
- * Version: 2.12.51
- * Last Updated: 2026-01-09
+ * Version: 3.6
+ * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.6: Clutch form now shows ONLY explicit field list (SIRE, DAM, LAY DATE, # LAID, # FERTILE, # SLUGS, STATUS, MANUAL OVERRIDE, NOTES)
  * - 2.12.51: Added AMOUNT PAID to breederSkipFields (not shown on Add Breeder form)
  * - 2.12.0: Split from monolithic index.html
  */
@@ -278,12 +279,10 @@ function renderModalForm(tab) {
       }
     }
     
-    // Skip hatch-related fields on clutch form (both ADD and EDIT)
+    // Clutch form - ONLY show these fields, nothing else
     if (state.modalTab === "clutch") {
-      var hUpper = h.toUpperCase();
-      for (var i = 0; i < clutchHatchFields.length; i++) {
-        if (hUpper === clutchHatchFields[i] || hUpper.includes(clutchHatchFields[i]) || clutchHatchFields[i].includes(hUpper)) return;
-      }
+      var clutchFormFields = ["SIRE", "DAM", "LAY DATE", "# LAID", "# FERTILE", "# SLUGS", "STATUS", "MANUAL OVERRIDE", "NOTES"];
+      if (clutchFormFields.indexOf(h.toUpperCase()) < 0 && clutchFormFields.indexOf(h) < 0) return;
     }
     
     // Activity form conditional fields
