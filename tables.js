@@ -1,10 +1,10 @@
 /*
  * THE RACK - Tables & Filters
- * Version: 2.12.56
+ * Version: 2.12.57
  * Last Updated: 2026-01-10
  * 
  * Changelog:
- * - 2.12.56: Minor enhancement to Pairings view column rendering
+ * - 2.12.57: Enhanced Pairings table column rendering based on specific requirements
  * - 2.12.50: Added search and filter bar to Pairings tab
  * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
  * - 2.12.0: Split from monolithic index.html
@@ -119,29 +119,46 @@ function renderTable() {
       var td = document.createElement("td");
       td.className = "px-3 py-3 text-slate-700 whitespace-nowrap text-sm";
       
-      // Special handling for Pairings view - SIRE maps to UNIQUE ID, DAM maps to VALUE
-      if (state.activeTab === "pairings" && col === "SIRE") {
-        // Get the animal name for the UNIQUE ID
-        var sireId = row["UNIQUE ID"] || "";
-        var sireName = getAnimalNameById(sireId);
-        td.textContent = sireName ? sireName + " | " + sireId : sireId || "--";
-      }
-      else if (state.activeTab === "pairings" && col === "DAM") {
-        // VALUE contains the paired animal (could be "Name | ID" format already)
-        var damValue = row["VALUE"] || "";
-        td.textContent = damValue || "--";
-      }
-      // Format date columns nicely
-      else if (col.toUpperCase().includes("DATE") && row[col]) {
-        var dateVal = parseDate(row[col]);
-        if (dateVal) {
-          td.textContent = (dateVal.getMonth() + 1) + "/" + dateVal.getDate() + "/" + dateVal.getFullYear();
-        } else {
+      // Special handling for Pairings view columns
+      if (state.activeTab === "pairings") {
+        if (col === "SIRE") {
+          // Get the animal name for the Sire
+          var sireId = row["UNIQUE ID"] || "";
+          var sireName = getAnimalNameById(sireId);
+          td.textContent = sireId ? (sireName ? sireName + " | " + sireId : sireId) : "--";
+        }
+        else if (col === "DAM") {
+          // Use the Paired With field for Dam column
+          var pairedWith = row["PAIRED WITH"] || row["VALUE"] || "--";
+          td.textContent = pairedWith;
+        }
+        // Format date columns nicely
+        else if (col.toUpperCase().includes("DATE") && row[col]) {
+          var dateVal = parseDate(row[col]);
+          if (dateVal) {
+            td.textContent = (dateVal.getMonth() + 1) + "/" + dateVal.getDate() + "/" + dateVal.getFullYear();
+          } else {
+            td.textContent = row[col] || "--";
+          }
+        } 
+        else {
           td.textContent = row[col] || "--";
         }
-      } 
+      }
       else {
-        td.textContent = row[col] || "--";
+        // Default rendering for other tabs
+        // Format date columns nicely
+        if (col.toUpperCase().includes("DATE") && row[col]) {
+          var dateVal = parseDate(row[col]);
+          if (dateVal) {
+            td.textContent = (dateVal.getMonth() + 1) + "/" + dateVal.getDate() + "/" + dateVal.getFullYear();
+          } else {
+            td.textContent = row[col] || "--";
+          }
+        } 
+        else {
+          td.textContent = row[col] || "--";
+        }
       }
       
       tr.appendChild(td);
