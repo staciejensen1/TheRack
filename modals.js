@@ -1,9 +1,10 @@
 /*
  * THE RACK - Modals (Add/Edit)
- * Version: 3.6
+ * Version: 3.7
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.7: All ID generators now check for duplicates before creating new ID
  * - 3.6: Clutch form now shows ONLY explicit field list (SIRE, DAM, LAY DATE, # LAID, # FERTILE, # SLUGS, STATUS, MANUAL OVERRIDE, NOTES)
  * - 2.12.51: Added AMOUNT PAID to breederSkipFields (not shown on Add Breeder form)
  * - 2.12.0: Split from monolithic index.html
@@ -991,15 +992,24 @@ function generateHatchlingId() {
   var rows = state.data.collection || [];
   var max = 0;
   var re = /^H-(\d{4})-(\d{4})$/i;
+  var existingIds = {};
   rows.forEach(function(r) {
     var id = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "";
+    existingIds[id.toUpperCase()] = true;
     var m = re.exec(id);
     if (m && m[1] === String(year)) {
       var n = parseInt(m[2], 10);
       if (n > max) max = n;
     }
   });
-  return "H-" + year + "-" + String(max + 1).padStart(4, "0");
+  // Generate next ID and verify it doesn't exist
+  var nextNum = max + 1;
+  var newId = "H-" + year + "-" + String(nextNum).padStart(4, "0");
+  while (existingIds[newId.toUpperCase()]) {
+    nextNum++;
+    newId = "H-" + year + "-" + String(nextNum).padStart(4, "0");
+  }
+  return newId;
 }
 
 function generateBreederId() {
@@ -1007,15 +1017,24 @@ function generateBreederId() {
   var rows = state.data.collection || [];
   var max = 0;
   var re = /^B-(\d{4})-(\d{4})$/i;
+  var existingIds = {};
   rows.forEach(function(r) {
     var id = r["UNIQUE ID"] || r["MANUAL OVERRIDE"] || "";
+    existingIds[id.toUpperCase()] = true;
     var m = re.exec(id);
     if (m && m[1] === String(year)) {
       var n = parseInt(m[2], 10);
       if (n > max) max = n;
     }
   });
-  return "B-" + year + "-" + String(max + 1).padStart(4, "0");
+  // Generate next ID and verify it doesn't exist
+  var nextNum = max + 1;
+  var newId = "B-" + year + "-" + String(nextNum).padStart(4, "0");
+  while (existingIds[newId.toUpperCase()]) {
+    nextNum++;
+    newId = "B-" + year + "-" + String(nextNum).padStart(4, "0");
+  }
+  return newId;
 }
 
 function generateActivityId() {
@@ -1038,12 +1057,26 @@ function generateClutchId(layDate) {
   var d = parseDate(layDate);
   var year = d ? d.getFullYear() : new Date().getFullYear();
   var rows = state.data.clutch || [];
-  var count = 0;
+  var max = 0;
+  var re = /^CL-(\d{4})-(\d{4})$/i;
+  var existingIds = {};
   rows.forEach(function(r) {
-    var ld = parseDate(r["LAY DATE"]);
-    if (ld && ld.getFullYear() === year) count++;
+    var id = r["CLUTCH ID"] || "";
+    existingIds[id.toUpperCase()] = true;
+    var m = re.exec(id);
+    if (m && m[1] === String(year)) {
+      var n = parseInt(m[2], 10);
+      if (n > max) max = n;
+    }
   });
-  return "CL-" + year + "-" + String(count + 1).padStart(4, "0");
+  // Generate next ID and verify it doesn't exist
+  var nextNum = max + 1;
+  var newId = "CL-" + year + "-" + String(nextNum).padStart(4, "0");
+  while (existingIds[newId.toUpperCase()]) {
+    nextNum++;
+    newId = "CL-" + year + "-" + String(nextNum).padStart(4, "0");
+  }
+  return newId;
 }
 
 function saveRecord() {
