@@ -1,9 +1,10 @@
 /*
  * THE RACK - Modals (Add/Edit)
- * Version: 3.7
+ * Version: 3.9
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.9: All forms now use explicit "ONLY show" field lists instead of skip lists
  * - 3.7: All ID generators now check for duplicates before creating new ID
  * - 3.6: Clutch form now shows ONLY explicit field list (SIRE, DAM, LAY DATE, # LAID, # FERTILE, # SLUGS, STATUS, MANUAL OVERRIDE, NOTES)
  * - 2.12.51: Added AMOUNT PAID to breederSkipFields (not shown on Add Breeder form)
@@ -196,41 +197,10 @@ function renderModalForm(tab) {
     return;
   }
   
-  // Skip UNIQUE ID and CLUTCH ID except for activity form where we need UNIQUE ID
-  var skipFields = ["__rowIndex", "__raw", "QR CODE", "SHEET ID", "SHEET_ID"];
-  if (state.modalTab !== "activity") {
-    skipFields.push("UNIQUE ID");
-    skipFields.push("CLUTCH ID");
-  }
-  
-  // Fields to skip for clutch ADD form (these are set via Hatch modal)
-  var clutchHatchFields = ["DAYS TO HATCH", "DAYS TIL HATCH", "DAYS TILL HATCH", "# HATCHED", "HATCH DATE", "EST. HATCH DATE", "EST HATCH DATE", "ESTIMATED HATCH DATE", "DAYS (LAY", "MANUAL ID", "QR CODE", "SHEET ID", "SHEET_ID"];
-  
-  // Fields to skip for breeder ADD form (hatchling/sale specific fields)
-  var breederSkipFields = ["HATCH WEIGHT", "HATCH DATE", "LIST PRICE", "BUYER ADDRESS", "MANUAL ID", "CLUTCH ID", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "AMOUNT PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "SIRE", "DAM", "QR CODE", "SHEET ID", "SHEET_ID"];
-  
-  // Fields to skip for hatchling ADD form
-  var hatchlingSkipFields = ["ANIMAL NAME", "LIST PRICE", "BUYER ADDRESS", "DATE SOLD", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "AMOUNT PAID", "SHIPPING FEE", "SALE SOURCE", "PAYMENT STATUS", "QR CODE", "SHEET ID", "SHEET_ID"];
-  
-  // Fields to show at the end for hatchling form
-  var hatchlingEndFields = ["MANUAL OVERRIDE", "NOTES"];
-  
-  // Fields that are read-only on hatchling form (auto-filled from clutch)
-  var hatchlingReadOnlyFields = ["SIRE", "DAM"];
-  
-  // Activity form - conditional fields based on ACTIVITY type
-  var activityType = (state.formData.ACTIVITY || "").toLowerCase();
-  var isSaleActivity = (activityType === "sold");
-  var isPairingActivity = (activityType === "paired" || activityType === "lock");
-  
-  // Fields only shown for specific activities
-  var activitySaleFields = ["SOLD DATE", "SOLD PRICE", "BUYER NAME", "BUYER EMAIL", "SALE SOURCE", "PAYMENT STATUS", "SHIP DATE", "SHIPPING FEE"];
-  var activityPairingFields = ["PAIRED WITH"];
-  
-  // Determine which fields to show based on STATUS
-  var status = (state.formData.STATUS || "").toLowerCase();
-  var showSaleFields = (status === "on hold" || status === "sold");
-  var saleFields = ["SOLD PRICE", "DATE SOLD", "BUYER NAME", "BUYER EMAIL", "SHIP DATE", "AMOUNT PAID", "SHIPPING FEE"];
+  // EXPLICIT FIELD LISTS - Forms show ONLY these fields
+  var breederFormFields = ["ANIMAL NAME", "SEX", "DATE OF BIRTH", "SPECIES", "GENETIC SUMMARY", "STATUS", "WT PURCHASE (G)", "PURCHASE PRICE", "BREEDER SOURCE", "MANUAL OVERRIDE", "NOTES"];
+  var clutchFormFields = ["DAM", "SIRE", "LAY DATE", "# LAID", "# SLUGS", "# FERTILE", "STATUS"];
+  // Hatchling form uses custom renderHatchlingForm() function
   
   // Check if this is a hatchling form - ONLY for hatchling, not clutch or anything else
   var isHatchlingForm = (state.formType === "hatchling" && state.modalMode === "add" && state.modalTab === "collection");
@@ -256,44 +226,15 @@ function renderModalForm(tab) {
   html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
   
   headers.forEach(function(h) {
-    if (skipFields.indexOf(h) >= 0) return;
-    if (skipFields.indexOf(h.toUpperCase()) >= 0) return;
-    if (h.includes("(RESERVED)")) return;
-    // Skip fields that look like Sheet IDs (long alphanumeric strings, may contain / or other chars)
-    if (/^[A-Z0-9_\-\/]{15,}$/i.test(h)) return;
-    // Also skip any field that starts with a number and is very long
-    if (/^\d/.test(h) && h.length > 10) return;
-    // Skip anything with SHEET in the name
-    if (h.toUpperCase().indexOf("SHEET") >= 0) return;
-    
-    // Collection form - hide sale fields unless status is on hold/sold
-    if (state.modalTab === "collection" && saleFields.indexOf(h) >= 0 && !showSaleFields) return;
-    
-    // Skip hatchling/sale fields on breeder ADD form (status = Breeder)
-    if (state.modalTab === "collection" && state.modalMode === "add") {
-      var formStatus = (state.formData.STATUS || "").toLowerCase();
-      if (formStatus === "breeder" || state.formType === "breeder") {
-        var hUpper = h.toUpperCase();
-        for (var i = 0; i < breederSkipFields.length; i++) {
-          if (hUpper === breederSkipFields[i] || hUpper.indexOf(breederSkipFields[i]) >= 0) return;
-        }
-      }
+    // Breeder ADD form - ONLY show breederFormFields
+    if (state.modalTab === "collection" && state.modalMode === "add" && state.formType === "breeder") {
+      if (breederFormFields.indexOf(h) < 0 && breederFormFields.indexOf(h.toUpperCase()) < 0) return;
     }
     
-    // Clutch form - ONLY show these fields, nothing else
+    // Clutch form - ONLY show clutchFormFields
     if (state.modalTab === "clutch") {
-      var clutchFormFields = ["SIRE", "DAM", "LAY DATE", "# LAID", "# FERTILE", "# SLUGS", "STATUS", "MANUAL OVERRIDE", "NOTES"];
-      if (clutchFormFields.indexOf(h.toUpperCase()) < 0 && clutchFormFields.indexOf(h) < 0) return;
-    }
-    
-    // Activity form conditional fields
-    if (state.modalTab === "activity") {
-      // Skip sale fields unless activity is "Sold"
-      if (activitySaleFields.indexOf(h) >= 0 && !isSaleActivity) return;
-      // Skip pairing fields unless activity is "Paired" or "Lock"
-      if (activityPairingFields.indexOf(h) >= 0 && !isPairingActivity) return;
-      // Skip VALUE field if it's a sale (sale data goes in specific fields)
-      if (h === "VALUE" && isSaleActivity) return;
+      if (clutchFormFields.indexOf(h) < 0 && clutchFormFields.indexOf(h.toUpperCase()) < 0) return;
+    }      if (h === "VALUE" && isSaleActivity) return;
     }
     
     var val = state.formData[h] || "";

@@ -1,9 +1,11 @@
 /*
  * THE RACK - Configuration
- * Version: 3.7
+ * Version: 3.9
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.9: All forms now use SHOW ONLY field lists (removed all skip list logic)
+ * - 3.8: Added STRUCTURE.md documenting all files, forms, tables, and rules
  * - 3.7: All ID generators check for duplicates; Import generates UNIQUE ID and QR CODE
  * - 3.6: Clutch form now shows ONLY explicit field list
  * - 3.5: Rewrote Import Collection to handle Collection CSV format with auto-generated UNIQUE IDs
@@ -20,7 +22,7 @@
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "3.7";
+var VERSION = "3.9";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {
