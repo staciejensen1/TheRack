@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 3.2
+  Version: 3.4
   Last Updated: 2026-01-10
   
   Changelog:
+  - 3.4: Added Import Collection link to sidebar
+  - 3.3: Fixed Clutches table to show CLUTCH ID column (was incorrectly set to UNIQUE ID)
   - 3.2: Changed Clutches table first column from CLUTCH ID to UNIQUE ID
   - 3.1: Added EST. HATCH DATE column to Clutches table
   - 3.0: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly
@@ -212,6 +214,7 @@
         <div class="pt-4 border-t border-gray-100">
           <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
           <div class="flex flex-col gap-1">
+            <button onclick="openImportModal(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Import Collection</button>
             <button onclick="navigateTo('sales'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Create Invoice</button>
             <button onclick="openBinTagGenerator(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print Bin Tags</button>
             <button onclick="exportCSV('collection'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
@@ -260,6 +263,7 @@
           <div class="mt-6 pt-4 border-t border-gray-100">
             <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
             <div class="flex flex-col gap-1">
+              <button onclick="openImportModal()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Import Collection</button>
               <button onclick="navigateTo('sales')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Create Invoice</button>
               <button onclick="openBinTagGenerator()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Print Bin Tags</button>
               <button onclick="exportCSV('collection')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg text-left">Export Collection</button>
