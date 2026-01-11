@@ -253,7 +253,7 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
   
-  var html = '<div style="width:324px; height:204px; border:1px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
+  var html = '<div style="width:324px; height:204px; border:2px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
   
   // ROW 1 - Logo (32%) | Sex+ID (38%) | QR (30%) - 47% height
   html += '<div style="display:flex; height:47%; border-bottom:2px solid #000;">';
@@ -424,7 +424,7 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   var html = '<div style="width:3.38in; height:2.13in; position:relative; box-sizing:border-box;">';
   
   // Actual tag: 3.18in x 1.93in with 0.10in bleed margin
-  html += '<div style="position:absolute; left:0.10in; top:0.10in; width:3.18in; height:1.93in; border:1px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
+  html += '<div style="position:absolute; left:0.10in; top:0.10in; width:3.18in; height:1.93in; border:2px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
   
   // ROW 1 - Logo (32%) | Sex+ID (38%) | QR (30%) - 47% height
   html += '<div style="display:flex; height:47%; border-bottom:2px solid #000;">';
@@ -517,7 +517,7 @@ function buildBinTagPrint(animal, businessName, logoUrl) {
   
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
   
-  var html = '<div class="bin-tag" style="width:3.38in; height:2.13in; border:1px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
+  var html = '<div class="bin-tag" style="width:3.38in; height:2.13in; border:2px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
   
   // ROW 1 - Logo (32%) | Sex+ID (38%) | QR (30%) - 47% height
   html += '<div style="display:flex; height:47%; border-bottom:2px solid #000;">';
