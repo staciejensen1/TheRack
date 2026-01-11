@@ -1,9 +1,10 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.41
- * Last Updated: 2026-01-10
+ * Version: 2.12.42
+ * Last Updated: 2026-01-11
  * 
  * Changelog:
+ * - 2.12.42: Changed Unique ID font to Montserrat 7pt (non-bold)
  * - 2.12.41: Redesigned bin tag layout - new structure with INFO/Year/Breeder in right column, updated fonts (Norwester + Montserrat), shows ID in name area if no name
  * - 2.12.40: Removed all PDF code, HTML print only
  * - 2.12.39: LOCKED - 3.18x1.93in tag, 0.10in bleed, explicit row heights
@@ -271,7 +272,7 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:7pt; font-weight:400; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
@@ -442,7 +443,7 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:7pt; font-weight:400; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
@@ -536,7 +537,7 @@ function buildBinTagPrint(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:7pt; font-weight:400; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
