@@ -1,9 +1,10 @@
 /*
  * THE RACK - Dashboard
- * Version: 3.14
+ * Version: 3.15
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.15: Changed all alert card text to white
  * - 3.14: Updated all alert cards to Soft Slate Blue palette (#B1BED0, #93A4B8, #7B8CA0, #5F7088)
  * - 3.13: Added last 3 months stats for Pairings (paired, locked, ovulation, pre-lay shed)
  * - 2.12.0: Split from monolithic index.html
@@ -30,7 +31,7 @@ function renderDashboard() {
       html += '<div onclick="filterByAlert(\'overdueClutches\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #5F7088, #4a5a6d); border: 2px solid #4a5a6d;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider" style="color: #B1BED0;">Overdue Clutches</div>';
+      html += '<div class="text-xs uppercase tracking-wider text-white">Overdue Clutches</div>';
       html += '<div class="text-2xl font-black text-white">' + stats.overdueClutches + '</div>';
       html += '</div>';
       html += '</div>';
@@ -42,7 +43,7 @@ function renderDashboard() {
       html += '<div onclick="filterByAlert(\'clutchesDueSoon\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #7B8CA0, #5F7088); border: 2px solid #5F7088;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider" style="color: #B1BED0;">Due Within 7 Days</div>';
+      html += '<div class="text-xs uppercase tracking-wider text-white">Due Within 7 Days</div>';
       html += '<div class="text-2xl font-black text-white">' + stats.clutchesDueSoon + '</div>';
       html += '</div>';
       html += '</div>';
@@ -66,8 +67,8 @@ function renderDashboard() {
       html += '<div onclick="filterByAlert(\'shippingSoon\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #93A4B8, #7B8CA0); border: 2px solid #7B8CA0;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Shipping in 3 Days</div>';
-      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.shippingSoon + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider text-white">Shipping in 3 Days</div>';
+      html += '<div class="text-2xl font-black text-white">' + stats.shippingSoon + '</div>';
       html += '</div>';
       html += '</div>';
       html += '</div>';
@@ -78,8 +79,8 @@ function renderDashboard() {
       html += '<div onclick="filterByAlert(\'unpaidDeposits\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #93A4B8, #7B8CA0); border: 2px solid #7B8CA0;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Unpaid Deposits</div>';
-      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.unpaidDeposits + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider text-white">Unpaid Deposits</div>';
+      html += '<div class="text-2xl font-black text-white">' + stats.unpaidDeposits + '</div>';
       html += '</div>';
       html += '</div>';
       html += '</div>';
@@ -90,8 +91,8 @@ function renderDashboard() {
       html += '<div onclick="filterByAlert(\'balanceDue\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #93A4B8, #7B8CA0); border: 2px solid #7B8CA0;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Balance Due</div>';
-      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.unpaidBalance + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider text-white">Balance Due</div>';
+      html += '<div class="text-2xl font-black text-white">' + stats.unpaidBalance + '</div>';
       html += '</div>';
       html += '</div>';
       html += '</div>';
@@ -102,8 +103,8 @@ function renderDashboard() {
       html += '<div onclick="filterByAlert(\'needsSexing\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #B1BED0, #93A4B8); border: 2px solid #93A4B8;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Needs Sexing</div>';
-      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.needsSexing + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider text-white">Needs Sexing</div>';
+      html += '<div class="text-2xl font-black text-white">' + stats.needsSexing + '</div>';
       html += '</div>';
       html += '</div>';
       html += '</div>';
@@ -114,8 +115,8 @@ function renderDashboard() {
       html += '<div onclick="filterByAlert(\'readyToList\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #d4dbe6, #B1BED0); border: 2px solid #B1BED0;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Ready to List</div>';
-      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.readyToList + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider text-white">Ready to List</div>';
+      html += '<div class="text-2xl font-black text-white">' + stats.readyToList + '</div>';
       html += '</div>';
       html += '</div>';
       html += '</div>';
