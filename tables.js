@@ -1,18 +1,11 @@
 /*
  * THE RACK - Tables & Filters
- * Version: 3.17
+ * Version: v31
  * Last Updated: 2026-01-10
  * 
  * Changelog:
- * - 3.17: Added year filter dropdown to Breeding page for viewing previous years
- * - 3.16: Renamed Pairings to Breeding; shows Paired, Lock, Ovulation, Pre Lay Shed (current year); cards show last 3 months
- * - 3.13: Pairings stats now show last 3 months; added Ovulations and Pre-Lay Sheds cards
- * - 3.12: Added Delete button to Pairings table Actions column
- * - 3.10: Changed Clutches table to use UNIQUE ID instead of CLUTCH ID (sheet column A renamed)
- * - 3.3: Fixed Clutches table to show CLUTCH ID column (was incorrectly set to UNIQUE ID)
- * - 3.2: Changed Clutches table first column from CLUTCH ID to UNIQUE ID
- * - 3.1: Added EST. HATCH DATE column to Clutches table
- * - 3.0: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly from Activity sheet
+ * - v31: Fixed Breeding/Pairings stats to show Last 3 Months data (Paired, Locked, Ovulations, Pre-Lay Sheds)
+ * - v30: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly from Activity sheet
  * - 2.12.50: Added search and filter bar to Pairings tab
  * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
  * - 2.12.0: Split from monolithic index.html
@@ -33,14 +26,12 @@ function renderTable() {
   var filterBar = document.getElementById("filterBar");
   var salesFilterBar = document.getElementById("salesFilterBar");
   var clutchesFilterBar = document.getElementById("clutchesFilterBar");
-  var breedingFilterBar = document.getElementById("breedingFilterBar");
   var sheetKey = getSheetKey(state.activeTab);
   
   // Hide ALL filter bars first
   filterBar.classList.add("hidden");
   salesFilterBar.classList.add("hidden");
   if (clutchesFilterBar) clutchesFilterBar.classList.add("hidden");
-  if (breedingFilterBar) breedingFilterBar.classList.add("hidden");
   
   // Show only the appropriate filter bar for current tab
   if (state.activeTab === "clutches") {
@@ -52,18 +43,13 @@ function renderTable() {
     populateSalesYearFilter();
     var salesSearchInput = document.getElementById("salesSearchInput");
     if (salesSearchInput) salesSearchInput.value = state.filters.search || "";
-  } else if (state.activeTab === "breeding") {
-    if (breedingFilterBar) breedingFilterBar.classList.remove("hidden");
-    populateBreedingYearFilter();
-    var breedingSearchInput = document.getElementById("breedingSearchInput");
-    if (breedingSearchInput) breedingSearchInput.value = state.filters.search || "";
   } else if (sheetKey === "collection") {
     // Collection, Hatchlings tabs
     filterBar.classList.remove("hidden");
     populateSpeciesFilter();
     var searchInput = document.getElementById("searchInput");
     if (searchInput) searchInput.value = state.filters.search || "";
-  } else if (state.activeTab === "activity") {
+  } else if (state.activeTab === "activity" || state.activeTab === "pairings") {
     filterBar.classList.remove("hidden");
     var searchInput = document.getElementById("searchInput");
     if (searchInput) searchInput.value = state.filters.search || "";
@@ -218,7 +204,7 @@ function renderTable() {
     }
 
     // Delete button for activity table (direct delete, no archive)
-    if (state.activeTab === "activity" || state.activeTab === "breeding") {
+    if (state.activeTab === "activity") {
       var deleteBtn = document.createElement("button");
       deleteBtn.className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200";
       deleteBtn.textContent = "Delete";
@@ -535,7 +521,7 @@ function clearAlertFilter() {
 }
 
 function clearAllFilters() {
-  state.filters = { sex: "", status: "", species: "", gene: "", salesYear: "", salesStatus: "", search: "", alertFilter: "", breedingYear: "" };
+  state.filters = { sex: "", status: "", species: "", gene: "", salesYear: "", salesStatus: "", search: "", alertFilter: "" };
   document.getElementById("filterSex").value = "";
   document.getElementById("filterStatus").value = "";
   document.getElementById("filterSpecies").value = "";
@@ -547,10 +533,6 @@ function clearAllFilters() {
   if (salesYearSelect) salesYearSelect.value = "";
   var salesStatusSelect = document.getElementById("filterSalesStatus");
   if (salesStatusSelect) salesStatusSelect.value = "";
-  var breedingSearchInput = document.getElementById("breedingSearchInput");
-  if (breedingSearchInput) breedingSearchInput.value = "";
-  var breedingYearSelect = document.getElementById("filterBreedingYear");
-  if (breedingYearSelect) breedingYearSelect.value = "";
   document.getElementById("geneFilterDisplay").classList.add("hidden");
   document.getElementById("clearFiltersBtn").classList.add("hidden");
   // Hide all alert filter displays
@@ -560,7 +542,7 @@ function clearAllFilters() {
 }
 
 function updateClearFiltersVisibility() {
-  var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene || state.filters.salesYear || state.filters.salesStatus || state.filters.search || state.filters.alertFilter || state.filters.breedingYear;
+  var hasFilters = state.filters.sex || state.filters.status || state.filters.species || state.filters.gene || state.filters.salesYear || state.filters.salesStatus || state.filters.search || state.filters.alertFilter;
   document.getElementById("clearFiltersBtn").classList.toggle("hidden", !hasFilters);
 }
 
@@ -594,35 +576,6 @@ function populateSalesYearFilter() {
   select.innerHTML = '<option value="">All Years</option>';
   Object.keys(years).sort().reverse().forEach(function(yr) {
     select.innerHTML += '<option value="' + yr + '">' + yr + '</option>';
-  });
-}
-
-function populateBreedingYearFilter() {
-  var years = {};
-  var currentYear = new Date().getFullYear();
-  var breedingActivities = ["paired", "lock", "ovulation", "pre lay shed"];
-  
-  state.data.activity.forEach(function(r) {
-    var activity = (r.ACTIVITY || "").toLowerCase().trim();
-    if (breedingActivities.indexOf(activity) >= 0) {
-      var activityDate = parseDate(r.DATE);
-      if (activityDate) {
-        years[activityDate.getFullYear()] = true;
-      }
-    }
-  });
-  
-  var select = document.getElementById("filterBreedingYear");
-  if (!select) return;
-  
-  var currentFilter = state.filters.breedingYear || "";
-  select.innerHTML = '<option value="">Current Year (' + currentYear + ')</option>';
-  
-  Object.keys(years).sort().reverse().forEach(function(yr) {
-    if (parseInt(yr) !== currentYear) {
-      var selected = (currentFilter === yr) ? ' selected' : '';
-      select.innerHTML += '<option value="' + yr + '"' + selected + '>' + yr + '</option>';
-    }
   });
 }
 
@@ -779,25 +732,25 @@ function renderTableStats() {
     statsView.innerHTML = html;
     statsView.classList.remove("hidden");
     
-  } else if (state.activeTab === "breeding") {
+  } else if (state.activeTab === "pairings") {
     var activityStats = calculateActivityStats();
     
     html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
     html += '<div class="text-xs uppercase tracking-wider text-gray-500">Paired (Last 3 Mo)</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.paired3Mo + '</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.pairedLast3Mo + '</div>';
     html += '</div>';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
     html += '<div class="text-xs uppercase tracking-wider text-gray-500">Locked (Last 3 Mo)</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.locked3Mo + '</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.lockedLast3Mo + '</div>';
     html += '</div>';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
     html += '<div class="text-xs uppercase tracking-wider text-gray-500">Ovulations (Last 3 Mo)</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.ovulation3Mo + '</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.ovulationsLast3Mo + '</div>';
     html += '</div>';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
     html += '<div class="text-xs uppercase tracking-wider text-gray-500">Pre-Lay Sheds (Last 3 Mo)</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.preLayShed3Mo + '</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.preLayShedsLast3Mo + '</div>';
     html += '</div>';
     html += '</div>';
     statsView.innerHTML = html;
@@ -812,8 +765,8 @@ function renderTableStats() {
 function getColumns() {
   var prefs = {
     collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
-    clutches: ["UNIQUE ID", "SIRE", "DAM", "LAY DATE", "EST. HATCH DATE", "# FERTILE", "STATUS"],
-    breeding: ["DATE", "UNIQUE ID", "PAIRED WITH", "ACTIVITY"],
+    clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
+    pairings: ["DATE", "UNIQUE ID", "PAIRED WITH", "ACTIVITY"],
     hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
     sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "AMOUNT PAID", "DATE SOLD", "BUYER NAME"],
     activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
@@ -1003,16 +956,16 @@ function getFilteredRows() {
       }
       return true;
     }
-    if (state.activeTab === "breeding") {
-      // Filter to only show Paired, Lock, Ovulation, Pre Lay Shed activities
+    if (state.activeTab === "pairings") {
+      // Filter to only show Paired and Lock activities for current year
       var activity = (r.ACTIVITY || "").toLowerCase().trim();
-      if (!(activity === "paired" || activity === "lock" || activity === "ovulation" || activity === "pre lay shed")) {
+      if (!(activity === "paired" || activity === "lock")) {
         return false;
       }
-      // Filter by selected year (default to current year)
+      // Filter to current year only
       var activityDate = parseDate(r.DATE);
-      var filterYear = state.filters.breedingYear ? parseInt(state.filters.breedingYear) : new Date().getFullYear();
-      if (activityDate && activityDate.getFullYear() !== filterYear) {
+      var currentYear = new Date().getFullYear();
+      if (activityDate && activityDate.getFullYear() !== currentYear) {
         return false;
       }
       return true;
@@ -1024,7 +977,6 @@ function getFilteredRows() {
 function getSheetKey(tab) {
   if (tab === "clutches") return "clutch";
   if (tab === "hatchlings" || tab === "sales" || tab === "collection") return "collection";
-  if (tab === "activity" || tab === "breeding") return "activity";
+  if (tab === "activity" || tab === "pairings") return "activity";
   return "collection";
 }
-
