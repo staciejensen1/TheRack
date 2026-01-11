@@ -1,11 +1,10 @@
 /*
  * THE RACK - Tables & Filters
- * Version: v32
+ * Version: v31
  * Last Updated: 2026-01-10
  * 
  * Changelog:
- * - v32: Fixed Breeding page to show all 4 activity types (Paired, Lock, Ovulation, Pre Lay Shed) in table and stats
- * - v31: Fixed Breeding/Pairings stats to show Last 3 Months data (Paired, Locked, Ovulations, Pre-Lay Sheds)
+ * - v31: Fixed Breeding tab - use "breeding" key, show 4 stat cards (Last 3 Mo), filter for Paired/Lock/Ovulation/Pre Lay Shed
  * - v30: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly from Activity sheet
  * - 2.12.50: Added search and filter bar to Pairings tab
  * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
@@ -50,7 +49,7 @@ function renderTable() {
     populateSpeciesFilter();
     var searchInput = document.getElementById("searchInput");
     if (searchInput) searchInput.value = state.filters.search || "";
-  } else if (state.activeTab === "activity" || state.activeTab === "pairings") {
+  } else if (state.activeTab === "activity" || state.activeTab === "breeding") {
     filterBar.classList.remove("hidden");
     var searchInput = document.getElementById("searchInput");
     if (searchInput) searchInput.value = state.filters.search || "";
@@ -733,7 +732,7 @@ function renderTableStats() {
     statsView.innerHTML = html;
     statsView.classList.remove("hidden");
     
-  } else if (state.activeTab === "pairings") {
+  } else if (state.activeTab === "breeding") {
     var activityStats = calculateActivityStats();
     
     html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
@@ -767,7 +766,7 @@ function getColumns() {
   var prefs = {
     collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
     clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# FERTILE", "STATUS"],
-    pairings: ["DATE", "UNIQUE ID", "PAIRED WITH", "ACTIVITY"],
+    breeding: ["DATE", "UNIQUE ID", "PAIRED WITH", "ACTIVITY"],
     hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
     sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "AMOUNT PAID", "DATE SOLD", "BUYER NAME"],
     activity: ["DATE", "UNIQUE ID", "ACTIVITY", "VALUE"]
@@ -957,7 +956,7 @@ function getFilteredRows() {
       }
       return true;
     }
-    if (state.activeTab === "pairings") {
+    if (state.activeTab === "breeding") {
       // Filter to show Paired, Lock, Ovulation, and Pre Lay Shed activities for current year
       var activity = (r.ACTIVITY || "").toLowerCase().trim();
       if (!(activity === "paired" || activity === "lock" || activity === "ovulation" || activity === "pre lay shed" || activity === "pre-lay shed" || activity === "prelay shed")) {
@@ -978,6 +977,6 @@ function getFilteredRows() {
 function getSheetKey(tab) {
   if (tab === "clutches") return "clutch";
   if (tab === "hatchlings" || tab === "sales" || tab === "collection") return "collection";
-  if (tab === "activity" || tab === "pairings") return "activity";
+  if (tab === "activity" || tab === "breeding") return "activity";
   return "collection";
 }
