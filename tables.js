@@ -1,9 +1,10 @@
 /*
  * THE RACK - Tables & Filters
- * Version: v33
+ * Version: v34
  * Last Updated: 2026-01-11
  * 
  * Changelog:
+ * - v34: Fixed Breeding stats date handling and field name fallbacks
  * - v33: Rewrote Breeding stats cards to calculate directly from Activity data - Column A (DATE) within last 3 months, Column C (ACTIVITY) matches Paired/Locked/Ovulation/Pre Lay Shed
  * - v32: Fixed activity matching - "locked" not "lock"
  * - v31: Fixed Breeding tab - use "breeding" key, show 4 stat cards (Last 3 Mo), filter for Paired/Lock/Ovulation/Pre Lay Shed
@@ -738,8 +739,10 @@ function renderTableStats() {
     // Calculate last 3 months stats directly from activity data
     var activityRows = state.data.activity || [];
     var now = new Date();
+    now.setHours(23, 59, 59, 999);
     var threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    threeMonthsAgo.setHours(0, 0, 0, 0);
     
     var pairedCount = 0;
     var lockedCount = 0;
@@ -747,11 +750,17 @@ function renderTableStats() {
     var preLayShedCount = 0;
     
     activityRows.forEach(function(r) {
-      var activityDate = parseDate(r.DATE);
-      if (!activityDate || activityDate < threeMonthsAgo || activityDate > now) {
-        return;
-      }
-      var activityType = (r.ACTIVITY || "").trim();
+      // Column A = DATE
+      var dateVal = r.DATE || r["Date"] || r["date"] || "";
+      var activityDate = parseDate(dateVal);
+      
+      // Skip if no valid date or outside 3 month window
+      if (!activityDate) return;
+      if (activityDate < threeMonthsAgo || activityDate > now) return;
+      
+      // Column C = ACTIVITY
+      var activityType = r.ACTIVITY || r["Activity"] || r["activity"] || "";
+      
       if (activityType === "Paired") pairedCount++;
       if (activityType === "Locked") lockedCount++;
       if (activityType === "Ovulation") ovulationCount++;
