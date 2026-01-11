@@ -16,7 +16,7 @@ function renderDashboard() {
   
   // Hero Banner
   html += '<div class="mb-8 rounded-2xl overflow-hidden">';
-  html += '<img src="https://raw.githubusercontent.com/PastorMasonDoes/TheRack/main/hero.png" alt="Rack It. Track It. Run It." class="w-full h-auto" style="min-height:80px; object-fit:cover;">';
+  html += '<img src="https://raw.githubusercontent.com/staciejensen1/TheRack/main/hero.png" alt="Rack It. Track It. Run It." class="w-full h-auto" style="min-height:80px; object-fit:cover;">';
   html += '</div>';
   
   // Alerts Section (only show if there are alerts)
