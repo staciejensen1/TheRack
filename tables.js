@@ -1,9 +1,11 @@
 /*
  * THE RACK - Tables & Filters
- * Version: v31
- * Last Updated: 2026-01-10
+ * Version: v33
+ * Last Updated: 2026-01-11
  * 
  * Changelog:
+ * - v33: Rewrote Breeding stats cards to calculate directly from Activity data - Column A (DATE) within last 3 months, Column C (ACTIVITY) matches Paired/Locked/Ovulation/Pre Lay Shed
+ * - v32: Fixed activity matching - "locked" not "lock"
  * - v31: Fixed Breeding tab - use "breeding" key, show 4 stat cards (Last 3 Mo), filter for Paired/Lock/Ovulation/Pre Lay Shed
  * - v30: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly from Activity sheet
  * - 2.12.50: Added search and filter bar to Pairings tab
@@ -733,24 +735,45 @@ function renderTableStats() {
     statsView.classList.remove("hidden");
     
   } else if (state.activeTab === "breeding") {
-    var activityStats = calculateActivityStats();
+    // Calculate last 3 months stats directly from activity data
+    var activityRows = state.data.activity || [];
+    var now = new Date();
+    var threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    
+    var pairedCount = 0;
+    var lockedCount = 0;
+    var ovulationCount = 0;
+    var preLayShedCount = 0;
+    
+    activityRows.forEach(function(r) {
+      var activityDate = parseDate(r.DATE);
+      if (!activityDate || activityDate < threeMonthsAgo || activityDate > now) {
+        return;
+      }
+      var activityType = (r.ACTIVITY || "").trim();
+      if (activityType === "Paired") pairedCount++;
+      if (activityType === "Locked") lockedCount++;
+      if (activityType === "Ovulation") ovulationCount++;
+      if (activityType === "Pre Lay Shed") preLayShedCount++;
+    });
     
     html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
     html += '<div class="text-xs uppercase tracking-wider text-gray-500">Paired (Last 3 Mo)</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.pairedLast3Mo + '</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + pairedCount + '</div>';
     html += '</div>';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
     html += '<div class="text-xs uppercase tracking-wider text-gray-500">Locked (Last 3 Mo)</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.lockedLast3Mo + '</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + lockedCount + '</div>';
     html += '</div>';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
     html += '<div class="text-xs uppercase tracking-wider text-gray-500">Ovulations (Last 3 Mo)</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.ovulationsLast3Mo + '</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + ovulationCount + '</div>';
     html += '</div>';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
     html += '<div class="text-xs uppercase tracking-wider text-gray-500">Pre-Lay Sheds (Last 3 Mo)</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.preLayShedsLast3Mo + '</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + preLayShedCount + '</div>';
     html += '</div>';
     html += '</div>';
     statsView.innerHTML = html;
@@ -957,9 +980,9 @@ function getFilteredRows() {
       return true;
     }
     if (state.activeTab === "breeding") {
-      // Filter to show Paired, Lock, Ovulation, and Pre Lay Shed activities for current year
+      // Filter to show Paired, Locked, Ovulation, and Pre Lay Shed activities for current year
       var activity = (r.ACTIVITY || "").toLowerCase().trim();
-      if (!(activity === "paired" || activity === "lock" || activity === "ovulation" || activity === "pre lay shed" || activity === "pre-lay shed" || activity === "prelay shed")) {
+      if (!(activity === "paired" || activity === "locked" || activity === "ovulation" || activity === "pre lay shed" || activity === "pre-lay shed" || activity === "prelay shed")) {
         return false;
       }
       // Filter to current year only
