@@ -1,9 +1,10 @@
 /*
  * THE RACK - Configuration
- * Version: 3.18
+ * Version: 3.19
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.19: Import now includes unnamed hatchlings (rows with UNIQUE ID or RECORD_ID)
  * - 3.18: Added RECORD_ID system for duplicate prevention on import
  * - 3.17: Added year filter dropdown to Breeding page
  * - 3.16: Renamed Pairings to Breeding; shows Paired, Lock, Ovulation, Pre Lay Shed
@@ -28,7 +29,7 @@
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "3.18";
+var VERSION = "3.19";
 var API_URL = "https://script.google.com/macros/s/AKfycbyd6kltwSxBgkV2jUz4Xk3nm0Bi_W3aKVY_wDHxsL-w-K26n5uyKP9cDqi1xHi77lX5/exec";
 
 var SHEET_TABS = {

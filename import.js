@@ -1,9 +1,10 @@
 /*
  * THE RACK - Collection Import
- * Version: 3.18
+ * Version: 3.15
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.15: Import now includes rows with ANIMAL NAME, UNIQUE ID, or RECORD_ID (supports unnamed hatchlings)
  * - 3.18: Added RECORD_ID support - skips duplicates, updates if data changed
  * - 3.7: Import now generates UNIQUE ID and QR CODE for each record, checks for duplicates
  * - 3.5: Rewrote import to handle Collection CSV format with auto-generated UNIQUE IDs
@@ -123,9 +124,13 @@ function parseImportCSV(text) {
     var row = allRows[i];
     if (row.length < 2) continue;
     
-    // Skip rows with no animal name
+    // Include rows that have ANIMAL NAME, UNIQUE ID, or RECORD_ID (for hatchlings without names)
     var animalName = row[colMap["ANIMAL NAME"]] || "";
-    if (!animalName.trim()) continue;
+    var uniqueId = row[colMap["UNIQUE ID"]] || "";
+    var recordId = row[colMap["RECORD_ID"]] || "";
+    
+    // Skip truly empty rows (no name, no ID, no record ID)
+    if (!animalName.trim() && !uniqueId.trim() && !recordId.trim()) continue;
     
     // Build record using exact column names from Collection sheet
     var record = {
@@ -154,7 +159,9 @@ function parseImportCSV(text) {
       "BUYER EMAIL": row[colMap["BUYER EMAIL"]] || "",
       "BUYER ADDRESS": row[colMap["BUYER ADDRESS"]] || "",
       "MANUAL ID": row[colMap["MANUAL ID"]] || "",
-      "SHIP DATE": row[colMap["SHIP DATE"]] || ""
+      "SHIP DATE": row[colMap["SHIP DATE"]] || "",
+      "UNIQUE ID": uniqueId,
+      "RECORD_ID": recordId
     };
     
     importData.push(record);
@@ -178,9 +185,10 @@ function showImportPreview() {
   var newCount = importData.length;
 
   importData.forEach(function(animal, index) {
+    var displayName = animal["ANIMAL NAME"] || animal["UNIQUE ID"] || "(Unnamed Hatchling)";
     html += '<tr class="' + (index % 2 === 0 ? 'bg-white' : 'bg-gray-50') + '">';
     html += '<td class="px-3 py-2"><span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">New</span></td>';
-    html += '<td class="px-3 py-2 font-medium">' + escapeHtml(animal["ANIMAL NAME"]) + '</td>';
+    html += '<td class="px-3 py-2 font-medium">' + escapeHtml(displayName) + '</td>';
     html += '<td class="px-3 py-2 mono text-xs">' + escapeHtml(animal["MANUAL OVERRIDE"] || "-") + '</td>';
     html += '<td class="px-3 py-2">' + escapeHtml(animal["SEX"] || "-") + '</td>';
     html += '<td class="px-3 py-2"><span class="px-2 py-1 rounded text-xs ' + getStatusColor(animal["STATUS"]) + '">' + escapeHtml(animal["STATUS"]) + '</span></td>';
