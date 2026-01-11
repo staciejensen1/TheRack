@@ -1,9 +1,11 @@
 /*
  * THE RACK - Dashboard
- * Version: 2.12.2
+ * Version: 2.12.4
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 2.12.4: Fixed all "lock" to "locked" to match Activity sheet Column C values
+ * - 2.12.3: Fixed activity matching - "locked" not "lock"
  * - 2.12.2: Added last 3 months stats to calculateActivityStats (pairedLast3Mo, lockedLast3Mo, ovulationsLast3Mo, preLayShedsLast3Mo)
  * - 2.12.1: Added hero banner with tagline at top of dashboard
  * - 2.12.0: Split from monolithic index.html
@@ -499,7 +501,7 @@ function calculateActivityStats() {
       if (activity === "took meal") stats.tookMeal++;
       if (activity === "refused meal") stats.refusedMeal++;
       if (activity === "paired") stats.paired++;
-      if (activity === "lock") stats.locked++;
+      if (activity === "locked") stats.locked++;
       if (activity === "ovulation") stats.ovulation++;
       if (activity === "laid") stats.laid++;
     }
@@ -511,15 +513,15 @@ function calculateActivityStats() {
     }
     if (isThisYear) {
       if (activity === "paired") stats.pairedYear++;
-      if (activity === "lock") stats.lockedYear++;
+      if (activity === "locked") stats.lockedYear++;
     }
     
     // Count for Pairings view (last 3 months)
     if (isLast3Months) {
       if (activity === "paired") stats.pairedLast3Mo++;
-      if (activity === "lock") stats.lockedLast3Mo++;
+      if (activity === "locked") stats.lockedLast3Mo++;
       if (activity === "ovulation") stats.ovulationsLast3Mo++;
-      if (activity === "pre-lay shed" || activity === "prelay shed" || activity === "pre lay shed") stats.preLayShedsLast3Mo++;
+      if (activity === "pre lay shed" || activity === "pre-lay shed" || activity === "prelay shed") stats.preLayShedsLast3Mo++;
     }
   });
   
