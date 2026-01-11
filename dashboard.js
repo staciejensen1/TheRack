@@ -1,9 +1,10 @@
 /*
  * THE RACK - Dashboard
- * Version: 2.12.1
+ * Version: 2.12.2
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 2.12.2: Added last 3 months stats to calculateActivityStats (pairedLast3Mo, lockedLast3Mo, ovulationsLast3Mo, preLayShedsLast3Mo)
  * - 2.12.1: Added hero banner with tagline at top of dashboard
  * - 2.12.0: Split from monolithic index.html
  */
@@ -443,6 +444,10 @@ function calculateActivityStats() {
   var currentMonth = now.getMonth();
   var currentYear = now.getFullYear();
   
+  // Calculate date 3 months ago
+  var threeMonthsAgo = new Date(now);
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  
   var stats = {
     feedingsMonth: 0,
     refusalsMonth: 0,
@@ -457,7 +462,12 @@ function calculateActivityStats() {
     laid: 0,
     // For pairings view (this year)
     pairedYear: 0,
-    lockedYear: 0
+    lockedYear: 0,
+    // For pairings view (last 3 months)
+    pairedLast3Mo: 0,
+    lockedLast3Mo: 0,
+    ovulationsLast3Mo: 0,
+    preLayShedsLast3Mo: 0
   };
   
   rows.forEach(function(r) {
@@ -468,6 +478,12 @@ function calculateActivityStats() {
     var isThisMonth = false;
     if (activityDate) {
       isThisMonth = (activityDate.getMonth() === currentMonth && activityDate.getFullYear() === currentYear);
+    }
+    
+    // Check if last 3 months
+    var isLast3Months = false;
+    if (activityDate) {
+      isLast3Months = (activityDate >= threeMonthsAgo && activityDate <= now);
     }
     
     // Count for Activity table stats (this month only)
@@ -496,6 +512,14 @@ function calculateActivityStats() {
     if (isThisYear) {
       if (activity === "paired") stats.pairedYear++;
       if (activity === "lock") stats.lockedYear++;
+    }
+    
+    // Count for Pairings view (last 3 months)
+    if (isLast3Months) {
+      if (activity === "paired") stats.pairedLast3Mo++;
+      if (activity === "lock") stats.lockedLast3Mo++;
+      if (activity === "ovulation") stats.ovulationsLast3Mo++;
+      if (activity === "pre-lay shed" || activity === "prelay shed" || activity === "pre lay shed") stats.preLayShedsLast3Mo++;
     }
   });
   
