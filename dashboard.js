@@ -1,9 +1,10 @@
 /*
  * THE RACK - Dashboard
- * Version: 2.12.0
- * Last Updated: 2026-01-09
+ * Version: 3.13
+ * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.13: Added last 3 months stats for Pairings (paired, locked, ovulation, pre-lay shed)
  * - 2.12.0: Split from monolithic index.html
  */
 
@@ -437,6 +438,11 @@ function calculateActivityStats() {
   var currentMonth = now.getMonth();
   var currentYear = now.getFullYear();
   
+  // Calculate 3 months ago date
+  var threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  threeMonthsAgo.setHours(0, 0, 0, 0);
+  
   var stats = {
     feedingsMonth: 0,
     refusalsMonth: 0,
@@ -449,9 +455,14 @@ function calculateActivityStats() {
     locked: 0,
     ovulation: 0,
     laid: 0,
-    // For pairings view (this year)
+    // For pairings view (this year - legacy)
     pairedYear: 0,
-    lockedYear: 0
+    lockedYear: 0,
+    // For pairings view (last 3 months)
+    paired3Mo: 0,
+    locked3Mo: 0,
+    ovulation3Mo: 0,
+    preLayShed3Mo: 0
   };
   
   rows.forEach(function(r) {
@@ -462,6 +473,12 @@ function calculateActivityStats() {
     var isThisMonth = false;
     if (activityDate) {
       isThisMonth = (activityDate.getMonth() === currentMonth && activityDate.getFullYear() === currentYear);
+    }
+    
+    // Check if last 3 months
+    var isLast3Months = false;
+    if (activityDate) {
+      isLast3Months = (activityDate >= threeMonthsAgo);
     }
     
     // Count for Activity table stats (this month only)
@@ -482,7 +499,7 @@ function calculateActivityStats() {
       if (activity === "laid") stats.laid++;
     }
     
-    // Count for Pairings view (this year)
+    // Count for Pairings view (this year - legacy)
     var isThisYear = false;
     if (activityDate) {
       isThisYear = (activityDate.getFullYear() === currentYear);
@@ -490,6 +507,14 @@ function calculateActivityStats() {
     if (isThisYear) {
       if (activity === "paired") stats.pairedYear++;
       if (activity === "lock") stats.lockedYear++;
+    }
+    
+    // Count for Pairings view (last 3 months)
+    if (isLast3Months) {
+      if (activity === "paired") stats.paired3Mo++;
+      if (activity === "lock") stats.locked3Mo++;
+      if (activity === "ovulation") stats.ovulation3Mo++;
+      if (activity === "pre lay shed") stats.preLayShed3Mo++;
     }
   });
   

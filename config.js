@@ -1,9 +1,11 @@
 /*
  * THE RACK - Configuration
- * Version: 3.11
+ * Version: 3.13
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.13: Pairings stats now show last 3 months; added Ovulations and Pre-Lay Sheds cards
+ * - 3.12: Added Delete button to Pairings table
  * - 3.11: Fixed Activity form to save PAIRED WITH to column M
  * - 3.10: Changed Clutch sheet references from CLUTCH ID to UNIQUE ID (column A renamed)
  * - 3.9: Breeder and Clutch forms now use SHOW ONLY field lists; Added STRUCTURE.md
@@ -21,7 +23,7 @@
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "3.11";
+var VERSION = "3.13";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {

@@ -1,9 +1,11 @@
 /*
  * THE RACK - Tables & Filters
- * Version: 3.10
+ * Version: 3.13
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.13: Pairings stats now show last 3 months; added Ovulations and Pre-Lay Sheds cards
+ * - 3.12: Added Delete button to Pairings table Actions column
  * - 3.10: Changed Clutches table to use UNIQUE ID instead of CLUTCH ID (sheet column A renamed)
  * - 3.3: Fixed Clutches table to show CLUTCH ID column (was incorrectly set to UNIQUE ID)
  * - 3.2: Changed Clutches table first column from CLUTCH ID to UNIQUE ID
@@ -207,7 +209,7 @@ function renderTable() {
     }
 
     // Delete button for activity table (direct delete, no archive)
-    if (state.activeTab === "activity") {
+    if (state.activeTab === "activity" || state.activeTab === "pairings") {
       var deleteBtn = document.createElement("button");
       deleteBtn.className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200";
       deleteBtn.textContent = "Delete";
@@ -737,16 +739,23 @@ function renderTableStats() {
     
   } else if (state.activeTab === "pairings") {
     var activityStats = calculateActivityStats();
-    var currentYear = new Date().getFullYear();
     
     html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-    html += '<div class="text-xs uppercase tracking-wider text-gray-500">Paired (' + currentYear + ')</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.pairedYear + '</div>';
+    html += '<div class="text-xs uppercase tracking-wider text-gray-500">Paired (Last 3 Mo)</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.paired3Mo + '</div>';
     html += '</div>';
     html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
-    html += '<div class="text-xs uppercase tracking-wider text-gray-500">Locked (' + currentYear + ')</div>';
-    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.lockedYear + '</div>';
+    html += '<div class="text-xs uppercase tracking-wider text-gray-500">Locked (Last 3 Mo)</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.locked3Mo + '</div>';
+    html += '</div>';
+    html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+    html += '<div class="text-xs uppercase tracking-wider text-gray-500">Ovulations (Last 3 Mo)</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.ovulation3Mo + '</div>';
+    html += '</div>';
+    html += '<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">';
+    html += '<div class="text-xs uppercase tracking-wider text-gray-500">Pre-Lay Sheds (Last 3 Mo)</div>';
+    html += '<div class="text-2xl font-black text-gray-900">' + activityStats.preLayShed3Mo + '</div>';
     html += '</div>';
     html += '</div>';
     statsView.innerHTML = html;
