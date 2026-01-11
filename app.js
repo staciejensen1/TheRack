@@ -72,7 +72,7 @@ function renderNavTabs() {
     { key: "dashboard", label: "Dashboard" },
     { key: "collection", label: "Collection" },
     { key: "clutches", label: "Clutches" },
-    { key: "pairings", label: "Pairings" },
+    { key: "breeding", label: "Breeding" },
     { key: "hatchlings", label: "Hatchlings" },
     { key: "sales", label: "Sales" },
     { key: "activity", label: "Activity" }
@@ -123,7 +123,7 @@ function renderCurrentView() {
     dashboard: "Dashboard",
     collection: "Collection",
     clutches: "Clutches",
-    pairings: "Pairings",
+    breeding: "Breeding",
     hatchlings: "Hatchlings",
     sales: "Sales",
     activity: "Activity",
@@ -134,7 +134,7 @@ function renderCurrentView() {
   var isArchive = state.activeTab === "archive";
   document.getElementById("dashboardView").classList.toggle("hidden", !isDash);
   document.getElementById("tableView").classList.toggle("hidden", isDash || isArchive);
-  document.getElementById("addBtn").classList.toggle("hidden", isDash || isArchive || state.activeTab === "pairings");
+  document.getElementById("addBtn").classList.toggle("hidden", isDash || isArchive || state.activeTab === "breeding");
   
   if (isDash || isArchive) {
     document.getElementById("filterBar").classList.add("hidden");
@@ -213,7 +213,7 @@ function getAnimalNameById(uniqueId) {
 }
 
 function getSheetKey(tab) {
-  if (tab === "clutches" || tab === "pairings") return "clutch";
+  if (tab === "clutches" || tab === "breeding") return "clutch";
   if (tab === "hatchlings" || tab === "sales" || tab === "collection") return "collection";
   if (tab === "activity") return "activity";
   return "collection";

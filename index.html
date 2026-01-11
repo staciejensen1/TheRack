@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 3.15
+  Version: 3.17
   Last Updated: 2026-01-10
   
   Changelog:
+  - 3.17: Added year filter dropdown to Breeding page
+  - 3.16: Renamed Pairings to Breeding; shows Paired, Lock, Ovulation, Pre Lay Shed
   - 3.15: Alert card text now white for better contrast
   - 3.14: Dashboard alerts now use Soft Slate Blue palette
   - 3.13: Pairings stats now show last 3 months; added Ovulations and Pre-Lay Sheds cards
@@ -374,6 +376,14 @@
           <!-- Clutches Filter Bar -->
           <div id="clutchesFilterBar" class="hidden mb-4 flex flex-wrap gap-2 items-center">
             <input type="text" id="clutchSearchInput" placeholder="Search clutch ID..." oninput="applyFilter('search', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white w-48">
+          </div>
+          
+          <!-- Breeding Filter Bar -->
+          <div id="breedingFilterBar" class="hidden mb-4 flex flex-wrap gap-2 items-center">
+            <input type="text" id="breedingSearchInput" placeholder="Search name or ID..." oninput="applyFilter('search', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white w-48">
+            <select id="filterBreedingYear" onchange="applyFilter('breedingYear', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+              <option value="">Current Year</option>
+            </select>
           </div>
           
           <!-- Alert Filter Display -->
