@@ -1,16 +1,15 @@
 /*
  * THE RACK - Tables & Filters
- * Version: v34
+ * Version: v35
  * Last Updated: 2026-01-11
  * 
  * Changelog:
+ * - v35: Fixed Lock (not Locked) for card calculation and table filter
  * - v34: Fixed Breeding stats date handling and field name fallbacks
- * - v33: Rewrote Breeding stats cards to calculate directly from Activity data - Column A (DATE) within last 3 months, Column C (ACTIVITY) matches Paired/Locked/Ovulation/Pre Lay Shed
- * - v32: Fixed activity matching - "locked" not "lock"
- * - v31: Fixed Breeding tab - use "breeding" key, show 4 stat cards (Last 3 Mo), filter for Paired/Lock/Ovulation/Pre Lay Shed
- * - v30: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly from Activity sheet
- * - 2.12.50: Added search and filter bar to Pairings tab
- * - 2.12.41: Fixed button onclick closures using IIFE pattern, added debug logging
+ * - v33: Rewrote Breeding stats cards to calculate directly from Activity data
+ * - v32: Fixed activity matching
+ * - v31: Fixed Breeding tab - use "breeding" key, show 4 stat cards
+ * - v30: Fixed Pairings table columns
  * - 2.12.0: Split from monolithic index.html
  */
 
@@ -762,7 +761,7 @@ function renderTableStats() {
       var activityType = r.ACTIVITY || r["Activity"] || r["activity"] || "";
       
       if (activityType === "Paired") pairedCount++;
-      if (activityType === "Locked") lockedCount++;
+      if (activityType === "Lock") lockedCount++;
       if (activityType === "Ovulation") ovulationCount++;
       if (activityType === "Pre Lay Shed") preLayShedCount++;
     });
@@ -989,9 +988,9 @@ function getFilteredRows() {
       return true;
     }
     if (state.activeTab === "breeding") {
-      // Filter to show Paired, Locked, Ovulation, and Pre Lay Shed activities for current year
+      // Filter to show Paired, Lock, Ovulation, and Pre Lay Shed activities for current year
       var activity = (r.ACTIVITY || "").toLowerCase().trim();
-      if (!(activity === "paired" || activity === "locked" || activity === "ovulation" || activity === "pre lay shed" || activity === "pre-lay shed" || activity === "prelay shed")) {
+      if (!(activity === "paired" || activity === "lock" || activity === "ovulation" || activity === "pre lay shed" || activity === "pre-lay shed" || activity === "prelay shed")) {
         return false;
       }
       // Filter to current year only
