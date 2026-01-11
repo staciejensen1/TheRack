@@ -1,5 +1,5 @@
 # THE RACK - Structure Documentation
-# Version: 3.13
+# Version: 3.14
 # Last Updated: 2026-01-10
 
 CLAUDE: UPDATE THIS FILE whenever you change file structure, rules, form fields, or table columns.

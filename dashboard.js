@@ -1,9 +1,10 @@
 /*
  * THE RACK - Dashboard
- * Version: 3.13
+ * Version: 3.14
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.14: Updated all alert cards to Soft Slate Blue palette (#B1BED0, #93A4B8, #7B8CA0, #5F7088)
  * - 3.13: Added last 3 months stats for Pairings (paired, locked, ovulation, pre-lay shed)
  * - 2.12.0: Split from monolithic index.html
  */
@@ -24,106 +25,98 @@ function renderDashboard() {
     html += '<div class="text-xs uppercase tracking-wider text-gray-900 font-semibold mb-3">ALERTS</div>';
     html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">';
     
-    //  Overdue Clutches (DARKEST - most urgent)
+    // Overdue Clutches (DARKEST - most urgent)
     if (stats.overdueClutches > 0) {
-      html += '<div onclick="filterByAlert(\'overdueClutches\');" class="cursor-pointer bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-900 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+      html += '<div onclick="filterByAlert(\'overdueClutches\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #5F7088, #4a5a6d); border: 2px solid #4a5a6d;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider text-gray-300">Overdue Clutches</div>';
+      html += '<div class="text-xs uppercase tracking-wider" style="color: #B1BED0;">Overdue Clutches</div>';
       html += '<div class="text-2xl font-black text-white">' + stats.overdueClutches + '</div>';
       html += '</div>';
-      html += '';
       html += '</div>';
       html += '</div>';
     }
     
-    //  Clutches Due Soon (DARK)
+    // Clutches Due Soon (DARK)
     if (stats.clutchesDueSoon > 0) {
-      html += '<div onclick="filterByAlert(\'clutchesDueSoon\');" class="cursor-pointer bg-gradient-to-br from-gray-500 to-gray-600 border-2 border-gray-700 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+      html += '<div onclick="filterByAlert(\'clutchesDueSoon\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #7B8CA0, #5F7088); border: 2px solid #5F7088;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider text-gray-200">Due Within 7 Days</div>';
+      html += '<div class="text-xs uppercase tracking-wider" style="color: #B1BED0;">Due Within 7 Days</div>';
       html += '<div class="text-2xl font-black text-white">' + stats.clutchesDueSoon + '</div>';
       html += '</div>';
-      html += '';
       html += '</div>';
       html += '</div>';
     }
     
-    //  Unshipped Sales (MEDIUM-DARK)
+    // Unshipped Sales (MEDIUM-DARK)
     if (stats.unshipped > 0) {
-      html += '<div onclick="filterByAlert(\'unshipped\');" class="cursor-pointer bg-gradient-to-br from-gray-400 to-gray-500 border-2 border-gray-600 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+      html += '<div onclick="filterByAlert(\'unshipped\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #93A4B8, #7B8CA0); border: 2px solid #7B8CA0;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider text-gray-100">Unshipped Sales</div>';
+      html += '<div class="text-xs uppercase tracking-wider text-white">Unshipped Sales</div>';
       html += '<div class="text-2xl font-black text-white">' + stats.unshipped + '</div>';
       html += '</div>';
-      html += '';
       html += '</div>';
       html += '</div>';
     }
     
-    //  Shipping Soon (MEDIUM)
+    // Shipping Soon (MEDIUM)
     if (stats.shippingSoon > 0) {
-      html += '<div onclick="filterByAlert(\'shippingSoon\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+      html += '<div onclick="filterByAlert(\'shippingSoon\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #93A4B8, #7B8CA0); border: 2px solid #7B8CA0;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider text-gray-700">Shipping in 3 Days</div>';
-      html += '<div class="text-2xl font-black text-gray-900">' + stats.shippingSoon + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Shipping in 3 Days</div>';
+      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.shippingSoon + '</div>';
       html += '</div>';
-      html += '';
       html += '</div>';
       html += '</div>';
     }
     
-    //  Unpaid Deposits (MEDIUM)
+    // Unpaid Deposits (MEDIUM)
     if (stats.unpaidDeposits > 0) {
-      html += '<div onclick="filterByAlert(\'unpaidDeposits\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+      html += '<div onclick="filterByAlert(\'unpaidDeposits\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #93A4B8, #7B8CA0); border: 2px solid #7B8CA0;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider text-gray-700">Unpaid Deposits</div>';
-      html += '<div class="text-2xl font-black text-gray-900">' + stats.unpaidDeposits + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Unpaid Deposits</div>';
+      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.unpaidDeposits + '</div>';
       html += '</div>';
-      html += '';
       html += '</div>';
       html += '</div>';
     }
     
-    // Balance Due (MEDIUM) - Sold Price > Total Paid
+    // Balance Due (MEDIUM)
     if (stats.unpaidBalance > 0) {
-      html += '<div onclick="filterByAlert(\'balanceDue\');" class="cursor-pointer bg-gradient-to-br from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+      html += '<div onclick="filterByAlert(\'balanceDue\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #93A4B8, #7B8CA0); border: 2px solid #7B8CA0;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider text-gray-700">Balance Due</div>';
-      html += '<div class="text-2xl font-black text-gray-900">' + stats.unpaidBalance + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Balance Due</div>';
+      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.unpaidBalance + '</div>';
       html += '</div>';
-      html += '';
       html += '</div>';
       html += '</div>';
     }
     
     // Needs Sexing (LIGHT)
     if (stats.needsSexing > 0) {
-      html += '<div onclick="filterByAlert(\'needsSexing\');" class="cursor-pointer bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-gray-400 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+      html += '<div onclick="filterByAlert(\'needsSexing\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #B1BED0, #93A4B8); border: 2px solid #93A4B8;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider text-gray-600">Needs Sexing</div>';
-      html += '<div class="text-2xl font-black text-gray-900">' + stats.needsSexing + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Needs Sexing</div>';
+      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.needsSexing + '</div>';
       html += '</div>';
-      html += '';
       html += '</div>';
       html += '</div>';
     }
     
-    //  Ready to List (LIGHTEST)
+    // Ready to List (LIGHTEST)
     if (stats.readyToList > 0) {
-      html += '<div onclick="filterByAlert(\'readyToList\');" class="cursor-pointer bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-gray-300 rounded-2xl p-3 hover:shadow-lg transition-shadow">';
+      html += '<div onclick="filterByAlert(\'readyToList\');" class="cursor-pointer rounded-2xl p-3 hover:shadow-lg transition-shadow" style="background: linear-gradient(to bottom right, #d4dbe6, #B1BED0); border: 2px solid #B1BED0;">';
       html += '<div class="flex items-center justify-between">';
       html += '<div>';
-      html += '<div class="text-xs uppercase tracking-wider text-gray-600">Ready to List</div>';
-      html += '<div class="text-2xl font-black text-gray-900">' + stats.readyToList + '</div>';
+      html += '<div class="text-xs uppercase tracking-wider" style="color: #5F7088;">Ready to List</div>';
+      html += '<div class="text-2xl font-black" style="color: #5F7088;">' + stats.readyToList + '</div>';
       html += '</div>';
-      html += '';
       html += '</div>';
       html += '</div>';
     }

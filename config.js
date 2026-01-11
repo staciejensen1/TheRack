@@ -1,9 +1,10 @@
 /*
  * THE RACK - Configuration
- * Version: 3.13
+ * Version: 3.14
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.14: Dashboard alerts now use Soft Slate Blue palette
  * - 3.13: Pairings stats now show last 3 months; added Ovulations and Pre-Lay Sheds cards
  * - 3.12: Added Delete button to Pairings table
  * - 3.11: Fixed Activity form to save PAIRED WITH to column M
@@ -23,7 +24,7 @@
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "3.13";
+var VERSION = "3.14";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {
