@@ -371,22 +371,21 @@ function printBinTagsHTML(animals, businessName, logoUrl) {
   // Page setup - be explicit about no margins anywhere
   html += '@page { size: 3.38in 2.13in; margin: 0 !important; padding: 0 !important; }';
   html += '* { box-sizing: border-box; margin: 0; padding: 0; }';
-  html += 'html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: hidden; }';
-  html += '.bin-tag-page { width: 3.38in; height: 2.13in; overflow: hidden; }';
+  html += 'html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: visible; }';
+  html += '.bin-tag-page { width: 3.38in; height: 2.13in; page-break-after: always; overflow: visible; }';
+  html += '.bin-tag-page:last-child { page-break-after: avoid; }';
   
   // Print media query
   html += '@media print {';
   html += '  @page { margin: 0 !important; }';
-  html += '  html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact; }';
-  html += '  .bin-tag-page { width: 3.38in; height: 2.13in; overflow: hidden; page-break-inside: avoid; page-break-after: auto; }';
-  html += '  .bin-tag-page:last-child { page-break-after: avoid !important; }';
+  html += '  html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }';
+  html += '  .bin-tag-page { width: 3.38in; height: 2.13in; overflow: visible; page-break-inside: avoid; }';
   html += '}';
   
   html += '</style></head><body>';
   
-  animals.forEach(function(animal, index) {
-    var isLast = (index === animals.length - 1);
-    html += '<div class="bin-tag-page"' + (isLast ? ' style="page-break-after:avoid !important;"' : '') + '>';
+  animals.forEach(function(animal) {
+    html += '<div class="bin-tag-page">';
     html += buildBinTagForPrint(animal, businessName, logoUrl);
     html += '</div>';
   });
@@ -487,7 +486,7 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
   
   // Outer wrapper - card stock size
-  var html = '<div style="width:3.38in; height:2.13in; position:relative; box-sizing:border-box;">';
+  var html = '<div style="width:3.38in; height:2.13in; position:relative; box-sizing:border-box; overflow:hidden;">';
   
   // Actual tag: 3.18in x 1.93in with 0.10in bleed margin
   html += '<div style="position:absolute; left:0.10in; top:0.10in; width:3.18in; height:1.93in; border:2px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
