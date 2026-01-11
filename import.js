@@ -1,9 +1,10 @@
 /*
  * THE RACK - Collection Import
- * Version: 3.7
+ * Version: 3.18
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.18: Added RECORD_ID support - skips duplicates, updates if data changed
  * - 3.7: Import now generates UNIQUE ID and QR CODE for each record, checks for duplicates
  * - 3.5: Rewrote import to handle Collection CSV format with auto-generated UNIQUE IDs
  * - 2.12.0: Split from monolithic index.html
@@ -210,6 +211,19 @@ function executeImport() {
   var completed = 0;
   var errors = 0;
   var created = 0;
+  var skipped = 0;
+  var updated = 0;
+  
+  // Build a map of existing RECORD_IDs for quick lookup
+  var existingRecordIds = {};
+  var existingRecords = {};
+  (state.data.collection || []).forEach(function(r) {
+    var recordId = r["RECORD_ID"];
+    if (recordId) {
+      existingRecordIds[recordId] = true;
+      existingRecords[recordId] = r;
+    }
+  });
   
   // Track IDs we've generated during this import to avoid duplicates
   var generatedIds = {};
@@ -254,15 +268,32 @@ function executeImport() {
     generatedIds[newId.toUpperCase()] = true;
     return newId;
   }
+  
+  // Check if two records have identical data (excluding internal fields)
+  function recordsAreIdentical(existing, imported) {
+    var keysToCompare = ["ANIMAL NAME", "SEX", "DATE OF BIRTH", "SPECIES", "GENETIC SUMMARY", 
+                         "STATUS", "WT PURCHASE (G)", "PURCHASE PRICE", "BREEDER SOURCE", "NOTES"];
+    for (var i = 0; i < keysToCompare.length; i++) {
+      var key = keysToCompare[i];
+      var existVal = String(existing[key] || "").trim();
+      var importVal = String(imported[key] || "").trim();
+      if (existVal !== importVal) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   function importNext() {
     if (completed >= total) {
       // Done
       document.getElementById("importStep3").classList.add("hidden");
       document.getElementById("importStep4").classList.remove("hidden");
-      document.getElementById("importResult").textContent = 
-        "Import complete: " + created + " animals imported." + 
-        (errors > 0 ? " " + errors + " failed." : "");
+      var resultMsg = "Import complete: " + created + " created";
+      if (updated > 0) resultMsg += ", " + updated + " updated";
+      if (skipped > 0) resultMsg += ", " + skipped + " skipped (identical)";
+      if (errors > 0) resultMsg += ", " + errors + " failed";
+      document.getElementById("importResult").textContent = resultMsg;
       // Reload data to show new records
       loadData();
       return;
@@ -272,20 +303,67 @@ function executeImport() {
     document.getElementById("importProgress").textContent = 
       "Importing " + (completed + 1) + " of " + total + ": " + animal["ANIMAL NAME"];
 
-    // Generate UNIQUE ID for this record
+    // Check if this record has a RECORD_ID and already exists
+    var existingRecordId = animal["RECORD_ID"];
+    
+    if (existingRecordId && existingRecordIds[existingRecordId]) {
+      // Record exists - check if data is identical
+      var existingRecord = existingRecords[existingRecordId];
+      if (recordsAreIdentical(existingRecord, animal)) {
+        // Skip - no changes needed
+        skipped++;
+        completed++;
+        setTimeout(importNext, 50);
+        return;
+      } else {
+        // Update existing record
+        apiCall('updateRecord', { 
+          tab: 'Collection', 
+          rowIndex: existingRecord.__rowIndex,
+          data: animal 
+        })
+          .then(function(response) {
+            if (response.success) {
+              updated++;
+            } else {
+              errors++;
+              console.error("Failed to update:", animal["ANIMAL NAME"], response.error);
+            }
+          })
+          .catch(function(error) {
+            errors++;
+            console.error("Error updating:", animal["ANIMAL NAME"], error);
+          })
+          .finally(function() {
+            completed++;
+            setTimeout(importNext, 100);
+          });
+        return;
+      }
+    }
+    
+    // New record - generate IDs
     var uniqueId = generateUniqueIdForImport();
     animal["UNIQUE ID"] = uniqueId;
     
     // Generate QR CODE based on UNIQUE ID
     animal["QR CODE"] = "https://app.therackapp.io?code=" + state.sheetId + "&animal=" + uniqueId;
+    
+    // Generate RECORD_ID for new records
+    if (!animal["RECORD_ID"]) {
+      animal["RECORD_ID"] = Date.now().toString() + completed;
+    }
 
-    // Create new row with generated UNIQUE ID and QR CODE
+    // Create new row with generated UNIQUE ID, QR CODE, and RECORD_ID
     apiCall('saveRecord', { tab: 'Collection', data: animal })
       .then(function(response) {
         if (response.success) {
           created++;
           // Add to local state so next ID generation knows about it
           state.data.collection.push(animal);
+          // Also track the RECORD_ID
+          existingRecordIds[animal["RECORD_ID"]] = true;
+          existingRecords[animal["RECORD_ID"]] = animal;
         } else {
           errors++;
           console.error("Failed to import:", animal["ANIMAL NAME"], response.error);

@@ -1,9 +1,10 @@
 /*
  * THE RACK - Configuration
- * Version: 3.17
+ * Version: 3.18
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.18: Added RECORD_ID system for duplicate prevention on import
  * - 3.17: Added year filter dropdown to Breeding page
  * - 3.16: Renamed Pairings to Breeding; shows Paired, Lock, Ovulation, Pre Lay Shed
  * - 3.15: Alert card text now white for better contrast
@@ -27,7 +28,7 @@
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "3.17";
+var VERSION = "3.18";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {

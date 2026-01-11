@@ -1,9 +1,10 @@
 /*
  * THE RACK - Modals (Add/Edit)
- * Version: 3.11
+ * Version: 3.18
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.18: Added RECORD_ID generation for all new records
  * - 3.11: Fixed Activity form to save PAIRED WITH to column M instead of VALUE
  * - 3.10: Changed Clutch sheet references from CLUTCH ID to UNIQUE ID (column A renamed)
  * - 3.9: Breeder and Clutch forms now use SHOW ONLY field lists
@@ -1085,6 +1086,11 @@ function generateClutchId(layDate) {
 function saveRecord() {
   var headers = state.headers[state.modalTab] || [];
   if (!headers.length) { document.getElementById("modalError").textContent = "No headers"; return; }
+
+  // Auto-generate RECORD_ID for all new records
+  if (state.modalMode === "add" && !state.formData["RECORD_ID"]) {
+    state.formData["RECORD_ID"] = Date.now().toString();
+  }
 
   // Auto-generate UNIQUE ID for new collection records (breeders/hatchlings)
   if (state.modalMode === "add" && state.modalTab === "collection") {
