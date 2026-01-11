@@ -1,9 +1,10 @@
 /*
  * THE RACK - Configuration
- * Version: 3.10
+ * Version: 3.11
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.11: Fixed Activity form to save PAIRED WITH to column M
  * - 3.10: Changed Clutch sheet references from CLUTCH ID to UNIQUE ID (column A renamed)
  * - 3.9: Breeder and Clutch forms now use SHOW ONLY field lists; Added STRUCTURE.md
  * - 3.7: All ID generators check for duplicates; Import generates UNIQUE ID and QR CODE
@@ -20,7 +21,7 @@
  * - 2.12.0: Split from monolithic index.html
  */
 
-var VERSION = "3.10";
+var VERSION = "3.11";
 var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
 
 var SHEET_TABS = {

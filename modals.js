@@ -1,9 +1,10 @@
 /*
  * THE RACK - Modals (Add/Edit)
- * Version: 3.10
+ * Version: 3.11
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.11: Fixed Activity form to save PAIRED WITH to column M instead of VALUE
  * - 3.10: Changed Clutch sheet references from CLUTCH ID to UNIQUE ID (column A renamed)
  * - 3.9: Breeder and Clutch forms now use SHOW ONLY field lists
  * - 3.7: All ID generators now check for duplicates before creating new ID
@@ -663,7 +664,7 @@ function renderActivityAddForm() {
   }
   
   if (showPairedWith) {
-    var pairedValue = state.formData["VALUE"] || "";
+    var pairedValue = state.formData["PAIRED WITH"] || "";
     html += '<div class="mb-5">';
     html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Paired With</label>';
     html += '<div class="relative">';
@@ -763,12 +764,12 @@ function filterPairedWithAnimals(search) {
 }
 
 function selectPairedWithAnimal(label) {
-  state.formData["VALUE"] = label;
+  state.formData["PAIRED WITH"] = label;
   renderActivityAddForm();
 }
 
 function clearPairedWithAnimal() {
-  state.formData["VALUE"] = "";
+  state.formData["PAIRED WITH"] = "";
   renderActivityAddForm();
 }
 
@@ -777,6 +778,7 @@ function saveActivityFromForm() {
   var date = state.formData["DATE"] || "";
   var activity = state.formData["ACTIVITY"] || "";
   var value = state.formData["VALUE"] || "";
+  var pairedWith = state.formData["PAIRED WITH"] || "";
   
   if (!animalId) {
     document.getElementById("modalError").textContent = "Please select an animal";
@@ -791,7 +793,8 @@ function saveActivityFromForm() {
     "DATE": date,
     "UNIQUE ID": animalId,
     "ACTIVITY": activity,
-    "VALUE": value
+    "VALUE": value,
+    "PAIRED WITH": pairedWith
   };
   
   setStatus("Saving...");
