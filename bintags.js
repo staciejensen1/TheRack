@@ -1,10 +1,9 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.42
+ * Version: 2.12.41
  * Last Updated: 2026-01-11
  * 
  * Changelog:
- * - 2.12.42: Changed Unique ID font to Montserrat 7pt (non-bold)
  * - 2.12.41: Redesigned bin tag layout - new structure with INFO/Year/Breeder in right column, updated fonts (Norwester + Montserrat), shows ID in name area if no name
  * - 2.12.40: Removed all PDF code, HTML print only
  * - 2.12.39: LOCKED - 3.18x1.93in tag, 0.10in bleed, explicit row heights
@@ -272,7 +271,7 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:7pt; font-weight:400; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
@@ -288,14 +287,14 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   // Left column (70%)
   html += '<div style="width:70%; display:flex; flex-direction:column; border-right:2px solid #000;">';
   
-  // Name (40% of bottom)
-  html += '<div style="height:40%; background:#fff; display:flex; justify-content:center; align-items:center; border-bottom:2px solid #000;">';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:20pt; color:#000; letter-spacing:1px;">' + escapeHtml(displayName) + '</div>';
+  // Name row (40% of bottom)
+  html += '<div style="height:40%; border-bottom:2px solid #000; display:flex; justify-content:center; align-items:center; padding:0 5px;">';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:20pt; color:#000; letter-spacing:1px; text-align:center; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:100%;">' + escapeHtml(displayName) + '</div>';
   html += '</div>';
   
-  // Genetics (60% of bottom)
-  html += '<div style="flex:1; background:#fff; display:flex; justify-content:center; align-items:center; padding:6px; text-align:center; box-sizing:border-box;">';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:9pt; font-weight:500; color:#000; line-height:1.3;">' + escapeHtml(genetics) + '</div>';
+  // Genetics row (60% of bottom)
+  html += '<div style="height:60%; display:flex; justify-content:center; align-items:center; padding:4px 6px; text-align:center;">';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:9pt; font-weight:500; line-height:1.2; color:#000;">' + escapeHtml(genetics) + '</div>';
   html += '</div>';
   
   html += '</div>';
@@ -303,21 +302,21 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   // Right column (30%)
   html += '<div style="width:30%; display:flex; flex-direction:column;">';
   
-  // INFO (30% of bottom section)
+  // INFO box (30% of right column) - black background
   html += '<div style="height:30%; background:#000; display:flex; justify-content:center; align-items:center;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:13pt; font-weight:bold; color:#fff; letter-spacing:2px;">INFO</div>';
   html += '</div>';
   
-  // Year Born (half of remaining)
-  html += '<div style="flex:1; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
+  // Year Born (35% of right column) - white background
+  html += '<div style="height:35%; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
   html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:700; color:#000;">YEAR BORN:</div>';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000; margin-top:1px;">' + yearBorn + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000;">' + yearBorn + '</div>';
   html += '</div>';
   
-  // Breeder (half of remaining)
-  html += '<div style="flex:1; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
+  // Breeder (35% of right column) - white background, no divider
+  html += '<div style="height:35%; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
   html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:700; color:#000;">BREEDER:</div>';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000; margin-top:1px;">' + escapeHtml(breederSource) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000;">' + escapeHtml(breederSource) + '</div>';
   html += '</div>';
   
   html += '</div>';
@@ -443,7 +442,7 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:7pt; font-weight:400; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
@@ -459,14 +458,14 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   // Left column (70%)
   html += '<div style="width:70%; display:flex; flex-direction:column; border-right:2px solid #000;">';
   
-  // Name (40% of bottom)
-  html += '<div style="height:40%; background:#fff; display:flex; justify-content:center; align-items:center; border-bottom:2px solid #000;">';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:20pt; color:#000; letter-spacing:1px;">' + escapeHtml(displayName) + '</div>';
+  // Name row (40% of bottom)
+  html += '<div style="height:40%; border-bottom:2px solid #000; display:flex; justify-content:center; align-items:center; padding:0 5px;">';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:20pt; color:#000; letter-spacing:1px; text-align:center; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:100%;">' + escapeHtml(displayName) + '</div>';
   html += '</div>';
   
-  // Genetics (60% of bottom)
-  html += '<div style="flex:1; background:#fff; display:flex; justify-content:center; align-items:center; padding:6px; text-align:center; box-sizing:border-box;">';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:9pt; font-weight:500; color:#000; line-height:1.3;">' + escapeHtml(genetics) + '</div>';
+  // Genetics row (60% of bottom)
+  html += '<div style="height:60%; display:flex; justify-content:center; align-items:center; padding:4px 6px; text-align:center;">';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:9pt; font-weight:500; line-height:1.2; color:#000;">' + escapeHtml(genetics) + '</div>';
   html += '</div>';
   
   html += '</div>';
@@ -474,21 +473,21 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   // Right column (30%)
   html += '<div style="width:30%; display:flex; flex-direction:column;">';
   
-  // INFO (30% of bottom section)
+  // INFO box (30% of right column) - black background
   html += '<div style="height:30%; background:#000; display:flex; justify-content:center; align-items:center;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:13pt; font-weight:bold; color:#fff; letter-spacing:2px;">INFO</div>';
   html += '</div>';
   
-  // Year Born (half of remaining)
-  html += '<div style="flex:1; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
+  // Year Born (35% of right column) - white background
+  html += '<div style="height:35%; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
   html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:700; color:#000;">YEAR BORN:</div>';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000; margin-top:1px;">' + yearBorn + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000;">' + yearBorn + '</div>';
   html += '</div>';
   
-  // Breeder (half of remaining)
-  html += '<div style="flex:1; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
+  // Breeder (35% of right column) - white background, no divider
+  html += '<div style="height:35%; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
   html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:700; color:#000;">BREEDER:</div>';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000; margin-top:1px;">' + escapeHtml(breederSource) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000;">' + escapeHtml(breederSource) + '</div>';
   html += '</div>';
   
   html += '</div>';
@@ -537,7 +536,7 @@ function buildBinTagPrint(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:7pt; font-weight:400; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
@@ -553,14 +552,14 @@ function buildBinTagPrint(animal, businessName, logoUrl) {
   // Left column (70%)
   html += '<div style="width:70%; display:flex; flex-direction:column; border-right:2px solid #000;">';
   
-  // Name (40% of bottom)
-  html += '<div style="height:40%; background:#fff; display:flex; justify-content:center; align-items:center; border-bottom:2px solid #000;">';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:20pt; color:#000; letter-spacing:1px;">' + escapeHtml(displayName) + '</div>';
+  // Name row (40% of bottom)
+  html += '<div style="height:40%; border-bottom:2px solid #000; display:flex; justify-content:center; align-items:center; padding:0 5px;">';
+  html += '<div style="font-family:Norwester,sans-serif; font-size:20pt; color:#000; letter-spacing:1px; text-align:center; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:100%;">' + escapeHtml(displayName) + '</div>';
   html += '</div>';
   
-  // Genetics (60% of bottom)
-  html += '<div style="flex:1; background:#fff; display:flex; justify-content:center; align-items:center; padding:6px; text-align:center; box-sizing:border-box;">';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:9pt; font-weight:500; color:#000; line-height:1.3;">' + escapeHtml(genetics) + '</div>';
+  // Genetics row (60% of bottom)
+  html += '<div style="height:60%; display:flex; justify-content:center; align-items:center; padding:4px 6px; text-align:center;">';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:9pt; font-weight:500; line-height:1.2; color:#000;">' + escapeHtml(genetics) + '</div>';
   html += '</div>';
   
   html += '</div>';
@@ -568,21 +567,21 @@ function buildBinTagPrint(animal, businessName, logoUrl) {
   // Right column (30%)
   html += '<div style="width:30%; display:flex; flex-direction:column;">';
   
-  // INFO (30% of bottom section)
+  // INFO box (30% of right column) - black background
   html += '<div style="height:30%; background:#000; display:flex; justify-content:center; align-items:center;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:13pt; font-weight:bold; color:#fff; letter-spacing:2px;">INFO</div>';
   html += '</div>';
   
-  // Year Born (half of remaining)
-  html += '<div style="flex:1; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
+  // Year Born (35% of right column) - white background
+  html += '<div style="height:35%; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
   html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:700; color:#000;">YEAR BORN:</div>';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000; margin-top:1px;">' + yearBorn + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000;">' + yearBorn + '</div>';
   html += '</div>';
   
-  // Breeder (half of remaining)
-  html += '<div style="flex:1; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
+  // Breeder (35% of right column) - white background, no divider
+  html += '<div style="height:35%; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">';
   html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:700; color:#000;">BREEDER:</div>';
-  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000; margin-top:1px;">' + escapeHtml(breederSource) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:5.5pt; font-weight:400; color:#000;">' + escapeHtml(breederSource) + '</div>';
   html += '</div>';
   
   html += '</div>';
