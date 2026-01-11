@@ -371,21 +371,22 @@ function printBinTagsHTML(animals, businessName, logoUrl) {
   // Page setup - be explicit about no margins anywhere
   html += '@page { size: 3.38in 2.13in; margin: 0 !important; padding: 0 !important; }';
   html += '* { box-sizing: border-box; margin: 0; padding: 0; }';
-  html += 'html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: visible; }';
-  html += '.bin-tag-page { width: 3.38in; height: 2.13in; page-break-after: always; overflow: visible; }';
-  html += '.bin-tag-page:last-child { page-break-after: avoid; }';
+  html += 'html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: hidden; }';
+  html += '.bin-tag-page { width: 3.38in; height: 2.13in; overflow: hidden; }';
   
   // Print media query
   html += '@media print {';
   html += '  @page { margin: 0 !important; }';
-  html += '  html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }';
-  html += '  .bin-tag-page { width: 3.38in; height: 2.13in; overflow: visible; page-break-inside: avoid; }';
+  html += '  html, body { margin: 0 !important; padding: 0 !important; width: 3.38in; height: 2.13in; overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact; }';
+  html += '  .bin-tag-page { width: 3.38in; height: 2.13in; overflow: hidden; page-break-inside: avoid; page-break-after: auto; }';
+  html += '  .bin-tag-page:last-child { page-break-after: avoid !important; }';
   html += '}';
   
   html += '</style></head><body>';
   
-  animals.forEach(function(animal) {
-    html += '<div class="bin-tag-page">';
+  animals.forEach(function(animal, index) {
+    var isLast = (index === animals.length - 1);
+    html += '<div class="bin-tag-page"' + (isLast ? ' style="page-break-after:avoid !important;"' : '') + '>';
     html += buildBinTagForPrint(animal, businessName, logoUrl);
     html += '</div>';
   });
