@@ -1,11 +1,10 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.42
+ * Version: 2.12.41
  * Last Updated: 2026-01-11
  * 
  * Changelog:
- * - 2.12.42: Added printBinTagsMultiple function for printing multiple tags per page
- * - 2.12.41: Redesigned bin tag layout - new structure with INFO/Year/Breeder in right column, updated fonts (Norwester + Montserrat), shows ID in name area if no name
+ * - 2.12.41: Redesigned bin tag layout, Montserrat font for ID/genetics/labels
  * - 2.12.40: Removed all PDF code, HTML print only
  * - 2.12.39: LOCKED - 3.18x1.93in tag, 0.10in bleed, explicit row heights
  * - 2.12.23: Complete rewrite - Norwester font
@@ -254,10 +253,9 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
   
-  // New design - 3.18in x 1.93in at 96dpi = 305px x 185px
-  var html = '<div style="width:305px; height:185px; border:2px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
+  var html = '<div style="width:324px; height:204px; border:2px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
   
-  // ROW 1 - Logo | Sex+ID | QR (47% height)
+  // ROW 1 - Logo (32%) | Sex+ID (38%) | QR (30%) - 47% height
   html += '<div style="display:flex; height:47%; border-bottom:2px solid #000;">';
   
   // Logo (32%)
@@ -272,7 +270,7 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
@@ -400,69 +398,6 @@ function printBinTagsHTML(animals, businessName, logoUrl) {
   }, 1000);
 }
 
-// Print multiple bin tags per page (letter size paper)
-function printBinTagsMultiple() {
-  var animalsToInclude = getAnimalsToInclude();
-  
-  if (animalsToInclude.length === 0) {
-    setStatus("No animals selected", true);
-    return;
-  }
-  
-  var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
-  var logoUrl = state.settings["LOGO DATA"] || state.settings["LOGO URL"] || "";
-  
-  var printWindow = window.open('', '_blank');
-  
-  var html = '<!DOCTYPE html><html><head><title>Bin Tags - Multiple Per Page</title>';
-  html += '<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">';
-  html += '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">';
-  html += '<style>';
-  
-  // Letter size page setup
-  html += '@page { size: letter; margin: 0.25in; }';
-  html += '* { box-sizing: border-box; margin: 0; padding: 0; }';
-  html += 'html, body { margin: 0; padding: 0; }';
-  html += '.page { width: 8in; padding: 0.25in; display: flex; flex-wrap: wrap; gap: 0.125in; align-content: flex-start; page-break-after: always; }';
-  html += '.page:last-child { page-break-after: avoid; }';
-  html += '.bin-tag-wrapper { width: 3.38in; height: 2.13in; flex-shrink: 0; }';
-  
-  // Print media query
-  html += '@media print {';
-  html += '  @page { margin: 0.25in; }';
-  html += '  html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }';
-  html += '  .page { page-break-inside: avoid; }';
-  html += '}';
-  
-  html += '</style></head><body>';
-  
-  // Calculate tags per page (2 columns x 4 rows = 8 tags per letter page)
-  var tagsPerPage = 8;
-  var totalPages = Math.ceil(animalsToInclude.length / tagsPerPage);
-  
-  for (var page = 0; page < totalPages; page++) {
-    html += '<div class="page">';
-    var startIdx = page * tagsPerPage;
-    var endIdx = Math.min(startIdx + tagsPerPage, animalsToInclude.length);
-    
-    for (var i = startIdx; i < endIdx; i++) {
-      html += '<div class="bin-tag-wrapper">';
-      html += buildBinTagPrint(animalsToInclude[i], businessName, logoUrl);
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-  
-  html += '</body></html>';
-  
-  printWindow.document.write(html);
-  printWindow.document.close();
-  
-  setTimeout(function() {
-    printWindow.print();
-  }, 1000);
-}
-
 // Dedicated function for print - uses inch dimensions
 // Card stock: 3.38in x 2.13in
 // Bleed margin: 0.10in on each side
@@ -486,12 +421,12 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
   
   // Outer wrapper - card stock size
-  var html = '<div style="width:3.38in; height:2.13in; position:relative; box-sizing:border-box; overflow:hidden;">';
+  var html = '<div style="width:3.38in; height:2.13in; position:relative; box-sizing:border-box;">';
   
   // Actual tag: 3.18in x 1.93in with 0.10in bleed margin
   html += '<div style="position:absolute; left:0.10in; top:0.10in; width:3.18in; height:1.93in; border:2px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
   
-  // ROW 1 - Logo | Sex+ID | QR (47% height)
+  // ROW 1 - Logo (32%) | Sex+ID (38%) | QR (30%) - 47% height
   html += '<div style="display:flex; height:47%; border-bottom:2px solid #000;">';
   
   // Logo (32%)
@@ -506,7 +441,7 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
@@ -582,10 +517,9 @@ function buildBinTagPrint(animal, businessName, logoUrl) {
   
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent("https://app.therackapp.io?code=" + state.sheetId + "&animal=" + id);
   
-  // New design - matches buildBinTagPreview and buildBinTagForPrint
   var html = '<div class="bin-tag" style="width:3.38in; height:2.13in; border:2px solid #000; background:#fff; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">';
   
-  // ROW 1 - Logo | Sex+ID | QR (47% height)
+  // ROW 1 - Logo (32%) | Sex+ID (38%) | QR (30%) - 47% height
   html += '<div style="display:flex; height:47%; border-bottom:2px solid #000;">';
   
   // Logo (32%)
@@ -600,7 +534,7 @@ function buildBinTagPrint(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
