@@ -1,9 +1,10 @@
 /*
  * THE RACK - Modals (Add/Edit)
- * Version: 3.9
+ * Version: 3.10
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.10: Changed Clutch sheet references from CLUTCH ID to UNIQUE ID (column A renamed)
  * - 3.9: Breeder and Clutch forms now use SHOW ONLY field lists
  * - 3.7: All ID generators now check for duplicates before creating new ID
  * - 3.6: Clutch form now shows ONLY explicit field list
@@ -188,7 +189,7 @@ function renderModalForm(tab) {
   
   // Fallback headers for clutch if none loaded
   if (state.modalTab === "clutch" && headers.length === 0) {
-    headers = ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "# LAID", "# FERTILE", "# SLUGS", "STATUS", "MANUAL OVERRIDE", "NOTES"];
+    headers = ["UNIQUE ID", "SIRE", "DAM", "LAY DATE", "# LAID", "# FERTILE", "# SLUGS", "STATUS", "MANUAL OVERRIDE", "NOTES"];
   }
   
   // Special rendering for Activity ADD form
@@ -372,9 +373,9 @@ function calculateEstHatchDate(layDateStr) {
 function renderHatchlingForm(headers) {
   var html = '<div class="space-y-4">';
   
-  // 1. CLUTCH ID - searchable chip selector showing "Clutch ID | Sire x Dam"
+  // 1. UNIQUE ID (Clutch) - searchable chip selector showing "Clutch ID | Sire x Dam"
   var clutchOpts = getClutchOptions() || [];
-  var clutchVal = state.formData["CLUTCH ID"] || "";
+  var clutchVal = state.formData["CLUTCH ID"] || state.formData["UNIQUE ID"] || "";
   html += '<div>';
   html += '<label class="block text-sm font-semibold text-gray-700 mb-2">Select Clutch</label>';
   html += '<div class="relative">';
@@ -384,7 +385,7 @@ function renderHatchlingForm(headers) {
   html += '<div id="hatchlingClutchList" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white ' + (clutchVal ? 'hidden' : '') + '">';
   clutchOpts.forEach(function(clutchId) {
     // Get clutch details for display
-    var clutch = state.data.clutch.find(function(c) { return c["CLUTCH ID"] === clutchId; });
+    var clutch = state.data.clutch.find(function(c) { return c["UNIQUE ID"] === clutchId; });
     var sire = clutch ? (clutch["SIRE"] || "").split(" | ")[0] : "";
     var dam = clutch ? (clutch["DAM"] || "").split(" | ")[0] : "";
     var pairing = (sire && dam) ? sire + " x " + dam : (sire || dam || "");
@@ -399,7 +400,7 @@ function renderHatchlingForm(headers) {
   
   // Show selected clutch as dark chip
   if (clutchVal) {
-    var selectedClutch = state.data.clutch.find(function(c) { return c["CLUTCH ID"] === clutchVal; });
+    var selectedClutch = state.data.clutch.find(function(c) { return c["UNIQUE ID"] === clutchVal; });
     var displayLabel = clutchVal;
     if (selectedClutch) {
       var s = (selectedClutch["SIRE"] || "").split(" | ")[0];
@@ -529,7 +530,7 @@ function selectHatchlingClutch(clutchId) {
   
   // Look up the clutch to get DAM and SIRE
   var clutchRows = state.data.clutch || [];
-  var found = clutchRows.find(function(c) { return c["CLUTCH ID"] === clutchId; });
+  var found = clutchRows.find(function(c) { return c["UNIQUE ID"] === clutchId; });
   
   if (found) {
     state.formData["DAM"] = found["DAM"] || "";
@@ -897,7 +898,7 @@ function getClutchOptions() {
   var rows = state.data.clutch || [];
   var opts = [];
   rows.forEach(function(r) {
-    var id = r["CLUTCH ID"];
+    var id = r["UNIQUE ID"];
     var status = (r["STATUS"] || "").toLowerCase();
     // Only show clutches that are NOT hatched
     if (id && status !== "hatched") {
@@ -1060,7 +1061,7 @@ function generateClutchId(layDate) {
   var re = /^CL-(\d{4})-(\d{4})$/i;
   var existingIds = {};
   rows.forEach(function(r) {
-    var id = r["CLUTCH ID"] || "";
+    var id = r["UNIQUE ID"] || "";
     existingIds[id.toUpperCase()] = true;
     var m = re.exec(id);
     if (m && m[1] === String(year)) {
@@ -1090,11 +1091,11 @@ function saveRecord() {
     }
   }
   
-  // Auto-generate CLUTCH ID for new clutch records
+  // Auto-generate UNIQUE ID for new clutch records
   if (state.modalMode === "add" && state.modalTab === "clutch") {
     var generatedId = document.getElementById("modalIdValue") ? document.getElementById("modalIdValue").textContent : "";
-    if (generatedId && !state.formData["CLUTCH ID"]) {
-      state.formData["CLUTCH ID"] = generatedId;
+    if (generatedId && !state.formData["UNIQUE ID"]) {
+      state.formData["UNIQUE ID"] = generatedId;
     }
   }
 

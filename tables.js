@@ -1,9 +1,10 @@
 /*
  * THE RACK - Tables & Filters
- * Version: 3.3
+ * Version: 3.10
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - 3.10: Changed Clutches table to use UNIQUE ID instead of CLUTCH ID (sheet column A renamed)
  * - 3.3: Fixed Clutches table to show CLUTCH ID column (was incorrectly set to UNIQUE ID)
  * - 3.2: Changed Clutches table first column from CLUTCH ID to UNIQUE ID
  * - 3.1: Added EST. HATCH DATE column to Clutches table
@@ -760,7 +761,7 @@ function renderTableStats() {
 function getColumns() {
   var prefs = {
     collection: ["QR", "UNIQUE ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS"],
-    clutches: ["CLUTCH ID", "SIRE", "DAM", "LAY DATE", "EST. HATCH DATE", "# FERTILE", "STATUS"],
+    clutches: ["UNIQUE ID", "SIRE", "DAM", "LAY DATE", "EST. HATCH DATE", "# FERTILE", "STATUS"],
     pairings: ["DATE", "UNIQUE ID", "PAIRED WITH", "ACTIVITY"],
     hatchlings: ["QR", "UNIQUE ID", "CLUTCH ID", "ANIMAL NAME", "SEX", "MATURITY", "GENETIC SUMMARY", "STATUS", "LIST PRICE"],
     sales: ["UNIQUE ID", "ANIMAL NAME", "STATUS", "SOLD PRICE", "AMOUNT PAID", "DATE SOLD", "BUYER NAME"],

@@ -1,5 +1,5 @@
 # THE RACK - Structure Documentation
-# Version: 3.9
+# Version: 3.10
 # Last Updated: 2026-01-10
 
 CLAUDE: UPDATE THIS FILE whenever you change file structure, rules, form fields, or table columns.
@@ -92,7 +92,7 @@ CLAUDE: UPDATE THIS FILE whenever you change file structure, rules, form fields,
 ## TABLE COLUMNS
 
 ### Collection: QR, UNIQUE ID, ANIMAL NAME, SEX, MATURITY, GENETIC SUMMARY, STATUS
-### Clutches: CLUTCH ID, SIRE, DAM, LAY DATE, EST. HATCH DATE, # FERTILE, STATUS
+### Clutches: UNIQUE ID, SIRE, DAM, LAY DATE, EST. HATCH DATE, # FERTILE, STATUS
 ### Pairings: DATE, UNIQUE ID, PAIRED WITH, ACTIVITY
 ### Hatchlings: QR, UNIQUE ID, CLUTCH ID, ANIMAL NAME, SEX, MATURITY, GENETIC SUMMARY, STATUS, LIST PRICE
 ### Sales: UNIQUE ID, ANIMAL NAME, STATUS, SOLD PRICE, AMOUNT PAID, DATE SOLD, BUYER NAME
@@ -104,7 +104,7 @@ CLAUDE: UPDATE THIS FILE whenever you change file structure, rules, form fields,
 
 - Breeder: B-YYYY-XXXX (checks for duplicates)
 - Hatchling: H-YYYY-XXXX (checks for duplicates)
-- Clutch: CL-YYYY-XXXX (checks for duplicates)
+- Clutch: CL-YYYY-XXXX (checks for duplicates, uses UNIQUE ID column)
 - Import: B-YYYY-XXXX + QR CODE auto-generated
 
 ---
