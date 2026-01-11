@@ -1,9 +1,10 @@
 /*
  * THE RACK - Tables & Filters
- * Version: v31
+ * Version: v32
  * Last Updated: 2026-01-10
  * 
  * Changelog:
+ * - v32: Fixed Breeding page to show all 4 activity types (Paired, Lock, Ovulation, Pre Lay Shed) in table and stats
  * - v31: Fixed Breeding/Pairings stats to show Last 3 Months data (Paired, Locked, Ovulations, Pre-Lay Sheds)
  * - v30: Fixed Pairings table to show DATE, UNIQUE ID, PAIRED WITH, ACTIVITY columns directly from Activity sheet
  * - 2.12.50: Added search and filter bar to Pairings tab
@@ -957,9 +958,9 @@ function getFilteredRows() {
       return true;
     }
     if (state.activeTab === "pairings") {
-      // Filter to only show Paired and Lock activities for current year
+      // Filter to show Paired, Lock, Ovulation, and Pre Lay Shed activities for current year
       var activity = (r.ACTIVITY || "").toLowerCase().trim();
-      if (!(activity === "paired" || activity === "lock")) {
+      if (!(activity === "paired" || activity === "lock" || activity === "ovulation" || activity === "pre lay shed" || activity === "pre-lay shed" || activity === "prelay shed")) {
         return false;
       }
       // Filter to current year only
