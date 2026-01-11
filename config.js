@@ -29,7 +29,7 @@
  */
 
 var VERSION = "3.18";
-var API_URL = "https://script.google.com/macros/s/AKfycbxBCpAzek-NAGTLtORGt6JmenXjPlcH_p1XmuPTycZ4mSHRvkn8kFxrcd_Hu8nMAmnK/exec";
+var API_URL = "https://script.google.com/macros/s/AKfycbyd6kltwSxBgkV2jUz4Xk3nm0Bi_W3aKVY_wDHxsL-w-K26n5uyKP9cDqi1xHi77lX5/exec";
 
 var SHEET_TABS = {
   collection: "Collection",
