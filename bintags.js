@@ -1,9 +1,11 @@
 /*
  * THE RACK - QR Codes & Bin Tags
- * Version: 2.12.41
- * Last Updated: 2026-01-10
+ * Version: 2.12.43
+ * Last Updated: 2026-01-11
  * 
  * Changelog:
+ * - 2.12.43: Added printBinTagsMultiple() function for printing multiple tags per page
+ * - 2.12.42: Changed Unique ID font to Montserrat 7pt (non-bold)
  * - 2.12.41: Redesigned bin tag layout - new structure with INFO/Year/Breeder in right column, updated fonts (Norwester + Montserrat), shows ID in name area if no name
  * - 2.12.40: Removed all PDF code, HTML print only
  * - 2.12.39: LOCKED - 3.18x1.93in tag, 0.10in bleed, explicit row heights
@@ -271,7 +273,7 @@ function buildBinTagPreview(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:7pt; font-weight:400; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
@@ -399,6 +401,69 @@ function printBinTagsHTML(animals, businessName, logoUrl) {
   }, 1000);
 }
 
+// Print multiple bin tags per page (letter size paper)
+function printBinTagsMultiple() {
+  var animalsToInclude = getAnimalsToInclude();
+  
+  if (animalsToInclude.length === 0) {
+    setStatus("No animals selected", true);
+    return;
+  }
+  
+  var businessName = state.settings["BUSINESS NAME"] || "THE RACK";
+  var logoUrl = state.settings["LOGO DATA"] || state.settings["LOGO URL"] || "";
+  
+  var printWindow = window.open('', '_blank');
+  
+  var html = '<!DOCTYPE html><html><head><title>Bin Tags - Multiple Per Page</title>';
+  html += '<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">';
+  html += '<link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet">';
+  html += '<style>';
+  
+  // Letter size page setup
+  html += '@page { size: letter; margin: 0.25in; }';
+  html += '* { box-sizing: border-box; margin: 0; padding: 0; }';
+  html += 'html, body { margin: 0; padding: 0; }';
+  html += '.page { width: 8in; padding: 0.25in; display: flex; flex-wrap: wrap; gap: 0.125in; align-content: flex-start; page-break-after: always; }';
+  html += '.page:last-child { page-break-after: avoid; }';
+  html += '.bin-tag-wrapper { width: 3.38in; height: 2.13in; flex-shrink: 0; }';
+  
+  // Print media query
+  html += '@media print {';
+  html += '  @page { margin: 0.25in; }';
+  html += '  html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }';
+  html += '  .page { page-break-inside: avoid; }';
+  html += '}';
+  
+  html += '</style></head><body>';
+  
+  // Calculate tags per page (2 columns x 4 rows = 8 tags per letter page)
+  var tagsPerPage = 8;
+  var totalPages = Math.ceil(animalsToInclude.length / tagsPerPage);
+  
+  for (var page = 0; page < totalPages; page++) {
+    html += '<div class="page">';
+    var startIdx = page * tagsPerPage;
+    var endIdx = Math.min(startIdx + tagsPerPage, animalsToInclude.length);
+    
+    for (var i = startIdx; i < endIdx; i++) {
+      html += '<div class="bin-tag-wrapper">';
+      html += buildBinTagPrint(animalsToInclude[i], businessName, logoUrl);
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  
+  html += '</body></html>';
+  
+  printWindow.document.write(html);
+  printWindow.document.close();
+  
+  setTimeout(function() {
+    printWindow.print();
+  }, 1000);
+}
+
 // Dedicated function for print - uses inch dimensions
 // Card stock: 3.38in x 2.13in
 // Bleed margin: 0.10in on each side
@@ -442,7 +507,7 @@ function buildBinTagForPrint(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:7pt; font-weight:400; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
@@ -536,7 +601,7 @@ function buildBinTagPrint(animal, businessName, logoUrl) {
   // Sex + ID (38%) - positioned at bottom
   html += '<div style="width:38%; background:#fff; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:8px; border-right:2px solid #000; box-sizing:border-box;">';
   html += '<div style="font-family:Norwester,sans-serif; font-size:17pt; color:#000; letter-spacing:2px;">' + escapeHtml(sexDisplay) + '</div>';
-  html += '<div style="font-family:Norwester,sans-serif; font-size:8pt; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
+  html += '<div style="font-family:Montserrat,sans-serif; font-size:7pt; font-weight:400; color:#000; margin-top:2px;">' + escapeHtml(id) + '</div>';
   html += '</div>';
   
   // QR (30%)
