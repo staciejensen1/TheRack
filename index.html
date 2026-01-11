@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <!--
   THE RACK - Reptile Breeding Program Management
-  Version: 3.20
-  Last Updated: 2026-01-11
+  Version: 3.19
+  Last Updated: 2026-01-10
   
   Changelog:
-  - 3.20: Updated bin tag modal - Chrome recommendation, Print 1 Tag Per Page and Print Multiple Per Page buttons
-  - 3.19: Updated bin tag modal - added Chrome recommendation, Print 1 Tag Per Page and Print Multiple Per Page buttons
+  - 3.19: Import now includes unnamed hatchlings (rows with UNIQUE ID or RECORD_ID)
   - 3.18: Added RECORD_ID system for duplicate prevention; removed GS menus
   - 3.17: Added year filter dropdown to Breeding page
   - 3.16: Renamed Pairings to Breeding; shows Paired, Lock, Ovulation, Pre Lay Shed
@@ -117,6 +116,7 @@
           </svg>
           <span id="versionTag" class="text-xs text-gray-400 hidden md:inline">v2.12.0</span>
         </div>
+
         <!-- Desktop: Login/Connected -->
         <div class="hidden md:flex flex-wrap items-center gap-2 md:gap-3">
           <!-- Login Form (shown when not logged in) -->
@@ -137,6 +137,7 @@
               Log In
             </button>
           </div>
+
           <!-- Connected Status (shown when logged in) -->
           <div id="connectedGroup" class="flex items-center gap-2 hidden">
             <span id="userEmail" class="text-sm text-gray-600"></span>
@@ -148,6 +149,7 @@
             </button>
           </div>
         </div>
+
         <!-- Mobile: Sync button only when logged in -->
         <div id="mobileSyncBtn" class="md:hidden hidden">
           <button onclick="loadData()" class="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200" title="Sync">
@@ -155,6 +157,7 @@
           </button>
         </div>
       </div>
+
       <!-- Mobile Login Form -->
       <div id="mobileLoginGroup" class="md:hidden mt-4 hidden">
         <div class="flex flex-col gap-2">
@@ -175,10 +178,12 @@
           </button>
         </div>
       </div>
+
       <div class="mt-3 flex items-center gap-4 text-sm">
         <span id="statusText" class="text-gray-500">Starting up...</span>
       </div>
     </header>
+
     <!-- Mobile Menu Overlay -->
     <div id="mobileMenuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleMobileMenu()"></div>
     
@@ -193,16 +198,19 @@
             </svg>
           </button>
         </div>
+
         <!-- Mobile User Info -->
         <div id="mobileUserInfo" class="mb-6 p-3 bg-gray-50 rounded-xl hidden">
           <div id="mobileUserEmail" class="text-sm text-gray-600 truncate"></div>
           <button onclick="handleSignOut(); toggleMobileMenu();" class="mt-2 text-sm text-red-600 hover:text-red-700">Sign out</button>
         </div>
+
         <!-- Navigation -->
         <div class="mb-6">
           <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Navigation</div>
           <nav id="mobileNavTabs" class="flex flex-col gap-1"></nav>
         </div>
+
         <!-- Quick Add -->
         <div class="mb-6">
           <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Quick Add</div>
@@ -213,6 +221,7 @@
             <button onclick="openAddModal('activity'); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-left">+ Activity</button>
           </div>
         </div>
+
         <!-- Tools -->
         <div class="pt-4 border-t border-gray-100">
           <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
@@ -229,6 +238,7 @@
             <a href="help.html" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block">Help Guide</a>
           </div>
         </div>
+
         <!-- Support -->
         <div class="mt-6 pt-4 border-t border-gray-100">
           <button onclick="openChangelogModal(); toggleMobileMenu();" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block w-full text-left">
@@ -240,6 +250,7 @@
         </div>
       </div>
     </aside>
+
     <div class="flex flex-col md:flex-row gap-6">
       <!-- Desktop Sidebar -->
       <aside class="hidden md:block w-56 shrink-0">
@@ -259,6 +270,7 @@
           <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Navigation</div>
           <nav id="navTabs" class="flex flex-col gap-1">
           </nav>
+
           <!-- Tools -->
           <div class="mt-6 pt-4 border-t border-gray-100">
             <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Tools</div>
@@ -275,6 +287,7 @@
               <a href="help.html" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block">Help Guide</a>
             </div>
           </div>
+
           <!-- Support -->
           <div class="mt-6 pt-4 border-t border-gray-100">
             <button onclick="openChangelogModal()" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg block w-full text-left">
@@ -286,6 +299,7 @@
           </div>
         </div>
       </aside>
+
       <!-- Main content -->
       <main class="flex-1 min-w-0">
         <!-- Mobile Quick Add Bar -->
@@ -297,6 +311,7 @@
             <button onclick="openAddModal('activity')" class="flex-shrink-0 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200">+ Activity</button>
           </div>
         </div>
+
         <div class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-200">
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
@@ -312,8 +327,10 @@
           
           <!-- Dashboard -->
           <div id="dashboardView"></div>
+
           <!-- Stats Cards (shown on table pages) -->
           <div id="tableStatsView" class="hidden mb-4"></div>
+
           <!-- Filter Bar (shown on table pages) -->
           <div id="filterBar" class="hidden mb-4 flex flex-wrap gap-2 items-center">
             <input type="text" id="searchInput" placeholder="Search name or ID..." oninput="applyFilter('search', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white w-48">
@@ -378,6 +395,7 @@
               <button onclick="clearAlertFilter()" class="text-gray-300 hover:text-white font-bold">&times;</button>
             </span>
           </div>
+
           <!-- Data table -->
           <div id="tableView" class="overflow-x-auto hidden">
             <table class="min-w-full text-sm">
@@ -391,8 +409,10 @@
       </main>
     </div>
   </div>
+
   <!-- Modals will be rendered dynamically -->
   <div id="modalContainer"></div>
+
   <!-- Bin Tag Modal -->
   <div id="binTagModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
     <div class="min-h-screen flex items-start justify-center p-4">
@@ -403,13 +423,6 @@
         </div>
         
         <div class="p-4 md:p-6">
-          <!-- Browser Recommendation -->
-          <div class="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-3">
-            <div class="text-sm text-blue-800">
-              <strong>Best Results:</strong> For optimal printing, use Google Chrome browser.
-            </div>
-          </div>
-          
           <!-- Printer Recommendations -->
           <div class="mb-6 bg-gray-50 border border-gray-200 rounded-xl p-4">
             <div class="text-sm font-semibold text-gray-800 mb-2">Recommended Supplies</div>
@@ -431,10 +444,7 @@
               </select>
             </div>
             <button onclick="printBinTags()" id="binTagDownloadBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
-              Print 1 Tag Per Page
-            </button>
-            <button onclick="printBinTagsMultiple()" class="px-4 py-2 bg-gray-700 text-white font-bold rounded-xl hover:bg-gray-800 text-sm">
-              Print Multiple Per Page
+              Print
             </button>
           </div>
           
@@ -465,6 +475,7 @@
       </div>
     </div>
   </div>
+
   <!-- QR Code Modal -->
   <div id="qrModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
     <div class="min-h-screen flex items-start justify-center p-4">
@@ -506,6 +517,70 @@
       </div>
     </div>
   </div>
+
+  <!-- Bin Tag Generator Modal -->
+  <div id="binTagModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
+    <div class="min-h-screen flex items-start justify-center p-4">
+      <div class="w-full max-w-5xl my-8 bg-white rounded-2xl shadow-2xl">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-slate-900">Print Bin Tags</h3>
+          <button onclick="closeBinTagModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+        </div>
+        
+        <div class="p-4 md:p-6">
+          <!-- Printer Recommendations -->
+          <div class="mb-6 bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <div class="text-sm font-semibold text-gray-800 mb-2">Recommended Supplies</div>
+            <div class="text-sm text-gray-600 space-y-1">
+              <div><strong>PVC Cards (waterproof):</strong> <a href="https://amzn.to/49KHshc" target="_blank" class="text-blue-600 hover:underline">3.38" x 2.13" PVC Cards on Amazon</a></div>
+              <div><strong>Card Printer:</strong> <a href="https://amzn.to/4sookwS" target="_blank" class="text-blue-600 hover:underline">Recommended Printer on Amazon</a></div>
+              <div class="text-gray-500 text-xs mt-2">Alternative: Use thick cardstock paper with any inkjet printer. PVC cards are waterproof and more durable for rack environments.</div>
+            </div>
+          </div>
+          
+          <!-- Options -->
+          <div class="mb-6 flex flex-wrap gap-4 items-center">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Select Animals</label>
+              <select id="binTagAnimalSelect" onchange="updateBinTagAnimalList(); updateBinTagPreview();" class="px-3 py-2 border border-gray-300 rounded-xl text-sm">
+                <option value="all">All Animals</option>
+                <option value="breeders">Breeders Only</option>
+                <option value="hatchlings">Hatchlings Only</option>
+              </select>
+            </div>
+            <button onclick="downloadBinTagsPDF()" id="binTagDownloadBtn" class="px-4 py-2 bg-gray-900 text-white font-bold rounded-xl hover:bg-black text-sm">
+              Print Tags
+            </button>
+          </div>
+          
+          <!-- Animal Selection List -->
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-medium text-gray-700">Select specific animals (or leave unchecked for all)</label>
+              <div class="flex gap-2">
+                <button onclick="selectAllBinTagAnimals()" class="text-xs text-gray-500 hover:text-gray-700">Select All</button>
+                <span class="text-gray-300">|</span>
+                <button onclick="deselectAllBinTagAnimals()" class="text-xs text-gray-500 hover:text-gray-700">Deselect All</button>
+              </div>
+            </div>
+            <div id="binTagAnimalList" class="border border-gray-200 rounded-xl p-3 bg-gray-50 max-h-40 overflow-auto">
+              <p class="text-gray-500 text-sm">Loading animals...</p>
+            </div>
+            <div class="mt-2 text-sm text-gray-500">
+              <span id="binTagSelectedCount">0</span> animals selected
+            </div>
+          </div>
+          
+          <!-- Preview -->
+          <div class="text-sm font-medium text-gray-700 mb-2">Preview</div>
+          <div id="binTagPreview" class="border border-gray-200 rounded-xl p-4 bg-gray-100 overflow-auto" style="max-height: 500px;">
+            <p class="text-gray-500 text-sm">Select animals to see preview...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Import Modal -->
   <div id="importModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
     <div class="min-h-screen flex items-start justify-center p-4">
@@ -591,6 +666,7 @@
       </div>
     </div>
   </div>
+
   <!-- Add/Edit Modal -->
   <div id="modal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
     <div class="min-h-screen flex items-start justify-center p-4">
@@ -608,7 +684,9 @@
             <div class="text-xs text-slate-400">Auto-generated (read-only)</div>
           </div>
         </div>
+
         <div id="modalBody" class="p-4 md:p-6 max-h-[60vh] overflow-auto"></div>
+
         <div class="p-4 md:p-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <span id="modalError" class="text-red-600 text-sm"></span>
           <div class="flex gap-3">
@@ -623,6 +701,7 @@
       </div>
     </div>
   </div>
+
   <!-- Hatch Modal -->
   <div id="hatchModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
     <div class="min-h-screen flex items-start justify-center p-4">
@@ -636,6 +715,7 @@
         </div>
         
         <div id="hatchModalBody" class="p-4 md:p-6"></div>
+
         <div class="p-4 md:p-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <span id="hatchModalError" class="text-red-600 text-sm"></span>
           <div class="flex flex-wrap gap-3">
@@ -653,6 +733,7 @@
       </div>
     </div>
   </div>
+
   <!-- Sale Modal -->
   <div id="saleModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
     <div class="min-h-screen flex items-start justify-center p-4">
@@ -666,6 +747,7 @@
         </div>
         
         <div id="saleModalBody" class="p-4 md:p-6"></div>
+
         <div class="p-4 md:p-6 border-t border-slate-200 flex justify-between items-center">
           <span id="saleModalError" class="text-red-600 text-sm"></span>
           <div class="flex gap-3">
@@ -680,6 +762,7 @@
       </div>
     </div>
   </div>
+
   <!-- Invoice Modal -->
   <div id="invoiceModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
     <div class="min-h-screen flex items-start justify-center p-4">
@@ -693,6 +776,7 @@
         </div>
         
         <div id="invoiceModalBody" class="p-4 md:p-6 max-h-[70vh] overflow-auto"></div>
+
         <div class="p-4 md:p-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <span id="invoiceModalError" class="text-red-600 text-sm"></span>
           <div class="flex flex-wrap gap-3">
@@ -713,6 +797,7 @@
       </div>
     </div>
   </div>
+
   <!-- Invoice Preview Modal -->
   <div id="invoicePreviewModal" class="fixed inset-0 bg-black/50 modal-backdrop hidden z-50 overflow-auto">
     <div class="min-h-screen flex items-start justify-center p-4">
@@ -725,6 +810,7 @@
         <div id="invoicePreviewBody" class="p-4 md:p-6 max-h-[70vh] overflow-auto bg-gray-100">
           <div id="invoicePrintArea"></div>
         </div>
+
         <div class="p-4 md:p-6 border-t border-slate-200 flex justify-end gap-3">
           <button onclick="closeInvoicePreview()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
             Back to Edit
@@ -739,6 +825,7 @@
       </div>
     </div>
   </div>
+
   <!-- Footer -->
   <footer class="mt-8 py-6 border-t border-gray-200 bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
@@ -752,6 +839,7 @@
       </div>
     </div>
   </footer>
+
   <!-- JavaScript Files (order matters!) -->
   <script src="config.js"></script>
   <script src="api.js"></script>
